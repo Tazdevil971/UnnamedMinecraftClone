@@ -117,6 +117,16 @@ private:
     std::optional<VkSurfaceFormatKHR> chooseSurfaceFormat(VkPhysicalDevice device);
     std::optional<VkPresentModeKHR> choosePresentMode(VkPhysicalDevice device);
     PhysicalDevice pickPhysicalDevice();
+
+    void createBuffer(
+        VkDeviceSize size,
+        VkBufferUsageFlags usage,
+        VkMemoryPropertyFlags properties,
+        VkBuffer& buffer,
+        VkDeviceMemory& deviceMemory);
+
+    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
     VkShaderModule loadShaderModule(const std::string &path);
