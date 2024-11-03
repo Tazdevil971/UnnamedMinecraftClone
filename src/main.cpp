@@ -3,6 +3,10 @@
 
 #include "Window.hpp"
 
+#include "backward.hpp"
+
+backward::SignalHandling sh;
+
 int main() {
     Window window;
 

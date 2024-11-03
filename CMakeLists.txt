@@ -3,10 +3,11 @@ include(cmake/AddShaders.cmake)
 
 add_subdirectory(libs/glfw)
 add_subdirectory(libs/glm)
-
-find_package(Vulkan REQUIRED)
+add_subdirectory(libs/backward-cpp)
 
 project(UnnamedMinecrafClone LANGUAGES CXX)
+
+find_package(Vulkan REQUIRED)
 
 set(SOURCES 
     src/main.cpp 
@@ -22,9 +23,13 @@ target_compile_features(UnnamedMinecrafClone PRIVATE cxx_std_17)
 add_shaders(UnnamedMinecrafClone_shaders ${SHADERS})
     
 target_include_directories(UnnamedMinecrafClone PUBLIC ${Vulkan_INCLUDE_DIRS})
-target_compile_definitions(UnnamedMinecrafClone PRIVATE GLM_FORCE_RADIANS)
+target_compile_definitions(
+    UnnamedMinecrafClone 
+    PRIVATE 
+    GLM_FORCE_RADIANS)
 target_link_libraries(
     UnnamedMinecrafClone
+    Backward::Interface
     glfw
     glm::glm
     ${Vulkan_LIBRARIES})

@@ -103,6 +103,10 @@ class Window {
     void createFramebuffers();
     void createCommandPool();
     void createVertexBuffer();
+    void createIndexBuffer();
+    void createUniformBuffers();
+    void createDescriptorPool();
+    void createDescriptorSets();
     void createCommandBuffer();
     void createSyncObjects();
 
@@ -135,6 +139,7 @@ class Window {
 
     VkShaderModule loadShaderModule(const std::string& path);
 
+    float getTime();
     glm::mat4 createMVP(float time);
 
     void onResize(int width, int height);
@@ -159,6 +164,7 @@ class Window {
     std::vector<VkFramebuffer> swapchainFramebuffers;
 
     VkRenderPass renderPass{VK_NULL_HANDLE};
+    VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
     VkPipeline pipeline{VK_NULL_HANDLE};
 
@@ -170,8 +176,17 @@ class Window {
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
 
+    VkDescriptorPool descriptorPool{VK_NULL_HANDLE};
+    std::vector<VkDescriptorSet> descriptorSets;
+
     VkBuffer vertexBuffer{VK_NULL_HANDLE};
     VkDeviceMemory vertexBufferMemory{VK_NULL_HANDLE};
+    VkBuffer indexBuffer{VK_NULL_HANDLE};
+    VkDeviceMemory indexBufferMemory{VK_NULL_HANDLE};
+
+    std::vector<VkBuffer> uniformBuffers;
+    std::vector<VkDeviceMemory> uniformBuffersMemory;
+    std::vector<void*> uniformBuffersMapped;
 
     VkSurfaceKHR surface{VK_NULL_HANDLE};
 };
