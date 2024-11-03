@@ -3,15 +3,14 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <array>
 #include <glm/glm.hpp>
-
-#include <vector>
 #include <optional>
 #include <string>
-#include <array>
+#include <vector>
 
 class Window {
-public:
+   public:
     Window();
 
     void init();
@@ -26,12 +25,13 @@ public:
             VkVertexInputBindingDescription description{};
             description.binding = 0;
             description.stride = sizeof(Vertex);
-            description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;            
+            description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
             return description;
         }
 
-        static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions() {
+        static std::array<VkVertexInputAttributeDescription, 2>
+        getAttributeDescriptions() {
             std::array<VkVertexInputAttributeDescription, 2> descriptions{};
             descriptions[0].binding = 0;
             descriptions[0].location = 0;
@@ -47,7 +47,11 @@ public:
         }
     };
 
-private:
+    struct Ubo {
+        glm::mat4 mvp;
+    };
+
+   private:
     const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
     struct VkInstanceExtensionSupport {
@@ -72,8 +76,7 @@ private:
 
         std::vector<uint32_t> indices() {
             std::vector<uint32_t> res;
-            if (graphics.has_value())
-                res.push_back(graphics.value());
+            if (graphics.has_value()) res.push_back(graphics.value());
 
             if (present.has_value() && present != graphics)
                 res.push_back(present.value());
@@ -91,7 +94,7 @@ private:
 
     void initWindow();
     void initVulkan();
-    
+
     void createVkInstance();
     void createSurface();
     void createDevice();
@@ -104,7 +107,8 @@ private:
     void createSyncObjects();
 
     void drawFrame();
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordCommandBuffer(VkCommandBuffer commandBuffer,
+                             uint32_t imageIndex);
 
     void cleanupSwapchain();
     void recreateSwapchain();
@@ -112,30 +116,32 @@ private:
     std::vector<const char*> getGlfwRequiredInstanceExtensions();
     VkInstanceExtensionSupport getVkInstanceExtensionSupport();
     VkInstanceLayerSupport getVkInstanceLayerSupport();
-    VkDeviceExtensionSupport getVkDeviceExtensionSupport(VkPhysicalDevice device);
+    VkDeviceExtensionSupport getVkDeviceExtensionSupport(
+        VkPhysicalDevice device);
     QueueFamilies getVkDeviceQueueFamilies(VkPhysicalDevice device);
-    std::optional<VkSurfaceFormatKHR> chooseSurfaceFormat(VkPhysicalDevice device);
+    std::optional<VkSurfaceFormatKHR> chooseSurfaceFormat(
+        VkPhysicalDevice device);
     std::optional<VkPresentModeKHR> choosePresentMode(VkPhysicalDevice device);
     PhysicalDevice pickPhysicalDevice();
 
-    void createBuffer(
-        VkDeviceSize size,
-        VkBufferUsageFlags usage,
-        VkMemoryPropertyFlags properties,
-        VkBuffer& buffer,
-        VkDeviceMemory& deviceMemory);
+    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                      VkMemoryPropertyFlags properties, VkBuffer& buffer,
+                      VkDeviceMemory& deviceMemory);
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    uint32_t findMemoryType(uint32_t typeFilter,
+                            VkMemoryPropertyFlags properties);
 
-    VkShaderModule loadShaderModule(const std::string &path);
+    VkShaderModule loadShaderModule(const std::string& path);
+
+    glm::mat4 createMVP(float time);
 
     void onResize(int width, int height);
 
-    static void glfwOnResizeCallback(GLFWwindow *window, int width, int height);
+    static void glfwOnResizeCallback(GLFWwindow* window, int width, int height);
 
-    GLFWwindow *window{nullptr};
+    GLFWwindow* window{nullptr};
     bool windowResized{false};
 
     PhysicalDevice physicalDevice;

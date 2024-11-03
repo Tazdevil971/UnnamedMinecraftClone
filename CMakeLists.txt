@@ -22,6 +22,7 @@ target_compile_features(UnnamedMinecrafClone PRIVATE cxx_std_17)
 add_shaders(UnnamedMinecrafClone_shaders ${SHADERS})
     
 target_include_directories(UnnamedMinecrafClone PUBLIC ${Vulkan_INCLUDE_DIRS})
+target_compile_definitions(UnnamedMinecrafClone PRIVATE GLM_FORCE_RADIANS)
 target_link_libraries(
     UnnamedMinecrafClone
     glfw
