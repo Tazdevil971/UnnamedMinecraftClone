@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
 include(cmake/AddShaders.cmake)
+include(cmake/AddAssets.cmake)
 
 add_subdirectory(libs/glfw)
 add_subdirectory(libs/glm)
 add_subdirectory(libs/backward-cpp)
+add_subdirectory(libs/stb_image)
 
-project(UnnamedMinecrafClone LANGUAGES CXX)
+project(UnnamedMinecraftClone LANGUAGES CXX)
 
 find_package(Vulkan REQUIRED)
 
@@ -17,20 +19,28 @@ set(SHADERS
     src/shaders/SimpleVert.vert
     src/shaders/SimpleFrag.frag)
 
-add_executable(UnnamedMinecrafClone ${SOURCES})
-target_compile_features(UnnamedMinecrafClone PRIVATE cxx_std_17)
+set(ASSETS
+    assets/test_image.jpg)
 
-add_shaders(UnnamedMinecrafClone_shaders ${SHADERS})
+add_executable(UnnamedMinecraftClone ${SOURCES})
+target_compile_features(UnnamedMinecraftClone PRIVATE cxx_std_17)
+
+add_shaders(UnnamedMinecraftClone_shaders ${SHADERS})
+add_assets(UnnamedMinecraftClone_assets ${ASSETS})
     
-target_include_directories(UnnamedMinecrafClone PUBLIC ${Vulkan_INCLUDE_DIRS})
+target_include_directories(UnnamedMinecraftClone PUBLIC ${Vulkan_INCLUDE_DIRS})
 target_compile_definitions(
-    UnnamedMinecrafClone 
+    UnnamedMinecraftClone 
     PRIVATE 
     GLM_FORCE_RADIANS)
 target_link_libraries(
-    UnnamedMinecrafClone
+    UnnamedMinecraftClone
     Backward::Interface
     glfw
     glm::glm
+    stb_image
     ${Vulkan_LIBRARIES})
-add_dependencies(UnnamedMinecrafClone UnnamedMinecrafClone_shaders)
+add_dependencies(
+    UnnamedMinecraftClone 
+    UnnamedMinecraftClone_shaders 
+    UnnamedMinecraftClone_assets)

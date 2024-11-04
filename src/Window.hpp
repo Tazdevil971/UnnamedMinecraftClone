@@ -20,6 +20,7 @@ class Window {
     struct Vertex {
         glm::vec2 pos;
         glm::vec3 color;
+        glm::vec2 texCoord;
 
         static VkVertexInputBindingDescription getBindingDescription() {
             VkVertexInputBindingDescription description{};
@@ -30,9 +31,9 @@ class Window {
             return description;
         }
 
-        static std::array<VkVertexInputAttributeDescription, 2>
+        static std::array<VkVertexInputAttributeDescription, 3>
         getAttributeDescriptions() {
-            std::array<VkVertexInputAttributeDescription, 2> descriptions{};
+            std::array<VkVertexInputAttributeDescription, 3> descriptions{};
             descriptions[0].binding = 0;
             descriptions[0].location = 0;
             descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
@@ -42,6 +43,11 @@ class Window {
             descriptions[1].location = 1;
             descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
             descriptions[1].offset = offsetof(Vertex, color);
+
+            descriptions[2].binding = 0;
+            descriptions[2].location = 2;
+            descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+            descriptions[2].offset = offsetof(Vertex, texCoord);
 
             return descriptions;
         }
@@ -102,6 +108,7 @@ class Window {
     void createGraphicsPipeline();
     void createFramebuffers();
     void createCommandPool();
+    void createTextureImage();
     void createVertexBuffer();
     void createIndexBuffer();
     void createUniformBuffers();
@@ -128,10 +135,23 @@ class Window {
     std::optional<VkPresentModeKHR> choosePresentMode(VkPhysicalDevice device);
     PhysicalDevice pickPhysicalDevice();
 
+    VkCommandBuffer beginSingleTimeCommands();
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                       VkMemoryPropertyFlags properties, VkBuffer& buffer,
                       VkDeviceMemory& deviceMemory);
+    void createImage(uint32_t width, uint32_t height, VkFormat format,
+                     VkImageTiling tiling, VkImageUsageFlags usage,
+                     VkMemoryPropertyFlags properties, VkImage& image,
+                     VkDeviceMemory& imageMemory);
+    void createImageView(VkImage image, VkFormat format, VkImageView& view);
 
+    void transitionImageLayout(VkImage image, VkFormat format,
+                               VkImageLayout oldLayout,
+                               VkImageLayout newLayout);
+    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
+                           uint32_t height);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
     uint32_t findMemoryType(uint32_t typeFilter,
@@ -183,6 +203,11 @@ class Window {
     VkDeviceMemory vertexBufferMemory{VK_NULL_HANDLE};
     VkBuffer indexBuffer{VK_NULL_HANDLE};
     VkDeviceMemory indexBufferMemory{VK_NULL_HANDLE};
+
+    VkImage textureImage{VK_NULL_HANDLE};
+    VkDeviceMemory textureImageMemory{VK_NULL_HANDLE};
+    VkImageView textureImageView{VK_NULL_HANDLE};
+    VkSampler textureSampler{VK_NULL_HANDLE};
 
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
