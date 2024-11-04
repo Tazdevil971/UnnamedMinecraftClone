@@ -18,7 +18,7 @@ class Window {
     void cleanup();
 
     struct Vertex {
-        glm::vec2 pos;
+        glm::vec3 pos;
         glm::vec3 color;
         glm::vec2 texCoord;
 
@@ -36,7 +36,7 @@ class Window {
             std::array<VkVertexInputAttributeDescription, 3> descriptions{};
             descriptions[0].binding = 0;
             descriptions[0].location = 0;
-            descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+            descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
             descriptions[0].offset = offsetof(Vertex, pos);
 
             descriptions[1].binding = 0;
@@ -108,6 +108,7 @@ class Window {
     void createGraphicsPipeline();
     void createFramebuffers();
     void createCommandPool();
+    void createDepthResources();
     void createTextureImage();
     void createVertexBuffer();
     void createIndexBuffer();
@@ -145,7 +146,8 @@ class Window {
                      VkImageTiling tiling, VkImageUsageFlags usage,
                      VkMemoryPropertyFlags properties, VkImage& image,
                      VkDeviceMemory& imageMemory);
-    void createImageView(VkImage image, VkFormat format, VkImageView& view);
+    void createImageView(VkImage image, VkFormat format,
+                         VkImageAspectFlags aspectFlags, VkImageView& view);
 
     void transitionImageLayout(VkImage image, VkFormat format,
                                VkImageLayout oldLayout,
@@ -156,6 +158,11 @@ class Window {
 
     uint32_t findMemoryType(uint32_t typeFilter,
                             VkMemoryPropertyFlags properties);
+
+    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates,
+                                 VkImageTiling tiling,
+                                 VkFormatFeatureFlags features);
+    VkFormat findDepthFormat();
 
     VkShaderModule loadShaderModule(const std::string& path);
 
@@ -182,6 +189,10 @@ class Window {
     std::vector<VkImage> swapchainImages;
     std::vector<VkImageView> swapchainImageViews;
     std::vector<VkFramebuffer> swapchainFramebuffers;
+
+    VkImage depthImage;
+    VkDeviceMemory depthImageMemory;
+    VkImageView depthImageView;
 
     VkRenderPass renderPass{VK_NULL_HANDLE};
     VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};

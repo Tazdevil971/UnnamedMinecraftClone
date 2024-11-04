@@ -32,7 +32,8 @@ target_include_directories(UnnamedMinecraftClone PUBLIC ${Vulkan_INCLUDE_DIRS})
 target_compile_definitions(
     UnnamedMinecraftClone 
     PRIVATE 
-    GLM_FORCE_RADIANS)
+    GLM_FORCE_RADIANS
+    GLM_FORCE_DEPTH_ZERO_TO_ONE)
 target_link_libraries(
     UnnamedMinecraftClone
     Backward::Interface
