@@ -27,36 +27,64 @@ Requirements and goals of the project.
     COBBLESTONE
   }
   
-  class ChunkMesh {}
+  class vk::Context {
+    - GLFWwindow *window
+    + VkDevice device()
+    + VkInstance instance()
+    + VkQueue graphicsQueue()
+    + VkQueue presentQueue()
+    + VkQueue transferQueue()
+  }
+
+  class vk::BufferManager {
+    - vk::Context *ctx
+    + GpuBuffer createBuffer<T>(const T* data)
+    + GpuImage createImage(...)
+    + GpuImage loadImage(...)
+  }
+
+  class vk::Framebuffer {
+    - vk::Context *ctx
+    + void recreate()
+    + ...
+  }
+
+  class vk::RenderSubpass {
+    + ...
+  }
+
+  class vk::Renderer {
+    - vk::Context *ctx
+    - vk::Framebuffer *fb
+    + void render(glm::vec3 cameraPos, list<Chunk> chunks)
+  }
 
   class Chunk {
     - Block blocks[16][16][16]
-    + Vec3d getOrigin()
-    + Block getBlock(Vec3d pos)
-    + void updateBlock(Vec3d pos, Block newBlock)
-    + ChunkMesh getMesh()
+    - GpuBuffer buffer
+    + glm::vec3 getOrigin()
+    + Block getBlock(glm::vec3 pos)
+    + GpuBuffer getMesh()
     + static Chunk genChunk(float yLevel)
   }
 
   World --* Chunk
 
   class World {
-    - map<Vec3d, Chunk>
-    + Chunk getChunk(Vec3d pos)
-    + list<Chunk> getChunkInArea(Vec3d pos, float radius)
-    + Block getBlock(Vec3d pos)
-    + void updateBlock(Vec3d pos, Block newBlock)
+    - vk::BufferManager *bufMgr
+    - map<glm::vec3, Chunk>
+    - Chunk createChunk(glm::vec3 pos)
+    + Chunk getChunk(glm::vec3 pos)
+    + list<Chunk> getChunkInArea(glm::vec3 pos, float radius)
+    + Block getBlock(glm::vec3 pos)
+    + void updateBlock(glm::vec3 pos, Block newBlock)
   }
 
   class PlayerController {
     - World* world
-    - Renderer* renderer
+    - vk::Renderer* renderer
     + void update()
     + void render()
-  }
-
-  class Renderer {
-    + void render(Vec3d cameraPos, list<Chunk> chunks)
   }
 @enduml
 ```
