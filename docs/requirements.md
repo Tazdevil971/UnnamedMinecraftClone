@@ -62,22 +62,22 @@ Requirements and goals of the project.
   class Chunk {
     - Block blocks[16][16][16]
     - GpuBuffer buffer
-    + glm::vec3 getOrigin()
-    + Block getBlock(glm::vec3 pos)
+    + Block getBlock(glm::ivec3 pos)
     + GpuBuffer getMesh()
-    + static Chunk genChunk(float yLevel)
+    + static Chunk genChunk(glm::ivec3 pos)
+    + void updateBlock(glm::ivec3 pos,vk::BufferManager *bufMgr)
   }
 
   World --* Chunk
 
   class World {
     - vk::BufferManager *bufMgr
-    - map<glm::vec3, Chunk> chunks
-    - Chunk createChunk(glm::vec3 pos)
-    + Chunk getChunk(glm::vec3 pos)
-    + list<Chunk> getChunkInArea(glm::vec3 pos, float radius)
-    + Block getBlock(glm::vec3 pos)
-    + void updateBlock(glm::vec3 pos, Block newBlock)
+    - map<glm::ivec3, Chunk> chunks
+    - Chunk createChunk(glm::ivec3 pos)
+    + Chunk getChunk(glm::ivec3 pos)
+    + list<Chunk> getChunkInArea(glm::ivec3 pos, float radius)
+    + Block getBlock(glm::ivec3 pos)
+    + void updateBlock(glm::ivec3 pos, Block newBlock)
   }
 
   class PlayerController {
