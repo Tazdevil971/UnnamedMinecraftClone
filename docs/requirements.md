@@ -72,7 +72,7 @@ Requirements and goals of the project.
 
   class World {
     - vk::BufferManager *bufMgr
-    - map<glm::vec3, Chunk>
+    - map<glm::vec3, Chunk> chunks
     - Chunk createChunk(glm::vec3 pos)
     + Chunk getChunk(glm::vec3 pos)
     + list<Chunk> getChunkInArea(glm::vec3 pos, float radius)

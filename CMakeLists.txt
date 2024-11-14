@@ -13,7 +13,9 @@ find_package(Vulkan REQUIRED)
 
 set(SOURCES 
     src/main.cpp 
-    src/Window.cpp)
+    src/Window.cpp
+    src/World.cpp
+    src/Chunk.cpp)
 
 set(SHADERS
     src/shaders/SimpleVert.vert
