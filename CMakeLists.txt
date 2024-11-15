@@ -6,6 +6,7 @@ add_subdirectory(libs/glfw)
 add_subdirectory(libs/glm)
 add_subdirectory(libs/backward-cpp)
 add_subdirectory(libs/stb_image)
+add_subdirectory(libs/VulkanMemoryAllocator)
 
 project(UnnamedMinecraftClone LANGUAGES CXX)
 
@@ -16,6 +17,8 @@ set(SOURCES
     src/Window.cpp
     src/render/Context.cpp
     src/render/Swapchain.cpp
+    src/render/BufferManager.cpp
+    src/render/VmaImplementation.cpp
     # src/world/World.cpp
     # src/world/Chunk.cpp
     )
@@ -41,10 +44,12 @@ target_compile_definitions(
     GLM_FORCE_DEPTH_ZERO_TO_ONE)
 target_link_libraries(
     UnnamedMinecraftClone
+    PRIVATE
     Backward::Interface
     glfw
     glm::glm
     stb_image
+    GPUOpen::VulkanMemoryAllocator
     ${Vulkan_LIBRARIES})
 add_dependencies(
     UnnamedMinecraftClone 

@@ -45,6 +45,7 @@ class Context {
         VkSurfaceFormatKHR surfaceFormat;
         VkPresentModeKHR presentMode;
         bool hasFilterAnisotropy;
+        bool hasKHRDedicatedAllocation;
     };
 
     static std::shared_ptr<Context> create(GLFWwindow *window) {
@@ -65,16 +66,17 @@ class Context {
     const DeviceInfo &getDeviceInfo() const { return deviceInfo; }
 
    private:
-    struct InstanceExtensionSupport {
+    struct InstanceExtensions {
         bool hasKHRPortabilityEnumeration;
     };
 
-    struct InstanceLayerSupport {
+    struct InstanceLayers {
         bool hasKhronos;
     };
 
-    struct DeviceExtensionSupport {
+    struct DeviceExtensions {
         bool hasKHRSwapchain;
+        bool hasKHRDedicatedAllocation;
     };
 
     void createInstance();
@@ -82,9 +84,9 @@ class Context {
     DeviceInfo pickPhysicalDevice();
     void createDevice();
 
-    InstanceExtensionSupport getInstanceExtensionSupport();
-    InstanceLayerSupport getInstanceLayerSupport();
-    DeviceExtensionSupport getDeviceExtensionSupport(VkPhysicalDevice device);
+    InstanceExtensions getInstanceExtensionSupport();
+    InstanceLayers getInstanceLayerSupport();
+    DeviceExtensions getDeviceExtensionSupport(VkPhysicalDevice device);
     QueueFamilies getDeviceQueueFamilies(VkPhysicalDevice device);
     std::optional<VkSurfaceFormatKHR> chooseSurfaceFormat(
         VkPhysicalDevice device);

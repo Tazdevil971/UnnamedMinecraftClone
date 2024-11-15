@@ -1,6 +1,7 @@
 #include "Context.hpp"
 
 #include <cstring>
+#include <iostream>
 #include <stdexcept>
 #include <vector>
 
@@ -47,8 +48,8 @@ void Context::createInstance() {
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 
     auto requiredExtensions = getGlfwExtensions();
-    auto extensionSupport = getInstanceExtensionSupport();
-    if (extensionSupport.hasKHRPortabilityEnumeration) {
+    auto instanceExtensions = getInstanceExtensionSupport();
+    if (instanceExtensions.hasKHRPortabilityEnumeration) {
         requiredExtensions.push_back(
             VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
         createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
@@ -57,9 +58,10 @@ void Context::createInstance() {
     createInfo.enabledExtensionCount = requiredExtensions.size();
     createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
-    auto layerSupport = getInstanceLayerSupport();
+    auto instanceLayers = getInstanceLayerSupport();
     const char *layerNames[] = {"VK_LAYER_KHRONOS_validation"};
-    if (layerSupport.hasKhronos) {
+    if (instanceLayers.hasKhronos) {
+        std::cout << "[INFO] Enabling VK_LAYER_KHRONOS_validation" << std::endl;
         createInfo.enabledLayerCount = 1;
         createInfo.ppEnabledLayerNames = layerNames;
     } else {
@@ -103,8 +105,12 @@ Context::DeviceInfo Context::pickPhysicalDevice() {
         bool hasFilterAnisotropy =
             supportedFeatures.samplerAnisotropy == VK_TRUE;
 
-        return DeviceInfo{queues, device, surfaceFormat.value(),
-                          presentMode.value(), hasFilterAnisotropy};
+        return DeviceInfo{queues,
+                          device,
+                          surfaceFormat.value(),
+                          presentMode.value(),
+                          hasFilterAnisotropy,
+                          support.hasKHRDedicatedAllocation};
     }
 
     throw std::runtime_error{"no suitable device found!"};
@@ -124,11 +130,13 @@ void Context::createDevice() {
     queueCreateInfos.push_back(queueCreateInfo);
 
     if (deviceInfo.queues.hasDedicatedPresentQueue()) {
+        std::cout << "[INFO] Device has dedicated present queue" << std::endl;
         queueCreateInfo.queueFamilyIndex = deviceInfo.queues.present.value();
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
     if (deviceInfo.queues.hasDedicatedTransferQueue()) {
+        std::cout << "[INFO] Device has dedicated transfer queue" << std::endl;
         queueCreateInfo.queueFamilyIndex = deviceInfo.queues.transfer.value();
         queueCreateInfos.push_back(queueCreateInfo);
     }
@@ -142,9 +150,18 @@ void Context::createDevice() {
     deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
     deviceCreateInfo.queueCreateInfoCount = queueCreateInfos.size();
 
-    const char *extensionNames[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-    deviceCreateInfo.enabledExtensionCount = 1;
-    deviceCreateInfo.ppEnabledExtensionNames = extensionNames;
+    std::vector<const char *> requiredExtensions{
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    if (deviceInfo.hasKHRDedicatedAllocation) {
+        std::cout << "[INFO] Enabling VK_KHR_dedicated_allocation" << std::endl;
+        requiredExtensions.push_back(
+            VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
+        requiredExtensions.push_back(
+            VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
+    }
+
+    deviceCreateInfo.enabledExtensionCount = requiredExtensions.size();
+    deviceCreateInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
     deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
@@ -160,14 +177,14 @@ void Context::createDevice() {
                      &transferQueue);
 }
 
-Context::InstanceExtensionSupport Context::getInstanceExtensionSupport() {
+Context::InstanceExtensions Context::getInstanceExtensionSupport() {
     uint32_t count = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
 
     std::vector<VkExtensionProperties> properties{count};
     vkEnumerateInstanceExtensionProperties(nullptr, &count, properties.data());
 
-    InstanceExtensionSupport support;
+    InstanceExtensions support;
 
     for (auto &extension : properties) {
         if (std::strcmp(extension.extensionName,
@@ -178,14 +195,14 @@ Context::InstanceExtensionSupport Context::getInstanceExtensionSupport() {
     return support;
 }
 
-Context::InstanceLayerSupport Context::getInstanceLayerSupport() {
+Context::InstanceLayers Context::getInstanceLayerSupport() {
     uint32_t count = 0;
     vkEnumerateInstanceLayerProperties(&count, nullptr);
 
     std::vector<VkLayerProperties> properties{count};
     vkEnumerateInstanceLayerProperties(&count, properties.data());
 
-    InstanceLayerSupport support;
+    InstanceLayers support;
 
     for (auto &layer : properties) {
         if (std::strcmp(layer.layerName, "VK_LAYER_KHRONOS_validation") == 0)
@@ -195,7 +212,7 @@ Context::InstanceLayerSupport Context::getInstanceLayerSupport() {
     return support;
 }
 
-Context::DeviceExtensionSupport Context::getDeviceExtensionSupport(
+Context::DeviceExtensions Context::getDeviceExtensionSupport(
     VkPhysicalDevice device) {
     uint32_t count = 0;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &count, nullptr);
@@ -204,12 +221,16 @@ Context::DeviceExtensionSupport Context::getDeviceExtensionSupport(
     vkEnumerateDeviceExtensionProperties(device, nullptr, &count,
                                          properties.data());
 
-    DeviceExtensionSupport support;
+    DeviceExtensions support;
 
     for (auto &extension : properties) {
         if (std::strcmp(extension.extensionName,
                         VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0)
             support.hasKHRSwapchain = true;
+
+        if (std::strcmp(extension.extensionName,
+                        VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME) == 0)
+            support.hasKHRDedicatedAllocation = true;
     }
 
     return support;

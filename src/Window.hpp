@@ -9,8 +9,9 @@
 #include <string>
 #include <vector>
 
-#include "Render/Context.hpp"
-#include "Render/Swapchain.hpp"
+#include "render/BufferManager.hpp"
+#include "render/Context.hpp"
+#include "render/Swapchain.hpp"
 
 class Window {
    public:
@@ -69,8 +70,6 @@ class Window {
     void createGraphicsPipeline();
     void createCommandPool();
     void createTextureImage();
-    void createVertexBuffer();
-    void createIndexBuffer();
     void createUniformBuffers();
     void createDescriptorPool();
     void createDescriptorSets();
@@ -122,6 +121,7 @@ class Window {
     bool windowResized{false};
 
     std::shared_ptr<render::Context> ctx;
+    std::shared_ptr<render::BufferManager> bufferMgr;
     std::shared_ptr<render::Swapchain> swapchain;
 
     VkRenderPass renderPass{VK_NULL_HANDLE};
@@ -140,10 +140,7 @@ class Window {
     VkDescriptorPool descriptorPool{VK_NULL_HANDLE};
     std::vector<VkDescriptorSet> descriptorSets;
 
-    VkBuffer vertexBuffer{VK_NULL_HANDLE};
-    VkDeviceMemory vertexBufferMemory{VK_NULL_HANDLE};
-    VkBuffer indexBuffer{VK_NULL_HANDLE};
-    VkDeviceMemory indexBufferMemory{VK_NULL_HANDLE};
+    render::SimpleMesh mesh;
 
     VkImage textureImage{VK_NULL_HANDLE};
     VkDeviceMemory textureImageMemory{VK_NULL_HANDLE};

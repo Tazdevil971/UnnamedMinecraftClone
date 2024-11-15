@@ -12,7 +12,7 @@
 #include <limits>
 #include <stdexcept>
 
-const std::vector<Window::Vertex> vertices = {
+const std::vector<render::Vertex> vertices = {
     {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
     {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
     {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
@@ -47,12 +47,12 @@ void Window::initWindow() {
 
 void Window::initVulkan() {
     ctx = render::Context::create(window);
+    bufferMgr = render::BufferManager::create(ctx);
     createCommandPool();
     createGraphicsPipeline();
     swapchain = render::Swapchain::create(ctx, renderPass);
     createTextureImage();
-    createVertexBuffer();
-    createIndexBuffer();
+    mesh = bufferMgr->allocateSimpleMesh(indices, vertices);
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
@@ -368,56 +368,6 @@ void Window::createTextureImage() {
         throw std::runtime_error{"failed to create texture sampler!"};
 }
 
-void Window::createVertexBuffer() {
-    VkDeviceSize bufferSize = sizeof(Vertex) * vertices.size();
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                 stagingBuffer, stagingBufferMemory);
-
-    void *data;
-    vkMapMemory(ctx->getDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertices.data(), bufferSize);
-    vkUnmapMemory(ctx->getDevice(), stagingBufferMemory);
-
-    createBuffer(
-        bufferSize,
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-    copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-    vkDestroyBuffer(ctx->getDevice(), stagingBuffer, nullptr);
-    vkFreeMemory(ctx->getDevice(), stagingBufferMemory, nullptr);
-}
-
-void Window::createIndexBuffer() {
-    VkDeviceSize bufferSize = sizeof(uint16_t) * indices.size();
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                 stagingBuffer, stagingBufferMemory);
-
-    void *data;
-    vkMapMemory(ctx->getDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, indices.data(), bufferSize);
-    vkUnmapMemory(ctx->getDevice(), stagingBufferMemory);
-
-    createBuffer(
-        bufferSize,
-        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
-    copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-    vkDestroyBuffer(ctx->getDevice(), stagingBuffer, nullptr);
-    vkFreeMemory(ctx->getDevice(), stagingBufferMemory, nullptr);
-}
-
 void Window::createUniformBuffers() {
     VkDeviceSize bufferSize = sizeof(Ubo);
 
@@ -583,7 +533,8 @@ void Window::drawFrame() {
                       inFlightFences[currentFrame]) != VK_SUCCESS)
         throw std::runtime_error{"failed to submit draw command buffer!"};
 
-    swapchain->present(frame, renderFinishedSemaphores[currentFrame], windowResized);
+    swapchain->present(frame, renderFinishedSemaphores[currentFrame],
+                       windowResized);
     windowResized = false;
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -623,9 +574,7 @@ void Window::recordCommandBuffer(VkCommandBuffer commandBuffer,
                             pipelineLayout, 0, 1, &descriptorSets[currentFrame],
                             0, nullptr);
 
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+    mesh.bind(commandBuffer);
 
     VkViewport viewport = swapchain->getViewport();
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
@@ -633,7 +582,7 @@ void Window::recordCommandBuffer(VkCommandBuffer commandBuffer,
     VkRect2D scissor = swapchain->getRenderArea();
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    vkCmdDrawIndexed(commandBuffer, indices.size(), 1, 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, mesh.indexCount, 1, 0, 0, 0);
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -692,17 +641,8 @@ void Window::cleanup() {
     if (textureImageMemory != VK_NULL_HANDLE)
         vkFreeMemory(ctx->getDevice(), textureImageMemory, nullptr);
 
-    if (indexBuffer != VK_NULL_HANDLE)
-        vkDestroyBuffer(ctx->getDevice(), indexBuffer, nullptr);
-
-    if (indexBufferMemory != VK_NULL_HANDLE)
-        vkFreeMemory(ctx->getDevice(), indexBufferMemory, nullptr);
-
-    if (vertexBuffer != VK_NULL_HANDLE)
-        vkDestroyBuffer(ctx->getDevice(), vertexBuffer, nullptr);
-
-    if (vertexBufferMemory != VK_NULL_HANDLE)
-        vkFreeMemory(ctx->getDevice(), vertexBufferMemory, nullptr);
+    bufferMgr->deallocateSimpleMesh(mesh);
+    bufferMgr->cleanup();
 
     if (commandPool != VK_NULL_HANDLE)
         vkDestroyCommandPool(ctx->getDevice(), commandPool, nullptr);

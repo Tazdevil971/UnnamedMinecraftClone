@@ -15,7 +15,7 @@ class Swapchain {
 
     static std::shared_ptr<Swapchain> create(std::shared_ptr<Context> ctx,
                                              VkRenderPass renderPass) {
-        return std::make_shared<Swapchain>(ctx, renderPass);
+        return std::make_shared<Swapchain>(std::move(ctx), renderPass);
     }
 
     Swapchain(std::shared_ptr<Context> ctx, VkRenderPass renderPass);

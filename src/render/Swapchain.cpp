@@ -7,7 +7,7 @@
 using namespace render;
 
 Swapchain::Swapchain(std::shared_ptr<Context> ctx, VkRenderPass renderPass)
-    : ctx{ctx}, renderPass{renderPass} {
+    : ctx{std::move(ctx)}, renderPass{renderPass} {
     try {
         createSwapchain();
         createImageViews();

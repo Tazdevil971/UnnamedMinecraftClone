@@ -7,3 +7,6 @@
 [submodule "libs/backward-cpp"]
 	path = libs/backward-cpp
 	url = https://github.com/bombela/backward-cpp.git
+[submodule "libs/VulkanMemoryAllocator"]
+	path = libs/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
