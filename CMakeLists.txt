@@ -14,9 +14,10 @@ find_package(Vulkan REQUIRED)
 set(SOURCES 
     src/main.cpp 
     src/Window.cpp
-    src/Render/Context.cpp
-    # src/World/World.cpp
-    # src/World/Chunk.cpp
+    src/render/Context.cpp
+    src/render/Swapchain.cpp
+    # src/world/World.cpp
+    # src/world/Chunk.cpp
     )
 
 set(SHADERS

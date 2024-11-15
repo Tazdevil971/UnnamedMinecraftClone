@@ -58,10 +58,10 @@ void Context::createInstance() {
     createInfo.ppEnabledExtensionNames = requiredExtensions.data();
 
     auto layerSupport = getInstanceLayerSupport();
+    const char *layerNames[] = {"VK_LAYER_KHRONOS_validation"};
     if (layerSupport.hasKhronos) {
-        static const char *LAYERS[] = {"VK_LAYER_KHRONOS_validation"};
         createInfo.enabledLayerCount = 1;
-        createInfo.ppEnabledLayerNames = LAYERS;
+        createInfo.ppEnabledLayerNames = layerNames;
     } else {
         createInfo.enabledLayerCount = 0;
         createInfo.ppEnabledLayerNames = nullptr;
@@ -113,12 +113,12 @@ Context::DeviceInfo Context::pickPhysicalDevice() {
 void Context::createDevice() {
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
 
-    static float PRIORITIES[] = {1.0f};
+    const float queuePriorities[] = {1.0f};
 
     VkDeviceQueueCreateInfo queueCreateInfo{};
     queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     queueCreateInfo.queueCount = 1;
-    queueCreateInfo.pQueuePriorities = PRIORITIES;
+    queueCreateInfo.pQueuePriorities = queuePriorities;
 
     queueCreateInfo.queueFamilyIndex = deviceInfo.queues.graphics.value();
     queueCreateInfos.push_back(queueCreateInfo);
@@ -142,9 +142,9 @@ void Context::createDevice() {
     deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
     deviceCreateInfo.queueCreateInfoCount = queueCreateInfos.size();
 
-    static const char *EXTENSIONS[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    const char *extensionNames[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
     deviceCreateInfo.enabledExtensionCount = 1;
-    deviceCreateInfo.ppEnabledExtensionNames = EXTENSIONS;
+    deviceCreateInfo.ppEnabledExtensionNames = extensionNames;
 
     deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 

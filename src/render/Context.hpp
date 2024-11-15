@@ -1,7 +1,9 @@
+#pragma once
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <memory>
 #include <optional>
 #include <vector>
 
@@ -22,7 +24,7 @@ class Context {
         bool hasDedicatedTransferQueue() const { return transfer != graphics; }
 
         bool hasDedicatedPresentQueue() const { return present != graphics; }
-    
+
         std::vector<uint32_t> indices() const {
             std::vector<uint32_t> out;
             if (graphics.has_value()) out.push_back(graphics.value());
@@ -45,37 +47,22 @@ class Context {
         bool hasFilterAnisotropy;
     };
 
+    static std::shared_ptr<Context> create(GLFWwindow *window) {
+        return std::make_shared<Context>(window);
+    }
+
     Context(GLFWwindow *window);
 
-    VkDevice getDevice() const {
-        return device;
-    }
-
-    VkInstance getInstance() const {
-        return instance;
-    }
-
-    VkSurfaceKHR getSurface() const {
-        return surface;
-    }
-
-    VkQueue getGraphicsQueue() const {
-        return graphicsQueue;
-    }
-
-    VkQueue getPresentQueue() const {
-        return presentQueue;
-    }
-
-    VkQueue getTransferQueue() const {
-        return transferQueue;
-    }
-
-    const DeviceInfo &getDeviceInfo() const {
-        return deviceInfo;
-    }
-
     void cleanup();
+
+    VkDevice getDevice() const { return device; }
+    GLFWwindow *getWindow() const { return window; }
+    VkInstance getInstance() const { return instance; }
+    VkSurfaceKHR getSurface() const { return surface; }
+    VkQueue getGraphicsQueue() const { return graphicsQueue; }
+    VkQueue getPresentQueue() const { return presentQueue; }
+    VkQueue getTransferQueue() const { return transferQueue; }
+    const DeviceInfo &getDeviceInfo() const { return deviceInfo; }
 
    private:
     struct InstanceExtensionSupport {

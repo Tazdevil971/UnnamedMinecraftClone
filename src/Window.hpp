@@ -9,6 +9,9 @@
 #include <string>
 #include <vector>
 
+#include "Render/Context.hpp"
+#include "Render/Swapchain.hpp"
+
 class Window {
    public:
     Window();
@@ -60,55 +63,11 @@ class Window {
    private:
     const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
-    struct VkInstanceExtensionSupport {
-        bool hasKHRPortabilityEnumeration;
-    };
-
-    struct VkInstanceLayerSupport {
-        bool hasKhronos;
-    };
-
-    struct VkDeviceExtensionSupport {
-        bool hasKHRSwapchain;
-    };
-
-    struct QueueFamilies {
-        std::optional<uint32_t> graphics;
-        std::optional<uint32_t> present;
-
-        bool isComplete() {
-            return graphics.has_value() && present.has_value();
-        }
-
-        std::vector<uint32_t> indices() {
-            std::vector<uint32_t> res;
-            if (graphics.has_value()) res.push_back(graphics.value());
-
-            if (present.has_value() && present != graphics)
-                res.push_back(present.value());
-
-            return res;
-        }
-    };
-
-    struct PhysicalDevice {
-        VkPhysicalDevice handle{VK_NULL_HANDLE};
-        QueueFamilies queues;
-        VkSurfaceFormatKHR surfaceFormat;
-        VkPresentModeKHR presentMode;
-    };
-
     void initWindow();
     void initVulkan();
 
-    void createVkInstance();
-    void createSurface();
-    void createDevice();
-    void createSwapChain();
     void createGraphicsPipeline();
-    void createFramebuffers();
     void createCommandPool();
-    void createDepthResources();
     void createTextureImage();
     void createVertexBuffer();
     void createIndexBuffer();
@@ -120,21 +79,7 @@ class Window {
 
     void drawFrame();
     void recordCommandBuffer(VkCommandBuffer commandBuffer,
-                             uint32_t imageIndex);
-
-    void cleanupSwapchain();
-    void recreateSwapchain();
-
-    std::vector<const char*> getGlfwRequiredInstanceExtensions();
-    VkInstanceExtensionSupport getVkInstanceExtensionSupport();
-    VkInstanceLayerSupport getVkInstanceLayerSupport();
-    VkDeviceExtensionSupport getVkDeviceExtensionSupport(
-        VkPhysicalDevice device);
-    QueueFamilies getVkDeviceQueueFamilies(VkPhysicalDevice device);
-    std::optional<VkSurfaceFormatKHR> chooseSurfaceFormat(
-        VkPhysicalDevice device);
-    std::optional<VkPresentModeKHR> choosePresentMode(VkPhysicalDevice device);
-    PhysicalDevice pickPhysicalDevice();
+                             VkFramebuffer framebuffer);
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -176,23 +121,8 @@ class Window {
     GLFWwindow* window{nullptr};
     bool windowResized{false};
 
-    PhysicalDevice physicalDevice;
-
-    VkInstance instance{VK_NULL_HANDLE};
-    VkDevice device{VK_NULL_HANDLE};
-    VkQueue graphicsQueue{VK_NULL_HANDLE};
-    VkQueue presentQueue{VK_NULL_HANDLE};
-
-    VkSwapchainKHR swapchain{VK_NULL_HANDLE};
-    VkExtent2D swapchainExtent;
-    VkFormat swapchainFormat;
-    std::vector<VkImage> swapchainImages;
-    std::vector<VkImageView> swapchainImageViews;
-    std::vector<VkFramebuffer> swapchainFramebuffers;
-
-    VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
-    VkImageView depthImageView;
+    std::shared_ptr<render::Context> ctx;
+    std::shared_ptr<render::Swapchain> swapchain;
 
     VkRenderPass renderPass{VK_NULL_HANDLE};
     VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
@@ -223,6 +153,4 @@ class Window {
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void*> uniformBuffersMapped;
-
-    VkSurfaceKHR surface{VK_NULL_HANDLE};
 };
