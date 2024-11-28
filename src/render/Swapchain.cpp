@@ -6,11 +6,16 @@
 
 using namespace render;
 
-Swapchain::Swapchain(std::shared_ptr<Context> ctx, VkRenderPass renderPass)
-    : ctx{std::move(ctx)}, renderPass{renderPass} {
+Swapchain::Swapchain(std::shared_ptr<Context> ctx,
+                     std::shared_ptr<BufferManager> bufferMgr,
+                     VkRenderPass renderPass)
+    : ctx{std::move(ctx)},
+      bufferMgr{std::move(bufferMgr)},
+      renderPass{renderPass} {
     try {
         createSwapchain();
         createImageViews();
+        createDepthImages();
         createFramebuffers();
     } catch (...) {
         cleanup();
@@ -29,8 +34,12 @@ void Swapchain::recreate() {
         if (imageView != VK_NULL_HANDLE)
             vkDestroyImageView(ctx->getDevice(), imageView, nullptr);
 
+    for (auto depthImage : depthImages)
+        bufferMgr->deallocateSimpleImage(depthImage);
+
     framebuffers.resize(0);
     colorImageViews.resize(0);
+    depthImages.resize(0);
 
     createSwapchain();
     createImageViews();
@@ -45,6 +54,9 @@ void Swapchain::cleanup() {
     for (auto imageView : colorImageViews)
         if (imageView != VK_NULL_HANDLE)
             vkDestroyImageView(ctx->getDevice(), imageView, nullptr);
+
+    for (auto depthImage : depthImages)
+        bufferMgr->deallocateSimpleImage(depthImage);
 
     if (swapchain != VK_NULL_HANDLE)
         vkDestroySwapchainKHR(ctx->getDevice(), swapchain, nullptr);
@@ -136,11 +148,6 @@ void Swapchain::createSwapchain() {
 }
 
 void Swapchain::createImageViews() {
-    // Destroy old colorImageViews if there are any
-    for (auto imageView : colorImageViews)
-        if (imageView != VK_NULL_HANDLE)
-            vkDestroyImageView(ctx->getDevice(), imageView, nullptr);
-
     // Obtain the new ones
     vkGetSwapchainImagesKHR(ctx->getDevice(), swapchain, &imageCount, nullptr);
 
@@ -167,15 +174,23 @@ void Swapchain::createImageViews() {
     }
 }
 
+void Swapchain::createDepthImages() {
+    depthImages.resize(imageCount);
+    for (uint32_t i = 0; i < imageCount; i++) {
+        depthImages[i] =
+            bufferMgr->allocateDepthImage(extent.width, extent.height);
+    }
+}
+
 void Swapchain::createFramebuffers() {
     framebuffers.resize(imageCount, VK_NULL_HANDLE);
     for (uint32_t i = 0; i < imageCount; i++) {
-        VkImageView attachments[] = {colorImageViews[i]};
+        VkImageView attachments[] = {colorImageViews[i], depthImages[i].view};
 
         VkFramebufferCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         createInfo.renderPass = renderPass;
-        createInfo.attachmentCount = 1;
+        createInfo.attachmentCount = 2;
         createInfo.pAttachments = attachments;
         createInfo.width = extent.width;
         createInfo.height = extent.height;

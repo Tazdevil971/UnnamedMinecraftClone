@@ -50,7 +50,7 @@ void Window::initVulkan() {
     bufferMgr = render::BufferManager::create(ctx);
     createCommandPool();
     createGraphicsPipeline();
-    swapchain = render::Swapchain::create(ctx, renderPass);
+    swapchain = render::Swapchain::create(ctx, bufferMgr, renderPass);
     createTextureImage();
     mesh = bufferMgr->allocateSimpleMesh(indices, vertices);
     createUniformBuffers();
@@ -72,14 +72,31 @@ void Window::createGraphicsPipeline() {
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+    VkAttachmentDescription depthAttachment{};
+    depthAttachment.format = ctx->getDeviceInfo().depthFormat;
+    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthAttachment.finalLayout =
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
     VkAttachmentReference colorAttachmentRef{};
     colorAttachmentRef.attachment = 0;
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depthAttachmentRef{};
+    depthAttachmentRef.attachment = 1;
+    depthAttachmentRef.layout =
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef;
+    subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
     VkSubpassDependency dependency{};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
@@ -92,11 +109,11 @@ void Window::createGraphicsPipeline() {
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
                                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-    VkAttachmentDescription attachments[] = {colorAttachment};
+    VkAttachmentDescription attachments[] = {colorAttachment, depthAttachment};
 
     VkRenderPassCreateInfo renderPassCreateInfo{};
     renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassCreateInfo.attachmentCount = 1;
+    renderPassCreateInfo.attachmentCount = 2;
     renderPassCreateInfo.pAttachments = attachments;
     renderPassCreateInfo.subpassCount = 1;
     renderPassCreateInfo.pSubpasses = &subpass;
@@ -271,7 +288,7 @@ void Window::createGraphicsPipeline() {
     pipelineCreateInfo.pViewportState = &viewportStateInfo;
     pipelineCreateInfo.pRasterizationState = &rasterizerStateInfo;
     pipelineCreateInfo.pMultisampleState = &multisamplingStateInfo;
-    // pipelineCreateInfo.pDepthStencilState = &depthStencilStateInfo;
+    pipelineCreateInfo.pDepthStencilState = &depthStencilStateInfo;
     pipelineCreateInfo.pColorBlendState = &colorBlendStateInfo;
     pipelineCreateInfo.pDynamicState = &dynamicStateInfo;
     pipelineCreateInfo.layout = pipelineLayout;
@@ -301,46 +318,8 @@ void Window::createCommandPool() {
 }
 
 void Window::createTextureImage() {
-    int width, height, channels;
-    stbi_uc *pixels = stbi_load("assets/test_image.jpg", &width, &height,
-                                &channels, STBI_rgb_alpha);
-
-    if (!pixels) throw std::runtime_error{"failed to laod texture image!"};
-
-    VkDeviceSize imageSize = width * height * 4;
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-
-    createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                 stagingBuffer, stagingBufferMemory);
-
-    void *data;
-    vkMapMemory(ctx->getDevice(), stagingBufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, pixels, imageSize);
-    vkUnmapMemory(ctx->getDevice(), stagingBufferMemory);
-
-    stbi_image_free(pixels);
-
-    createImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage,
-                textureImageMemory);
-
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB,
-                          VK_IMAGE_LAYOUT_UNDEFINED,
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    copyBufferToImage(stagingBuffer, textureImage, width, height);
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB,
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    vkDestroyBuffer(ctx->getDevice(), stagingBuffer, nullptr);
-    vkFreeMemory(ctx->getDevice(), stagingBufferMemory, nullptr);
-
-    createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB,
-                    VK_IMAGE_ASPECT_COLOR_BIT, textureImageView);
+    textureImage = bufferMgr->allocateSimpleImage("assets/test_image.jpg",
+                                                  VK_FORMAT_R8G8B8A8_SRGB);
 
     VkPhysicalDeviceProperties properties{};
     vkGetPhysicalDeviceProperties(ctx->getDeviceInfo().device, &properties);
@@ -432,7 +411,7 @@ void Window::createDescriptorSets() {
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = textureImageView;
+        imageInfo.imageView = textureImage.view;
         imageInfo.sampler = textureSampler;
 
         VkWriteDescriptorSet descriptorWrites[2] = {};
@@ -561,10 +540,11 @@ void Window::recordCommandBuffer(VkCommandBuffer commandBuffer,
     renderPassBeginInfo.framebuffer = framebuffer;
     renderPassBeginInfo.renderArea = swapchain->getRenderArea();
 
-    VkClearValue clearValues[1] = {};
+    VkClearValue clearValues[2] = {};
     clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+    clearValues[1].depthStencil = {1.0f, 0};
 
-    renderPassBeginInfo.clearValueCount = 1;
+    renderPassBeginInfo.clearValueCount = 2;
     renderPassBeginInfo.pClearValues = clearValues;
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo,
@@ -632,15 +612,7 @@ void Window::cleanup() {
     if (textureSampler != VK_NULL_HANDLE)
         vkDestroySampler(ctx->getDevice(), textureSampler, nullptr);
 
-    if (textureImageView != VK_NULL_HANDLE)
-        vkDestroyImageView(ctx->getDevice(), textureImageView, nullptr);
-
-    if (textureImage != VK_NULL_HANDLE)
-        vkDestroyImage(ctx->getDevice(), textureImage, nullptr);
-
-    if (textureImageMemory != VK_NULL_HANDLE)
-        vkFreeMemory(ctx->getDevice(), textureImageMemory, nullptr);
-
+    bufferMgr->deallocateSimpleImage(textureImage);
     bufferMgr->deallocateSimpleMesh(mesh);
     bufferMgr->cleanup();
 

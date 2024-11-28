@@ -24,6 +24,14 @@ class BufferManager {
 
     void deallocateSimpleMesh(SimpleMesh mesh);
 
+    DepthImage allocateDepthImage(uint32_t width, uint32_t height);
+
+    SimpleImage allocateSimpleImage(const uint8_t* pixels, uint32_t width,
+                                    uint32_t height, VkFormat format);
+    SimpleImage allocateSimpleImage(const std::string& path, VkFormat format);
+
+    void deallocateSimpleImage(SimpleImage image);
+
    private:
     void createVma();
     void createCommandPool();
@@ -35,9 +43,20 @@ class BufferManager {
                       VmaAllocationCreateFlags vmaFlags, VkBuffer& outBuffer,
                       VmaAllocation& outMemory);
 
+    void createImage(uint32_t width, uint32_t height, VkFormat format,
+                     VkImageUsageFlags usage, VmaMemoryUsage vmaUsage,
+                     VmaAllocationCreateFlags vmaFlags, VkImage& outImage,
+                     VmaAllocation& outMemory);
+
+    void createImageView(VkImage image, VkFormat format,
+                         VkImageAspectFlags aspect, VkImageView& imageView);
+
     void startRecording();
     void copyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size);
-    void transferBufferToGraphics(VkBuffer buffer);
+    void copyBufferToImage(VkBuffer src, VkImage dst, uint32_t width,
+                           uint32_t height);
+    void transitionImageLayout(VkImage image, VkImageLayout oldLayout,
+                               VkImageLayout newLayout, VkFormat format);
     void submitAndWait();
 
     std::shared_ptr<Context> ctx;

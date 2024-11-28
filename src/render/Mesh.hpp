@@ -15,8 +15,8 @@ struct Vertex {
 };
 
 struct SimpleMesh {
-    VmaAllocation memory;
-    VkBuffer buffer;
+    VmaAllocation memory{VK_NULL_HANDLE};
+    VkBuffer buffer{VK_NULL_HANDLE};
 
     VkDeviceSize vertexOffset;
     VkDeviceSize indicesOffset;
@@ -33,9 +33,16 @@ struct SimpleMesh {
 };
 
 struct SimpleImage {
-    VmaAllocation memory;
-    VkImage image;
+    VmaAllocation memory{VK_NULL_HANDLE};
+    VkImage image{VK_NULL_HANDLE};
+    VkImageView view{VK_NULL_HANDLE};
+
+    uint32_t width;
+    uint32_t height;
+    VkFormat format;
 };
+
+struct DepthImage : SimpleImage {};
 
 struct SimpleTexture {
     SimpleImage image;

@@ -14,14 +14,10 @@ class Context {
     struct QueueFamilies {
         std::optional<uint32_t> graphics;
         std::optional<uint32_t> present;
-        std::optional<uint32_t> transfer;
 
         bool isComplete() const {
-            return graphics.has_value() && present.has_value() &&
-                   transfer.has_value();
+            return graphics.has_value() && present.has_value();
         }
-
-        bool hasDedicatedTransferQueue() const { return transfer != graphics; }
 
         bool hasDedicatedPresentQueue() const { return present != graphics; }
 
@@ -32,9 +28,6 @@ class Context {
             if (present.has_value() && hasDedicatedPresentQueue())
                 out.push_back(present.value());
 
-            if (transfer.has_value() && hasDedicatedTransferQueue())
-                out.push_back(transfer.value());
-
             return out;
         }
     };
@@ -44,6 +37,7 @@ class Context {
         VkPhysicalDevice device{VK_NULL_HANDLE};
         VkSurfaceFormatKHR surfaceFormat;
         VkPresentModeKHR presentMode;
+        VkFormat depthFormat;
         bool hasFilterAnisotropy;
         bool hasKHRDedicatedAllocation;
     };
@@ -62,7 +56,6 @@ class Context {
     VkSurfaceKHR getSurface() const { return surface; }
     VkQueue getGraphicsQueue() const { return graphicsQueue; }
     VkQueue getPresentQueue() const { return presentQueue; }
-    VkQueue getTransferQueue() const { return transferQueue; }
     const DeviceInfo &getDeviceInfo() const { return deviceInfo; }
 
    private:
@@ -91,6 +84,9 @@ class Context {
     std::optional<VkSurfaceFormatKHR> chooseSurfaceFormat(
         VkPhysicalDevice device);
     std::optional<VkPresentModeKHR> choosePresentMode(VkPhysicalDevice device);
+    std::optional<VkFormat> findFirstSupportedFormat(
+        VkPhysicalDevice device, const std::vector<VkFormat> &formats,
+        VkImageTiling tiling, VkFormatFeatureFlags features) const;
 
     GLFWwindow *window{nullptr};
     VkInstance instance{VK_NULL_HANDLE};
@@ -98,7 +94,6 @@ class Context {
     VkDevice device{VK_NULL_HANDLE};
     VkQueue graphicsQueue{VK_NULL_HANDLE};
     VkQueue presentQueue{VK_NULL_HANDLE};
-    VkQueue transferQueue{VK_NULL_HANDLE};
 
     DeviceInfo deviceInfo;
 };

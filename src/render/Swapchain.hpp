@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "BufferManager.hpp"
 #include "Context.hpp"
 
 namespace render {
@@ -13,12 +14,16 @@ class Swapchain {
         VkFramebuffer framebuffer;
     };
 
-    static std::shared_ptr<Swapchain> create(std::shared_ptr<Context> ctx,
-                                             VkRenderPass renderPass) {
-        return std::make_shared<Swapchain>(std::move(ctx), renderPass);
+    static std::shared_ptr<Swapchain> create(
+        std::shared_ptr<Context> ctx, std::shared_ptr<BufferManager> bufferMgr,
+        VkRenderPass renderPass) {
+        return std::make_shared<Swapchain>(std::move(ctx), std::move(bufferMgr),
+                                           renderPass);
     }
 
-    Swapchain(std::shared_ptr<Context> ctx, VkRenderPass renderPass);
+    Swapchain(std::shared_ptr<Context> ctx,
+              std::shared_ptr<BufferManager> bufferMgr,
+              VkRenderPass renderPass);
 
     void recreate();
     void cleanup();
@@ -59,21 +64,24 @@ class Swapchain {
 
     void createSwapchain();
     void createImageViews();
+    void createDepthImages();
     void createFramebuffers();
 
     void waitForRecreateReady();
     Shape getSwapchainShape();
 
     std::shared_ptr<Context> ctx;
-    VkRenderPass renderPass{VK_NULL_HANDLE};
+    std::shared_ptr<BufferManager> bufferMgr;
 
     VkSwapchainKHR swapchain{VK_NULL_HANDLE};
+    VkRenderPass renderPass;
     VkExtent2D extent;
     VkFormat colorFormat;
 
     uint32_t imageCount{0};
     std::vector<VkImage> colorImages;
     std::vector<VkImageView> colorImageViews;
+    std::vector<DepthImage> depthImages;
     std::vector<VkFramebuffer> framebuffers;
 };
 

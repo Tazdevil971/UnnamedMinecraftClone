@@ -1,8 +1,12 @@
 #include "BufferManager.hpp"
 
+#include <stb_image.h>
+
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
+
+#include "../Utils.hpp"
 
 using namespace render;
 
@@ -48,6 +52,9 @@ SimpleMesh BufferManager::allocateSimpleMesh(
                  VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
                  stagingBuffer, stagingMemory);
 
+    auto stagingDefer =
+        Defer{[=]() { vmaDestroyBuffer(vma, stagingBuffer, stagingMemory); }};
+
     void* data;
     vmaMapMemory(vma, stagingMemory, &data);
 
@@ -65,20 +72,108 @@ SimpleMesh BufferManager::allocateSimpleMesh(
                      VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                  VMA_MEMORY_USAGE_AUTO, 0, buffer, memory);
 
+    auto outputDefer = Defer{[=]() { vmaDestroyBuffer(vma, buffer, memory); }};
+
     // Finally copy the buffer and transfer to graphics queue
     startRecording();
     copyBuffer(stagingBuffer, buffer, bufferSize);
-    transferBufferToGraphics(buffer);
     submitAndWait();
 
-    vmaDestroyBuffer(vma, stagingBuffer, stagingMemory);
-
+    outputDefer.defuse();
     return {memory,        buffer,          vertexOffset,
             indicesOffset, vertices.size(), indices.size()};
 }
 
 void BufferManager::deallocateSimpleMesh(SimpleMesh mesh) {
-    vmaDestroyBuffer(vma, mesh.buffer, mesh.memory);
+    if (mesh.memory != VK_NULL_HANDLE)
+        vmaDestroyBuffer(vma, mesh.buffer, mesh.memory);
+}
+
+DepthImage BufferManager::allocateDepthImage(uint32_t width, uint32_t height) {
+    VmaAllocation memory;
+    VkImage image;
+    VkFormat format = ctx->getDeviceInfo().depthFormat;
+
+    createImage(width, height, format,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                VMA_MEMORY_USAGE_AUTO, 0, image, memory);
+
+    auto outputDefer = Defer{[=]() { vmaDestroyImage(vma, image, memory); }};
+
+    startRecording();
+    transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED,
+                          VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                          format);
+    submitAndWait();
+
+    VkImageView imageView;
+    createImageView(image, format, VK_IMAGE_ASPECT_DEPTH_BIT, imageView);
+
+    outputDefer.defuse();
+    return {memory, image, imageView, width, height, format};
+}
+
+SimpleImage BufferManager::allocateSimpleImage(const std::string& path,
+                                               VkFormat format) {
+    int width, height, channels;
+    stbi_uc* pixels =
+        stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+
+    if (!pixels) throw std::runtime_error{"failed to laod texture file!"};
+
+    auto pixelsDefer = Defer{[=]() { stbi_image_free(pixels); }};
+    return allocateSimpleImage(pixels, width, height, format);
+}
+
+SimpleImage BufferManager::allocateSimpleImage(const uint8_t* pixels,
+                                               uint32_t height, uint32_t width,
+                                               VkFormat format) {
+    VkDeviceSize imageSize = width * height * 4;
+    VmaAllocation stagingMemory;
+    VkBuffer stagingBuffer;
+    VmaAllocation memory;
+    VkImage image;
+
+    createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VMA_MEMORY_USAGE_AUTO,
+                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
+                 stagingBuffer, stagingMemory);
+
+    auto stagingDefer =
+        Defer{[=]() { vmaDestroyBuffer(vma, stagingBuffer, stagingMemory); }};
+
+    void* data;
+    vmaMapMemory(vma, stagingMemory, &data);
+    memcpy(data, pixels, imageSize);
+    vmaUnmapMemory(vma, stagingMemory);
+
+    createImage(width, height, format,
+                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VMA_MEMORY_USAGE_AUTO, 0, image, memory);
+
+    auto outputDefer = Defer{[=]() { vmaDestroyImage(vma, image, memory); }};
+
+    startRecording();
+    transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, format);
+    copyBufferToImage(stagingBuffer, image, width, height);
+    transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, format);
+    submitAndWait();
+
+    VkImageView imageView;
+    createImageView(image, format, VK_IMAGE_ASPECT_COLOR_BIT, imageView);
+
+    outputDefer.defuse();
+    return {memory, image, imageView, width, height, format};
+}
+
+void BufferManager::deallocateSimpleImage(SimpleImage image) {
+    if (image.view != VK_NULL_HANDLE)
+        vkDestroyImageView(ctx->getDevice(), image.view, nullptr);
+
+    if (image.memory != VK_NULL_HANDLE)
+        vmaDestroyImage(vma, image.image, image.memory);
 }
 
 void BufferManager::createVma() {
@@ -101,7 +196,7 @@ void BufferManager::createCommandPool() {
     createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT |
                        VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    createInfo.queueFamilyIndex = ctx->getDeviceInfo().queues.transfer.value();
+    createInfo.queueFamilyIndex = ctx->getDeviceInfo().queues.graphics.value();
 
     if (vkCreateCommandPool(ctx->getDevice(), &createInfo, nullptr,
                             &commandPool) != VK_SUCCESS)
@@ -149,6 +244,54 @@ void BufferManager::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
         throw std::runtime_error{"failed to create vma buffer!"};
 }
 
+void BufferManager::createImage(uint32_t width, uint32_t height,
+                                VkFormat format, VkImageUsageFlags usage,
+                                VmaMemoryUsage vmaUsage,
+                                VmaAllocationCreateFlags vmaFlags,
+                                VkImage& outImage, VmaAllocation& outMemory) {
+    VkImageCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    createInfo.imageType = VK_IMAGE_TYPE_2D;
+    createInfo.extent.width = width;
+    createInfo.extent.height = height;
+    createInfo.extent.depth = 1;
+    createInfo.mipLevels = 1;
+    createInfo.arrayLayers = 1;
+    createInfo.format = format;
+    createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    createInfo.usage = usage;
+    createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VmaAllocationCreateInfo allocInfo{};
+    allocInfo.flags = vmaFlags;
+    allocInfo.usage = vmaUsage;
+
+    if (vmaCreateImage(vma, &createInfo, &allocInfo, &outImage, &outMemory,
+                       nullptr) != VK_SUCCESS)
+        throw std::runtime_error{"failed to create vma image!"};
+}
+
+void BufferManager::createImageView(VkImage image, VkFormat format,
+                                    VkImageAspectFlags aspect,
+                                    VkImageView& imageView) {
+    VkImageViewCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    createInfo.image = image;
+    createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    createInfo.format = format;
+    createInfo.subresourceRange.aspectMask = aspect;
+    createInfo.subresourceRange.baseMipLevel = 0;
+    createInfo.subresourceRange.levelCount = 1;
+    createInfo.subresourceRange.baseArrayLayer = 0;
+    createInfo.subresourceRange.layerCount = 1;
+
+    if (vkCreateImageView(ctx->getDevice(), &createInfo, nullptr, &imageView) !=
+        VK_SUCCESS)
+        throw std::runtime_error("failed to create texture image view!");
+}
+
 void BufferManager::startRecording() {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -165,22 +308,80 @@ void BufferManager::copyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size) {
     vkCmdCopyBuffer(commandBuffer, src, dst, 1, &copyRegion);
 }
 
-void BufferManager::transferBufferToGraphics(VkBuffer buffer) {
-    // If the device has no dedicated transfer queue this is not needed
-    if (!ctx->getDeviceInfo().queues.hasDedicatedTransferQueue()) return;
+void BufferManager::copyBufferToImage(VkBuffer src, VkImage dst, uint32_t width,
+                                      uint32_t height) {
+    VkBufferImageCopy copyRegion{};
+    copyRegion.bufferOffset = 0;
+    copyRegion.bufferRowLength = 0;
+    copyRegion.bufferImageHeight = 0;
 
-    VkBufferMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    barrier.dstAccessMask = 0;
-    barrier.srcQueueFamilyIndex = ctx->getDeviceInfo().queues.transfer.value();
-    barrier.dstQueueFamilyIndex = ctx->getDeviceInfo().queues.graphics.value();
-    barrier.buffer = buffer;
-    barrier.offset = 0;
-    barrier.size = VK_WHOLE_SIZE;
-    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 1,
-                         &barrier, 0, nullptr);
+    copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    copyRegion.imageSubresource.mipLevel = 0;
+    copyRegion.imageSubresource.baseArrayLayer = 0;
+    copyRegion.imageSubresource.layerCount = 1;
+
+    copyRegion.imageOffset = {0, 0, 0};
+    copyRegion.imageExtent = {width, height, 1};
+    vkCmdCopyBufferToImage(commandBuffer, src, dst,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+                           &copyRegion);
+}
+
+void BufferManager::transitionImageLayout(VkImage image,
+                                          VkImageLayout oldLayout,
+                                          VkImageLayout newLayout,
+                                          VkFormat format) {
+    VkAccessFlags srcAccessMask;
+    VkPipelineStageFlags srcStage;
+    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
+        srcAccessMask = 0;
+        srcStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        srcStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+
+    VkAccessFlags dstAccessMask;
+    VkPipelineStageFlags dstStage;
+    if (newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    } else if (newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        dstStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    } else if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+        dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+                        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        dstStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    }
+
+    VkImageAspectFlags aspectMask;
+    if (format == VK_FORMAT_D32_SFLOAT) {
+        aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    } else if (format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
+               format == VK_FORMAT_D24_UNORM_S8_UINT) {
+        aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    } else {
+        aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = oldLayout;
+    barrier.newLayout = newLayout;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = image;
+    barrier.subresourceRange.aspectMask = aspectMask;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.srcAccessMask = srcAccessMask;
+    barrier.dstAccessMask = dstAccessMask;
+
+    vkCmdPipelineBarrier(commandBuffer, srcStage, dstStage, 0, 0, nullptr, 0,
+                         nullptr, 1, &barrier);
 }
 
 void BufferManager::submitAndWait() {
@@ -191,7 +392,7 @@ void BufferManager::submitAndWait() {
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    vkQueueSubmit(ctx->getTransferQueue(), 1, &submitInfo, syncFence);
+    vkQueueSubmit(ctx->getGraphicsQueue(), 1, &submitInfo, syncFence);
     vkWaitForFences(ctx->getDevice(), 1, &syncFence, VK_TRUE, UINT64_MAX);
 
     vkResetCommandBuffer(commandBuffer, 0);

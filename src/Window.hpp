@@ -142,9 +142,7 @@ class Window {
 
     render::SimpleMesh mesh;
 
-    VkImage textureImage{VK_NULL_HANDLE};
-    VkDeviceMemory textureImageMemory{VK_NULL_HANDLE};
-    VkImageView textureImageView{VK_NULL_HANDLE};
+    render::SimpleImage textureImage;
     VkSampler textureSampler{VK_NULL_HANDLE};
 
     std::vector<VkBuffer> uniformBuffers;

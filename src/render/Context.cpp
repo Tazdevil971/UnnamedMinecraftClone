@@ -99,6 +99,14 @@ Context::DeviceInfo Context::pickPhysicalDevice() {
         auto presentMode = choosePresentMode(device);
         if (!presentMode.has_value()) continue;
 
+        auto depthFormat = findFirstSupportedFormat(
+            device,
+            {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT,
+             VK_FORMAT_D24_UNORM_S8_UINT},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+        if (!depthFormat.has_value()) continue;
+
         VkPhysicalDeviceFeatures supportedFeatures;
         vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
@@ -109,6 +117,7 @@ Context::DeviceInfo Context::pickPhysicalDevice() {
                           device,
                           surfaceFormat.value(),
                           presentMode.value(),
+                          depthFormat.value(),
                           hasFilterAnisotropy,
                           support.hasKHRDedicatedAllocation};
     }
@@ -132,12 +141,6 @@ void Context::createDevice() {
     if (deviceInfo.queues.hasDedicatedPresentQueue()) {
         std::cout << "[INFO] Device has dedicated present queue" << std::endl;
         queueCreateInfo.queueFamilyIndex = deviceInfo.queues.present.value();
-        queueCreateInfos.push_back(queueCreateInfo);
-    }
-
-    if (deviceInfo.queues.hasDedicatedTransferQueue()) {
-        std::cout << "[INFO] Device has dedicated transfer queue" << std::endl;
-        queueCreateInfo.queueFamilyIndex = deviceInfo.queues.transfer.value();
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
@@ -173,8 +176,6 @@ void Context::createDevice() {
                      &graphicsQueue);
     vkGetDeviceQueue(device, deviceInfo.queues.present.value(), 0,
                      &presentQueue);
-    vkGetDeviceQueue(device, deviceInfo.queues.transfer.value(), 0,
-                     &transferQueue);
 }
 
 Context::InstanceExtensions Context::getInstanceExtensionSupport() {
@@ -248,10 +249,7 @@ Context::QueueFamilies Context::getDeviceQueueFamilies(
 
     uint32_t i = 0;
     for (auto &queue : properties) {
-        if (queue.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-            indices.graphics = i;
-        else if (queue.queueFlags & VK_QUEUE_TRANSFER_BIT)
-            indices.transfer = i;
+        if (queue.queueFlags & VK_QUEUE_GRAPHICS_BIT) indices.graphics = i;
 
         VkBool32 presentSupport = false;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface,
@@ -262,9 +260,6 @@ Context::QueueFamilies Context::getDeviceQueueFamilies(
 
         i++;
     }
-
-    // If we did not find a transfer queue, use the graphics one
-    if (!indices.transfer.has_value()) indices.transfer = indices.graphics;
 
     return indices;
 }
@@ -306,4 +301,23 @@ std::optional<VkPresentModeKHR> Context::choosePresentMode(
     }
 
     return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+std::optional<VkFormat> Context::findFirstSupportedFormat(
+    VkPhysicalDevice device, const std::vector<VkFormat> &formats,
+    VkImageTiling tiling, VkFormatFeatureFlags features) const {
+    for (const auto &format : formats) {
+        VkFormatProperties props;
+        vkGetPhysicalDeviceFormatProperties(device, format, &props);
+
+        if (tiling == VK_IMAGE_TILING_LINEAR &&
+            (props.linearTilingFeatures & features) == features) {
+            return format;
+        } else if (tiling == VK_IMAGE_TILING_OPTIMAL &&
+                   (props.optimalTilingFeatures & features) == features) {
+            return format;
+        }
+    }
+
+    return {};
 }
