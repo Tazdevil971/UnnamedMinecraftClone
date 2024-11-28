@@ -32,4 +32,21 @@ struct SimpleMesh {
     }
 };
 
+struct SimpleImage {
+    VmaAllocation memory;
+    VkImage image;
+};
+
+struct SimpleTexture {
+    SimpleImage image;
+    VkSampler sampler;
+    VkDescriptorSet descriptor;
+};
+
+struct SimpleModel {
+    SimpleMesh mesh;
+    SimpleTexture texture;
+    glm::mat4 modelMatrix;
+};
+
 }  // namespace render
