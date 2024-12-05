@@ -325,3 +325,31 @@ std::optional<VkFormat> Context::findFirstSupportedFormat(
 
     return {};
 }
+
+VkShaderModule Context::loadShaderModule(const std::string &path) const{
+    std::ifstream is(path, std::ios::binary | std::ios::ate);
+    if (!is) throw std::runtime_error{"failed to load shader module"};
+
+    std::vector<uint32_t> code;
+    code.resize(is.tellg());
+
+    is.seekg(0);
+    is.read(reinterpret_cast<char *>(code.data()), code.size());
+    is.close();
+
+    return loadShaderModule(code.data(), code.size());
+}
+
+VkShaderModule Context::loadShaderModule(const uint32_t * code, size_t size) const{
+    VkShaderModuleCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize = size;
+    createInfo.pCode = code;
+
+    VkShaderModule shaderModule;
+    if (vkCreateShaderModule(getDevice(), &createInfo, nullptr,
+                             &shaderModule) != VK_SUCCESS)
+        throw std::runtime_error{"failed to create shader module"};
+
+    return shaderModule;
+}

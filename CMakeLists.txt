@@ -19,6 +19,7 @@ set(SOURCES
     src/render/Swapchain.cpp
     src/render/BufferManager.cpp
     src/render/VmaImplementation.cpp
+    src/render/Renderer.cpp
     # src/world/World.cpp
     # src/world/Chunk.cpp
     )

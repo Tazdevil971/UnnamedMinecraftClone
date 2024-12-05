@@ -3,6 +3,7 @@
 #include <vk_mem_alloc.h>
 
 #include <memory>
+#include <string>
 
 #include "Context.hpp"
 #include "Mesh.hpp"
