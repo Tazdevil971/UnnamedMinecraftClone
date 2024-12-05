@@ -63,7 +63,7 @@ class Swapchain {
     };
 
     void createSwapchain();
-    void createImageViews();
+    void createColorImages();
     void createDepthImages();
     void createFramebuffers();
 
@@ -79,8 +79,7 @@ class Swapchain {
     VkFormat colorFormat;
 
     uint32_t imageCount{0};
-    std::vector<VkImage> colorImages;
-    std::vector<VkImageView> colorImageViews;
+    std::vector<SimpleImage> colorImages;
     std::vector<DepthImage> depthImages;
     std::vector<VkFramebuffer> framebuffers;
 };

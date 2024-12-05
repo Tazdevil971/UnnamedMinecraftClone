@@ -14,7 +14,7 @@ Swapchain::Swapchain(std::shared_ptr<Context> ctx,
       renderPass{renderPass} {
     try {
         createSwapchain();
-        createImageViews();
+        createColorImages();
         createDepthImages();
         createFramebuffers();
     } catch (...) {
@@ -30,19 +30,18 @@ void Swapchain::recreate() {
         if (framebuffer != VK_NULL_HANDLE)
             vkDestroyFramebuffer(ctx->getDevice(), framebuffer, nullptr);
 
-    for (auto imageView : colorImageViews)
-        if (imageView != VK_NULL_HANDLE)
-            vkDestroyImageView(ctx->getDevice(), imageView, nullptr);
+    for (auto colorImage : colorImages)
+        bufferMgr->deallocateSimpleImage(colorImage);
 
     for (auto depthImage : depthImages)
         bufferMgr->deallocateSimpleImage(depthImage);
 
     framebuffers.resize(0);
-    colorImageViews.resize(0);
+    colorImages.resize(0);
     depthImages.resize(0);
 
     createSwapchain();
-    createImageViews();
+    createColorImages();
     createFramebuffers();
 }
 
@@ -51,9 +50,8 @@ void Swapchain::cleanup() {
         if (framebuffer != VK_NULL_HANDLE)
             vkDestroyFramebuffer(ctx->getDevice(), framebuffer, nullptr);
 
-    for (auto imageView : colorImageViews)
-        if (imageView != VK_NULL_HANDLE)
-            vkDestroyImageView(ctx->getDevice(), imageView, nullptr);
+    for (auto colorImage : colorImages)
+        bufferMgr->deallocateSimpleImage(colorImage);
 
     for (auto depthImage : depthImages)
         bufferMgr->deallocateSimpleImage(depthImage);
@@ -147,30 +145,19 @@ void Swapchain::createSwapchain() {
     colorFormat = createInfo.imageFormat;
 }
 
-void Swapchain::createImageViews() {
+void Swapchain::createColorImages() {
     // Obtain the new ones
     vkGetSwapchainImagesKHR(ctx->getDevice(), swapchain, &imageCount, nullptr);
 
-    colorImages.resize(imageCount, VK_NULL_HANDLE);
+    std::vector<VkImage> importedImages;
+    importedImages.resize(imageCount, VK_NULL_HANDLE);
     vkGetSwapchainImagesKHR(ctx->getDevice(), swapchain, &imageCount,
-                            colorImages.data());
+                            importedImages.data());
 
-    colorImageViews.resize(imageCount, VK_NULL_HANDLE);
+    colorImages.resize(imageCount);
     for (uint32_t i = 0; i < imageCount; i++) {
-        VkImageViewCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        createInfo.image = colorImages[i];
-        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        createInfo.format = colorFormat;
-        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        createInfo.subresourceRange.baseMipLevel = 0;
-        createInfo.subresourceRange.levelCount = 1;
-        createInfo.subresourceRange.baseArrayLayer = 0;
-        createInfo.subresourceRange.layerCount = 1;
-
-        if (vkCreateImageView(ctx->getDevice(), &createInfo, nullptr,
-                              &colorImageViews[i]) != VK_SUCCESS)
-            throw std::runtime_error("failed to create texture image view!");
+        colorImages[i] = bufferMgr->importSimpleImage(
+            importedImages[i], extent.width, extent.height, colorFormat);
     }
 }
 
@@ -185,7 +172,7 @@ void Swapchain::createDepthImages() {
 void Swapchain::createFramebuffers() {
     framebuffers.resize(imageCount, VK_NULL_HANDLE);
     for (uint32_t i = 0; i < imageCount; i++) {
-        VkImageView attachments[] = {colorImageViews[i], depthImages[i].view};
+        VkImageView attachments[] = {colorImages[i].view, depthImages[i].view};
 
         VkFramebufferCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

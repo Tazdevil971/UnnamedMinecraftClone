@@ -113,6 +113,14 @@ DepthImage BufferManager::allocateDepthImage(uint32_t width, uint32_t height) {
     return {memory, image, imageView, width, height, format};
 }
 
+SimpleImage BufferManager::importSimpleImage(VkImage image, uint32_t width,
+                                             uint32_t height, VkFormat format) {
+    VkImageView imageView;
+    createImageView(image, format, VK_IMAGE_ASPECT_COLOR_BIT, imageView);
+
+    return {VK_NULL_HANDLE, image, imageView, width, height, format};
+}
+
 SimpleImage BufferManager::allocateSimpleImage(const std::string& path,
                                                VkFormat format) {
     int width, height, channels;

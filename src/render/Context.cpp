@@ -107,8 +107,11 @@ Context::DeviceInfo Context::pickPhysicalDevice() {
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
         if (!depthFormat.has_value()) continue;
 
-        VkPhysicalDeviceFeatures supportedFeatures;
+        VkPhysicalDeviceFeatures supportedFeatures{};
         vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
+        VkPhysicalDeviceProperties props{};
+        vkGetPhysicalDeviceProperties(device, &props);
 
         bool hasFilterAnisotropy =
             supportedFeatures.samplerAnisotropy == VK_TRUE;
@@ -119,7 +122,8 @@ Context::DeviceInfo Context::pickPhysicalDevice() {
                           presentMode.value(),
                           depthFormat.value(),
                           hasFilterAnisotropy,
-                          support.hasKHRDedicatedAllocation};
+                          support.hasKHRDedicatedAllocation,
+                          props.limits.maxSamplerAnisotropy};
     }
 
     throw std::runtime_error{"no suitable device found!"};

@@ -40,6 +40,7 @@ class Context {
         VkFormat depthFormat;
         bool hasFilterAnisotropy;
         bool hasKHRDedicatedAllocation;
+        float maxSamplerAnisotropy;
     };
 
     static std::shared_ptr<Context> create(GLFWwindow *window) {
