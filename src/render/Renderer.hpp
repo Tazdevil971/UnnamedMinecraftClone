@@ -12,7 +12,7 @@ class Renderer {
     Renderer(std::shared_ptr<Context> ctx,
              std::shared_ptr<TextureManager> textureMgr,
              std::shared_ptr<BufferManager> bufferMgr);
-    void render(std::list<SimpleModel> models, bool windowResized);
+    void render(glm::mat4 viewProjection, std::list<SimpleModel> models, bool windowResized);
     void cleanup();
 
    private:
@@ -36,7 +36,7 @@ class Renderer {
     void createGraphicsPipeline();
     void createCommandPool();
     void createSyncObjects();
-    void recordCommandBuffer(VkFramebuffer framebuffer, const SimpleModel & model);
+    void recordCommandBuffer(VkFramebuffer framebuffer, const SimpleModel & model, glm::mat4 viewProjection);
 
 };
 }  // namespace 

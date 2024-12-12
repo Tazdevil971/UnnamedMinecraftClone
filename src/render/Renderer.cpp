@@ -3,6 +3,7 @@
 #include "TextureManager.hpp"
 #include "Context.hpp"
 #include <list>
+#include <glm/mat4x4.hpp>
 
 using namespace render;
 
@@ -22,7 +23,7 @@ Renderer::Renderer(std::shared_ptr<Context> ctx,
     }
 }
 
-void Renderer::render(std::list<SimpleModel> models, bool windowResized) {
+void Renderer::render(glm::mat4 viewProjection, std::list<SimpleModel> models, bool windowResized) {
 
     vkWaitForFences(ctx->getDevice(), 1, &inFlightFence, VK_TRUE,
                     UINT64_MAX);
@@ -41,7 +42,7 @@ void Renderer::render(std::list<SimpleModel> models, bool windowResized) {
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
         throw std::runtime_error{"failed to begin recording command buffer!"};
     for (const auto &model : models)
-        recordCommandBuffer(frame.framebuffer, model);
+        recordCommandBuffer(frame.framebuffer, model, viewProjection);
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
         throw std::runtime_error{"failed to record command buffer!"};
 
@@ -321,7 +322,7 @@ void Renderer::createSyncObjects() {
             throw std::runtime_error{"failed to create sync objects!"};
 }
 
-void Renderer::recordCommandBuffer(VkFramebuffer framebuffer, const SimpleModel & model) {
+void Renderer::recordCommandBuffer(VkFramebuffer framebuffer, const SimpleModel & model, glm::mat4 viewProjection) {
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.renderPass = renderPass;
@@ -344,9 +345,11 @@ void Renderer::recordCommandBuffer(VkFramebuffer framebuffer, const SimpleModel 
 
     model.mesh.bind(commandBuffer);
 
+    glm::mat4 mvp = viewProjection * model.modelMatrix;
+
      vkCmdPushConstants(commandBuffer, pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
-                       &model.modelMatrix);
+                       &mvp);
 
     VkViewport viewport = swapchain->getViewport();
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
