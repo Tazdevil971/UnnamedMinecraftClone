@@ -1,21 +1,25 @@
 #include "Renderer.hpp"
+
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/mat4x4.hpp>
+#include <list>
+
+#include "Context.hpp"
 #include "Swapchain.hpp"
 #include "TextureManager.hpp"
-#include "Context.hpp"
-#include <list>
-#include <glm/mat4x4.hpp>
 
 using namespace render;
 
 Renderer::Renderer(std::shared_ptr<Context> ctx,
                    std::shared_ptr<TextureManager> textureMgr,
-                   std::shared_ptr<BufferManager> bufferMgr) 
+                   std::shared_ptr<BufferManager> bufferMgr)
     : ctx(std::move(ctx)), textureMgr(std::move(textureMgr)) {
     try {
         createRenderPass();
-        swapchain = Swapchain::create(ctx, bufferMgr, renderPass);
+        swapchain = Swapchain::create(this->ctx, bufferMgr, renderPass);
         createGraphicsPipeline();
         createCommandPool();
+        createCommandBuffer();
         createSyncObjects();
     } catch (...) {
         cleanup();
@@ -23,13 +27,11 @@ Renderer::Renderer(std::shared_ptr<Context> ctx,
     }
 }
 
-void Renderer::render(glm::mat4 viewProjection, std::list<SimpleModel> models, bool windowResized) {
+void Renderer::render(const Camera &camera, std::list<SimpleModel> models,
+                      bool windowResized) {
+    vkWaitForFences(ctx->getDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
 
-    vkWaitForFences(ctx->getDevice(), 1, &inFlightFence, VK_TRUE,
-                    UINT64_MAX);
-
-    Swapchain::Frame frame =
-        swapchain->acquireFrame(imageAvailableSemaphore);
+    Swapchain::Frame frame = swapchain->acquireFrame(imageAvailableSemaphore);
 
     vkResetFences(ctx->getDevice(), 1, &inFlightFence);
 
@@ -41,8 +43,16 @@ void Renderer::render(glm::mat4 viewProjection, std::list<SimpleModel> models, b
 
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
         throw std::runtime_error{"failed to begin recording command buffer!"};
+
+    float ratio = static_cast<float>(swapchain->getExtent().width) /
+                  static_cast<float>(swapchain->getExtent().height);
+    glm::mat4 proj = glm::perspective(glm::radians(camera.fov), ratio,
+                                      camera.nearPlane, camera.farPlane);
+    glm::mat4 vp = proj * camera.view;
+
     for (const auto &model : models)
-        recordCommandBuffer(frame.framebuffer, model, viewProjection);
+        recordCommandBuffer(frame.framebuffer, model, vp);
+        
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
         throw std::runtime_error{"failed to record command buffer!"};
 
@@ -61,12 +71,11 @@ void Renderer::render(glm::mat4 viewProjection, std::list<SimpleModel> models, b
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
-    if (vkQueueSubmit(ctx->getGraphicsQueue(), 1, &submitInfo,
-                      inFlightFence) != VK_SUCCESS)
+    if (vkQueueSubmit(ctx->getGraphicsQueue(), 1, &submitInfo, inFlightFence) !=
+        VK_SUCCESS)
         throw std::runtime_error{"failed to submit draw command buffer!"};
 
-    swapchain->present(frame, renderFinishedSemaphore,
-                       windowResized);
+    swapchain->present(frame, renderFinishedSemaphore, windowResized);
 }
 
 void Renderer::createRenderPass() {
@@ -139,7 +148,7 @@ void Renderer::createGraphicsPipeline() {
     pushConstantRange.offset = 0;
     pushConstantRange.size = sizeof(glm::mat4);
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
-    pipelineLayoutCreateInfo.sType = 
+    pipelineLayoutCreateInfo.sType =
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutCreateInfo.setLayoutCount = 1;
     pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
@@ -206,7 +215,7 @@ void Renderer::createGraphicsPipeline() {
     rasterizerStateInfo.rasterizerDiscardEnable = VK_FALSE;
     rasterizerStateInfo.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizerStateInfo.lineWidth = 1.0f;
-    rasterizerStateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizerStateInfo.cullMode = VK_CULL_MODE_NONE;
     rasterizerStateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizerStateInfo.depthBiasEnable = VK_FALSE;
     rasterizerStateInfo.depthBiasConstantFactor = 0.0f;
@@ -301,6 +310,18 @@ void Renderer::createCommandPool() {
         throw std::runtime_error{"failed to create command pool!"};
 }
 
+void Renderer::createCommandBuffer() {
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = 1;
+
+    if (vkAllocateCommandBuffers(ctx->getDevice(), &allocInfo,
+                                 &commandBuffer) != VK_SUCCESS)
+        throw std::runtime_error{"failed to create command buffer!"};
+}
+
 void Renderer::createSyncObjects() {
     VkSemaphoreCreateInfo semaphoreCreateInfo{};
     semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -309,20 +330,22 @@ void Renderer::createSyncObjects() {
     fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        if (vkCreateSemaphore(ctx->getDevice(), &semaphoreCreateInfo, nullptr,
-                              &imageAvailableSemaphore) != VK_SUCCESS)
-            throw std::runtime_error{"failed to create sync objects!"};
+    if (vkCreateSemaphore(ctx->getDevice(), &semaphoreCreateInfo, nullptr,
+                          &imageAvailableSemaphore) != VK_SUCCESS)
+        throw std::runtime_error{"failed to create sync objects!"};
 
-        if (vkCreateSemaphore(ctx->getDevice(), &semaphoreCreateInfo, nullptr,
-                              &renderFinishedSemaphore) != VK_SUCCESS)
-            throw std::runtime_error{"failed to create sync objects!"};
+    if (vkCreateSemaphore(ctx->getDevice(), &semaphoreCreateInfo, nullptr,
+                          &renderFinishedSemaphore) != VK_SUCCESS)
+        throw std::runtime_error{"failed to create sync objects!"};
 
-        if (vkCreateFence(ctx->getDevice(), &fenceCreateInfo, nullptr,
-                          &inFlightFence) != VK_SUCCESS)
-            throw std::runtime_error{"failed to create sync objects!"};
+    if (vkCreateFence(ctx->getDevice(), &fenceCreateInfo, nullptr,
+                      &inFlightFence) != VK_SUCCESS)
+        throw std::runtime_error{"failed to create sync objects!"};
 }
 
-void Renderer::recordCommandBuffer(VkFramebuffer framebuffer, const SimpleModel & model, glm::mat4 viewProjection) {
+void Renderer::recordCommandBuffer(VkFramebuffer framebuffer,
+                                   const SimpleModel &model,
+                                   glm::mat4 viewProjection) {
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.renderPass = renderPass;
@@ -340,16 +363,15 @@ void Renderer::recordCommandBuffer(VkFramebuffer framebuffer, const SimpleModel 
                          VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            pipelineLayout, 0, 1, &model.texture.descriptor,
-                            0, nullptr);
+                            pipelineLayout, 0, 1, &model.texture.descriptor, 0,
+                            nullptr);
 
     model.mesh.bind(commandBuffer);
 
     glm::mat4 mvp = viewProjection * model.modelMatrix;
 
-     vkCmdPushConstants(commandBuffer, pipelineLayout,
-                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
-                       &mvp);
+    vkCmdPushConstants(commandBuffer, pipelineLayout,
+                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mvp);
 
     VkViewport viewport = swapchain->getViewport();
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
@@ -358,7 +380,7 @@ void Renderer::recordCommandBuffer(VkFramebuffer framebuffer, const SimpleModel 
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     vkCmdDrawIndexed(commandBuffer, model.mesh.indexCount, 1, 0, 0, 0);
-
+    
     vkCmdEndRenderPass(commandBuffer);
 }
 
@@ -372,8 +394,7 @@ void Renderer::cleanup() {
     if (inFlightFence != VK_NULL_HANDLE)
         vkDestroyFence(ctx->getDevice(), inFlightFence, nullptr);
 
-    if (swapchain)
-        swapchain->cleanup();
+    if (swapchain) swapchain->cleanup();
 
     if (commandPool != VK_NULL_HANDLE)
         vkDestroyCommandPool(ctx->getDevice(), commandPool, nullptr);
@@ -386,5 +407,4 @@ void Renderer::cleanup() {
 
     if (renderPass != VK_NULL_HANDLE)
         vkDestroyRenderPass(ctx->getDevice(), renderPass, nullptr);
-
 }

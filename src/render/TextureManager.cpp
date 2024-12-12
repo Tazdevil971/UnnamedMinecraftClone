@@ -1,5 +1,8 @@
 #include "TextureManager.hpp"
 
+#include "../Utils.hpp"
+
+#include <iostream>
 #include <stdexcept>
 
 using namespace render;
@@ -11,6 +14,7 @@ TextureManager::TextureManager(std::shared_ptr<Context> ctx,
     try {
         createLayout();
         createPool(poolSize);
+        createDescriptorSets(poolSize);
     } catch (...) {
         cleanup();
         throw;
@@ -18,16 +22,20 @@ TextureManager::TextureManager(std::shared_ptr<Context> ctx,
 }
 
 void TextureManager::cleanup() {
-    if (pool == VK_NULL_HANDLE)
+    if (pool != VK_NULL_HANDLE)
         vkDestroyDescriptorPool(ctx->getDevice(), pool, nullptr);
 
-    if (simpleLayout == VK_NULL_HANDLE)
+    if (simpleLayout != VK_NULL_HANDLE)
         vkDestroyDescriptorSetLayout(ctx->getDevice(), simpleLayout, nullptr);
 }
 
-SimpleTexture TextureManager::createSimpleTexture(const std::string& path) {
-    SimpleImage image = bufferMgr->allocateSimpleImage("assets/test_image.jpg",
-                                                  VK_FORMAT_R8G8B8A8_SRGB);
+SimpleTexture TextureManager::createSimpleTexture(const std::string& path,
+                                                  VkFormat format) {
+    SimpleImage image = bufferMgr->allocateSimpleImage(path, format);
+
+    auto imageDefer = Defer{[&]() {
+        bufferMgr->deallocateSimpleImage(image);
+    }};
 
     VkSamplerCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -50,14 +58,51 @@ SimpleTexture TextureManager::createSimpleTexture(const std::string& path) {
     VkSampler sampler;
 
     if (vkCreateSampler(ctx->getDevice(), &createInfo, nullptr,
-                        &sampler) != VK_SUCCESS)
+                                  &sampler) != VK_SUCCESS)
         throw std::runtime_error{"failed to create texture sampler!"};
 
-    
+    auto samplerDefer = Defer{[&]() {
+        vkDestroySampler(ctx->getDevice(), sampler, nullptr);
+    }};
+
+
+    if (descriptorSets.size() == 0)
+        throw std::runtime_error{"not enough descriptor sets!"};
+
+    VkDescriptorSet descriptor = descriptorSets.back();
+    descriptorSets.pop_back();
+
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = image.view;
+    imageInfo.sampler = sampler;
+
+    VkWriteDescriptorSet descriptorWrite{};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = descriptor;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pBufferInfo = nullptr;
+    descriptorWrite.pImageInfo = &imageInfo;
+    descriptorWrite.pTexelBufferView = nullptr;
+
+    vkUpdateDescriptorSets(ctx->getDevice(), 1, &descriptorWrite, 0, nullptr);
+
+    imageDefer.defuse();
+    samplerDefer.defuse();
+    return {image, sampler, descriptor};
 }
 
 void TextureManager::deallocateSimpleTexture(SimpleTexture texture) {
-    
+    if (texture.descriptor != VK_NULL_HANDLE)
+        descriptorSets.push_back(texture.descriptor);
+
+    if (texture.sampler != VK_NULL_HANDLE)
+        vkDestroySampler(ctx->getDevice(), texture.sampler, nullptr);
+
+    bufferMgr->deallocateSimpleImage(texture.image);
 }
 
 void TextureManager::createLayout() {
@@ -95,4 +140,20 @@ void TextureManager::createPool(uint32_t size) {
     if (vkCreateDescriptorPool(ctx->getDevice(), &poolInfo, nullptr, &pool) !=
         VK_SUCCESS)
         throw std::runtime_error{"failed to create descriptor pool!"};
+}
+
+void TextureManager::createDescriptorSets(uint32_t size) {
+    std::vector<VkDescriptorSetLayout> layouts;
+    layouts.resize(size, simpleLayout);
+
+    descriptorSets.resize(size);    
+    
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = pool;
+    allocInfo.descriptorSetCount = size;
+    allocInfo.pSetLayouts = layouts.data();
+
+    if (vkAllocateDescriptorSets(ctx->getDevice(), &allocInfo, descriptorSets.data()) != VK_SUCCESS)
+        throw std::runtime_error{"failed to create descriptor set!"};
 }

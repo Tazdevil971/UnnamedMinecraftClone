@@ -12,7 +12,7 @@ layout(push_constant) uniform Ubo {
 } ubo;
 
 void main() {
-    gl_Position = ubo.mvp * vec4(inPosition, 1.0);
+    gl_Position = ubo.mvp * vec4(inPosition.xyz, 1.0);
     fragColor = inColor;
     fragTexCoord = inTexCoord;
 }

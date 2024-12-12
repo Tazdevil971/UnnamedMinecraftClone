@@ -8,24 +8,24 @@
 backward::SignalHandling sh;
 
 int main() {
-    Window window;
+
+    std::unique_ptr<Window> window;
 
     try {
-        window.init();
+        window = std::make_unique<Window>();
     } catch (std::exception &e) {
         std::cerr << "Initialization failure: " << e.what() << std::endl;
-        window.cleanup();
         return -1;
     }
 
     try {
-        window.mainLoop();
+        window->mainLoop();
     } catch (std::exception &e) {
         std::cerr << "Main loop failure: " << e.what() << std::endl;
-        window.cleanup();
+        window->cleanup();
         return -1;
     }
 
-    window.cleanup();
+    window->cleanup();
     return 0;
 }

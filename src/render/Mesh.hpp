@@ -85,4 +85,11 @@ struct SimpleModel {
     glm::mat4 modelMatrix;
 };
 
+struct Camera {
+    glm::mat4 view;
+    float fov;
+    float nearPlane;
+    float farPlane;
+};
+
 }  // namespace render

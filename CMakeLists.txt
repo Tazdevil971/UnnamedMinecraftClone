@@ -14,10 +14,12 @@ find_package(Vulkan REQUIRED)
 
 set(SOURCES 
     src/main.cpp 
+    # src/Window2.cpp
     src/Window.cpp
     src/render/Context.cpp
     src/render/Swapchain.cpp
     src/render/BufferManager.cpp
+    src/render/TextureManager.cpp
     src/render/VmaImplementation.cpp
     src/render/Renderer.cpp
     # src/world/World.cpp

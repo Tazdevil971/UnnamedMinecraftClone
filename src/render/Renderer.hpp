@@ -4,16 +4,28 @@
 #include "Swapchain.hpp"
 #include "TextureManager.hpp"
 
+#include <list>
 
 namespace render {
 
 class Renderer {
    public:
+    static std::shared_ptr<Renderer> create(
+        std::shared_ptr<Context> ctx,
+        std::shared_ptr<TextureManager> textureMgr,
+        std::shared_ptr<BufferManager> bufferMgr) {
+        return std::make_shared<Renderer>(std::move(ctx), std::move(textureMgr),
+                                          std::move(bufferMgr));
+    }
+
     Renderer(std::shared_ptr<Context> ctx,
              std::shared_ptr<TextureManager> textureMgr,
              std::shared_ptr<BufferManager> bufferMgr);
-    void render(glm::mat4 viewProjection, std::list<SimpleModel> models, bool windowResized);
+    void render(const Camera &camera, std::list<SimpleModel> models,
+                bool windowResized);
     void cleanup();
+
+
 
    private:
     VkRenderPass renderPass{VK_NULL_HANDLE};
@@ -35,8 +47,10 @@ class Renderer {
     void createRenderPass();
     void createGraphicsPipeline();
     void createCommandPool();
+    void createCommandBuffer();
     void createSyncObjects();
-    void recordCommandBuffer(VkFramebuffer framebuffer, const SimpleModel & model, glm::mat4 viewProjection);
-
+    void recordCommandBuffer(VkFramebuffer framebuffer,
+                             const SimpleModel& model,
+                             glm::mat4 viewProjection);
 };
-}  // namespace 
+}  // namespace render
