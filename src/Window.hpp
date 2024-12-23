@@ -18,14 +18,15 @@ class Window {
     void cleanup();
 
     void onResize(int width, int height);
-   private:
 
+   private:
     float getTime();
 
     GLFWwindow *window;
     bool windowResized{false};
 
     std::shared_ptr<render::Context> ctx;
+    std::shared_ptr<render::Swapchain> swapchain;
     std::shared_ptr<render::BufferManager> bufferMgr;
     std::shared_ptr<render::TextureManager> textureMgr;
     std::shared_ptr<render::Renderer> renderer;

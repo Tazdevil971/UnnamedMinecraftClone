@@ -1,10 +1,10 @@
 #pragma once
 
+#include <list>
+
 #include "Context.hpp"
 #include "Swapchain.hpp"
 #include "TextureManager.hpp"
-
-#include <list>
 
 namespace render {
 
@@ -13,19 +13,17 @@ class Renderer {
     static std::shared_ptr<Renderer> create(
         std::shared_ptr<Context> ctx,
         std::shared_ptr<TextureManager> textureMgr,
-        std::shared_ptr<BufferManager> bufferMgr) {
+        std::shared_ptr<Swapchain> swapchain) {
         return std::make_shared<Renderer>(std::move(ctx), std::move(textureMgr),
-                                          std::move(bufferMgr));
+                                          std::move(swapchain));
     }
 
     Renderer(std::shared_ptr<Context> ctx,
              std::shared_ptr<TextureManager> textureMgr,
-             std::shared_ptr<BufferManager> bufferMgr);
-    void render(const Camera &camera, std::list<SimpleModel> models,
+             std::shared_ptr<Swapchain> swapchain);
+    void render(const Camera& camera, std::list<SimpleModel> models,
                 bool windowResized);
     void cleanup();
-
-
 
    private:
     VkRenderPass renderPass{VK_NULL_HANDLE};
@@ -37,6 +35,7 @@ class Renderer {
 
     std::shared_ptr<Context> ctx;
     std::shared_ptr<Swapchain> swapchain;
+    std::shared_ptr<Framebuffer> framebuffer;
     std::shared_ptr<TextureManager> textureMgr;
 
     VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
@@ -49,8 +48,7 @@ class Renderer {
     void createCommandPool();
     void createCommandBuffer();
     void createSyncObjects();
-    void recordCommandBuffer(VkFramebuffer framebuffer,
-                             const SimpleModel& model,
+    void recordCommandBuffer(uint32_t frameIndex, const SimpleModel& model,
                              glm::mat4 viewProjection);
 };
 }  // namespace render

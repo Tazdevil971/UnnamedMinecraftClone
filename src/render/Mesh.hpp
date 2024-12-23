@@ -24,7 +24,7 @@ struct SimpleMesh {
     size_t vertexCount;
     size_t indexCount;
 
-    void bind(VkCommandBuffer commandBuffer) const{
+    void bind(VkCommandBuffer commandBuffer) const {
         VkDeviceSize offsets[] = {vertexOffset};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &buffer, offsets);
         vkCmdBindIndexBuffer(commandBuffer, buffer, indicesOffset,

@@ -28,7 +28,7 @@ class BufferManager {
     DepthImage allocateDepthImage(uint32_t width, uint32_t height);
 
     SimpleImage importSimpleImage(VkImage image, uint32_t width,
-                                    uint32_t height, VkFormat format);
+                                  uint32_t height, VkFormat format);
     SimpleImage allocateSimpleImage(const uint8_t* pixels, uint32_t width,
                                     uint32_t height, VkFormat format);
     SimpleImage allocateSimpleImage(const std::string& path, VkFormat format);

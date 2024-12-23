@@ -3,10 +3,10 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <fstream>
 #include <memory>
 #include <optional>
 #include <vector>
-#include <fstream>
 
 namespace render {
 
@@ -32,6 +32,7 @@ class Context {
             return out;
         }
     };
+
     VkShaderModule loadShaderModule(const std::string &path) const;
     VkShaderModule loadShaderModule(const uint32_t *code, size_t size) const;
 

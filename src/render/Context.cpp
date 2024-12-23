@@ -27,12 +27,20 @@ Context::Context(GLFWwindow *window) : window{window} {
 }
 
 void Context::cleanup() {
-    if (device != VK_NULL_HANDLE) vkDestroyDevice(device, nullptr);
+    if (device != VK_NULL_HANDLE) {
+        vkDestroyDevice(device, nullptr);
+        device = VK_NULL_HANDLE;
+    }
 
-    if (surface != VK_NULL_HANDLE)
+    if (surface != VK_NULL_HANDLE) {
         vkDestroySurfaceKHR(instance, surface, nullptr);
+        surface = VK_NULL_HANDLE;
+    }
 
-    if (instance != VK_NULL_HANDLE) vkDestroyInstance(instance, nullptr);
+    if (instance != VK_NULL_HANDLE) {
+        vkDestroyInstance(instance, nullptr);
+        instance = VK_NULL_HANDLE;
+    }
 }
 
 void Context::createInstance() {
@@ -326,7 +334,7 @@ std::optional<VkFormat> Context::findFirstSupportedFormat(
     return {};
 }
 
-VkShaderModule Context::loadShaderModule(const std::string &path) const{
+VkShaderModule Context::loadShaderModule(const std::string &path) const {
     std::ifstream is(path, std::ios::binary | std::ios::ate);
     if (!is) throw std::runtime_error{"failed to load shader module"};
 
@@ -340,7 +348,8 @@ VkShaderModule Context::loadShaderModule(const std::string &path) const{
     return loadShaderModule(code.data(), code.size());
 }
 
-VkShaderModule Context::loadShaderModule(const uint32_t * code, size_t size) const{
+VkShaderModule Context::loadShaderModule(const uint32_t *code,
+                                         size_t size) const {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = size;

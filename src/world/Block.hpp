@@ -1,6 +1,1 @@
-enum class Block { 
-	AIR, 
-	GRASS, 
-	DIRT, 
-	COBBLESTONE
-};
+enum class Block { AIR, GRASS, DIRT, COBBLESTONE };

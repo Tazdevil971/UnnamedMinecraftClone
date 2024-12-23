@@ -2,13 +2,11 @@
 #include <stdexcept>
 
 #include "Window.hpp"
-
 #include "backward.hpp"
 
 backward::SignalHandling sh;
 
 int main() {
-
     std::unique_ptr<Window> window;
 
     try {

@@ -10,8 +10,7 @@
 
 using namespace render;
 
-BufferManager::BufferManager(std::shared_ptr<Context> ctx)
-    : ctx{std::move(ctx)} {
+BufferManager::BufferManager(std::shared_ptr<Context> ctx) : ctx{ctx} {
     try {
         createVma();
         createCommandPool();
@@ -24,12 +23,20 @@ BufferManager::BufferManager(std::shared_ptr<Context> ctx)
 }
 
 void BufferManager::cleanup() {
-    if (syncFence) vkDestroyFence(ctx->getDevice(), syncFence, nullptr);
+    if (syncFence != VK_NULL_HANDLE) {
+        vkDestroyFence(ctx->getDevice(), syncFence, nullptr);
+        syncFence = VK_NULL_HANDLE;
+    }
 
-    if (commandPool)
+    if (commandPool != VK_NULL_HANDLE) {
         vkDestroyCommandPool(ctx->getDevice(), commandPool, nullptr);
+        commandPool = VK_NULL_HANDLE;
+    }
 
-    if (vma != VK_NULL_HANDLE) vmaDestroyAllocator(vma);
+    if (vma != VK_NULL_HANDLE) {
+        vmaDestroyAllocator(vma);
+        vma = VK_NULL_HANDLE;
+    }
 }
 
 SimpleMesh BufferManager::allocateSimpleMesh(
@@ -85,8 +92,11 @@ SimpleMesh BufferManager::allocateSimpleMesh(
 }
 
 void BufferManager::deallocateSimpleMesh(SimpleMesh mesh) {
-    if (mesh.memory != VK_NULL_HANDLE)
+    if (mesh.memory != VK_NULL_HANDLE) {
         vmaDestroyBuffer(vma, mesh.buffer, mesh.memory);
+        mesh.memory = VK_NULL_HANDLE;
+        mesh.buffer = VK_NULL_HANDLE;
+    }
 }
 
 DepthImage BufferManager::allocateDepthImage(uint32_t width, uint32_t height) {
@@ -177,11 +187,16 @@ SimpleImage BufferManager::allocateSimpleImage(const uint8_t* pixels,
 }
 
 void BufferManager::deallocateSimpleImage(SimpleImage image) {
-    if (image.view != VK_NULL_HANDLE)
+    if (image.view != VK_NULL_HANDLE) {
         vkDestroyImageView(ctx->getDevice(), image.view, nullptr);
+        image.view = VK_NULL_HANDLE;
+    }
 
-    if (image.memory != VK_NULL_HANDLE)
+    if (image.memory != VK_NULL_HANDLE) {
         vmaDestroyImage(vma, image.image, image.memory);
+        image.memory = VK_NULL_HANDLE;
+        image.image = VK_NULL_HANDLE;
+    }
 }
 
 void BufferManager::createVma() {

@@ -12,11 +12,12 @@ using namespace render;
 
 Renderer::Renderer(std::shared_ptr<Context> ctx,
                    std::shared_ptr<TextureManager> textureMgr,
-                   std::shared_ptr<BufferManager> bufferMgr)
-    : ctx(std::move(ctx)), textureMgr(std::move(textureMgr)) {
+                   std::shared_ptr<Swapchain> swapchain)
+    : ctx{ctx}, swapchain{swapchain}, textureMgr{textureMgr} {
     try {
         createRenderPass();
-        swapchain = Swapchain::create(this->ctx, bufferMgr, renderPass);
+        framebuffer = swapchain->createFramebuffer(renderPass);
+
         createGraphicsPipeline();
         createCommandPool();
         createCommandBuffer();
@@ -51,8 +52,8 @@ void Renderer::render(const Camera &camera, std::list<SimpleModel> models,
     glm::mat4 vp = proj * camera.view;
 
     for (const auto &model : models)
-        recordCommandBuffer(frame.framebuffer, model, vp);
-        
+        recordCommandBuffer(frame.index, model, vp);
+
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
         throw std::runtime_error{"failed to record command buffer!"};
 
@@ -343,14 +344,14 @@ void Renderer::createSyncObjects() {
         throw std::runtime_error{"failed to create sync objects!"};
 }
 
-void Renderer::recordCommandBuffer(VkFramebuffer framebuffer,
+void Renderer::recordCommandBuffer(uint32_t frameIndex,
                                    const SimpleModel &model,
                                    glm::mat4 viewProjection) {
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.renderPass = renderPass;
-    renderPassBeginInfo.framebuffer = framebuffer;
-    renderPassBeginInfo.renderArea = swapchain->getRenderArea();
+    renderPassBeginInfo.framebuffer = framebuffer->getFrame(frameIndex);
+    renderPassBeginInfo.renderArea = framebuffer->getRenderArea();
 
     VkClearValue clearValues[2] = {};
     clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -373,38 +374,50 @@ void Renderer::recordCommandBuffer(VkFramebuffer framebuffer,
     vkCmdPushConstants(commandBuffer, pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mvp);
 
-    VkViewport viewport = swapchain->getViewport();
+    VkViewport viewport = framebuffer->getViewport();
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
-    VkRect2D scissor = swapchain->getRenderArea();
+    VkRect2D scissor = framebuffer->getRenderArea();
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     vkCmdDrawIndexed(commandBuffer, model.mesh.indexCount, 1, 0, 0, 0);
-    
+
     vkCmdEndRenderPass(commandBuffer);
 }
 
 void Renderer::cleanup() {
-    if (imageAvailableSemaphore != VK_NULL_HANDLE)
+    if (imageAvailableSemaphore != VK_NULL_HANDLE) {
         vkDestroySemaphore(ctx->getDevice(), imageAvailableSemaphore, nullptr);
+        imageAvailableSemaphore = VK_NULL_HANDLE;
+    }
 
-    if (renderFinishedSemaphore != VK_NULL_HANDLE)
+    if (renderFinishedSemaphore != VK_NULL_HANDLE) {
         vkDestroySemaphore(ctx->getDevice(), renderFinishedSemaphore, nullptr);
+        renderFinishedSemaphore = VK_NULL_HANDLE;
+    }
 
-    if (inFlightFence != VK_NULL_HANDLE)
+    if (inFlightFence != VK_NULL_HANDLE) {
         vkDestroyFence(ctx->getDevice(), inFlightFence, nullptr);
+        inFlightFence = VK_NULL_HANDLE;
+    }
 
-    if (swapchain) swapchain->cleanup();
-
-    if (commandPool != VK_NULL_HANDLE)
+    if (commandPool != VK_NULL_HANDLE) {
         vkDestroyCommandPool(ctx->getDevice(), commandPool, nullptr);
+        commandPool = VK_NULL_HANDLE;
+    }
 
-    if (pipeline != VK_NULL_HANDLE)
+    if (pipeline != VK_NULL_HANDLE) {
         vkDestroyPipeline(ctx->getDevice(), pipeline, nullptr);
+        pipeline = VK_NULL_HANDLE;
+    }
 
-    if (pipelineLayout != VK_NULL_HANDLE)
+    if (pipelineLayout != VK_NULL_HANDLE) {
         vkDestroyPipelineLayout(ctx->getDevice(), pipelineLayout, nullptr);
+        pipelineLayout = VK_NULL_HANDLE;
+    }
 
-    if (renderPass != VK_NULL_HANDLE)
+    if (renderPass != VK_NULL_HANDLE) {
         vkDestroyRenderPass(ctx->getDevice(), renderPass, nullptr);
+        renderPass = VK_NULL_HANDLE;
+    }
 }

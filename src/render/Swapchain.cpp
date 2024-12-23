@@ -1,23 +1,17 @@
 #include "Swapchain.hpp"
 
 #include <algorithm>
+#include <iostream>
 #include <limits>
 #include <stdexcept>
-#include <iostream>
 
 using namespace render;
 
 Swapchain::Swapchain(std::shared_ptr<Context> ctx,
-                     std::shared_ptr<BufferManager> bufferMgr,
-                     VkRenderPass renderPass)
-    : ctx{std::move(ctx)},
-      bufferMgr{std::move(bufferMgr)},
-      renderPass{renderPass} {
+                     std::shared_ptr<BufferManager> bufferMgr)
+    : ctx{ctx}, bufferMgr{bufferMgr} {
     try {
         createSwapchain();
-        createColorImages();
-        createDepthImages();
-        createFramebuffers();
     } catch (...) {
         cleanup();
         throw;
@@ -27,38 +21,21 @@ Swapchain::Swapchain(std::shared_ptr<Context> ctx,
 void Swapchain::recreate() {
     waitForRecreateReady();
 
-    for (auto framebuffer : framebuffers)
-        if (framebuffer != VK_NULL_HANDLE)
-            vkDestroyFramebuffer(ctx->getDevice(), framebuffer, nullptr);
-
-    for (auto colorImage : colorImages)
-        bufferMgr->deallocateSimpleImage(colorImage);
-
-    for (auto depthImage : depthImages)
-        bufferMgr->deallocateSimpleImage(depthImage);
-
-    framebuffers.resize(0);
-    colorImages.resize(0);
-    depthImages.resize(0);
-
     createSwapchain();
-    createColorImages();
-    createFramebuffers();
+
+    if (framebuffer) framebuffer->recreate(swapchain, extent, colorFormat);
 }
 
 void Swapchain::cleanup() {
-    for (auto framebuffer : framebuffers)
-        if (framebuffer != VK_NULL_HANDLE)
-            vkDestroyFramebuffer(ctx->getDevice(), framebuffer, nullptr);
-
-    for (auto colorImage : colorImages)
-        bufferMgr->deallocateSimpleImage(colorImage);
-
-    for (auto depthImage : depthImages)
-        bufferMgr->deallocateSimpleImage(depthImage);
-
-    if (swapchain != VK_NULL_HANDLE)
+    if (swapchain != VK_NULL_HANDLE) {
         vkDestroySwapchainKHR(ctx->getDevice(), swapchain, nullptr);
+        swapchain = VK_NULL_HANDLE;
+    }
+
+    if (framebuffer) {
+        framebuffer->cleanup();
+        framebuffer.reset();
+    }
 }
 
 Swapchain::Frame Swapchain::acquireFrame(VkSemaphore semaphore) {
@@ -77,7 +54,16 @@ Swapchain::Frame Swapchain::acquireFrame(VkSemaphore semaphore) {
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
         throw std::runtime_error{"failed to acquire swapchain image!"};
 
-    return {index, framebuffers[index]};
+    return {index};
+}
+
+std::shared_ptr<Framebuffer> Swapchain::createFramebuffer(
+    VkRenderPass renderPass) {
+    assert(!framebuffer);
+
+    framebuffer = std::shared_ptr<Framebuffer>(new Framebuffer(
+        ctx, bufferMgr, swapchain, extent, colorFormat, renderPass));
+    return framebuffer;
 }
 
 void Swapchain::present(const Frame &frame, VkSemaphore semaphore,
@@ -144,50 +130,6 @@ void Swapchain::createSwapchain() {
 
     extent = createInfo.imageExtent;
     colorFormat = createInfo.imageFormat;
-}
-
-void Swapchain::createColorImages() {
-    // Obtain the new ones
-    vkGetSwapchainImagesKHR(ctx->getDevice(), swapchain, &imageCount, nullptr);
-
-    std::vector<VkImage> importedImages;
-    importedImages.resize(imageCount, VK_NULL_HANDLE);
-    vkGetSwapchainImagesKHR(ctx->getDevice(), swapchain, &imageCount,
-                            importedImages.data());
-
-    colorImages.resize(imageCount);
-    for (uint32_t i = 0; i < imageCount; i++) {
-        colorImages[i] = bufferMgr->importSimpleImage(
-            importedImages[i], extent.width, extent.height, colorFormat);
-    }
-}
-
-void Swapchain::createDepthImages() {
-    depthImages.resize(imageCount);
-    for (uint32_t i = 0; i < imageCount; i++) {
-        depthImages[i] =
-            bufferMgr->allocateDepthImage(extent.width, extent.height);
-    }
-}
-
-void Swapchain::createFramebuffers() {
-    framebuffers.resize(imageCount, VK_NULL_HANDLE);
-    for (uint32_t i = 0; i < imageCount; i++) {
-        VkImageView attachments[] = {colorImages[i].view, depthImages[i].view};
-
-        VkFramebufferCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        createInfo.renderPass = renderPass;
-        createInfo.attachmentCount = 2;
-        createInfo.pAttachments = attachments;
-        createInfo.width = extent.width;
-        createInfo.height = extent.height;
-        createInfo.layers = 1;
-
-        if (vkCreateFramebuffer(ctx->getDevice(), &createInfo, nullptr,
-                                &framebuffers[i]) != VK_SUCCESS)
-            throw std::runtime_error{"failed to create framebuffer!"};
-    }
 }
 
 void Swapchain::waitForRecreateReady() {

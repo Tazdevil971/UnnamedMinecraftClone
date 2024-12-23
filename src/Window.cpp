@@ -27,7 +27,8 @@ Window::Window() {
         ctx = Context::create(window);
         bufferMgr = BufferManager::create(ctx);
         textureMgr = TextureManager::create(ctx, bufferMgr, 10);
-        renderer = Renderer::create(ctx, textureMgr, bufferMgr);
+        swapchain = Swapchain::create(ctx, bufferMgr);
+        renderer = Renderer::create(ctx, textureMgr, swapchain);
 
         model.texture = textureMgr->createSimpleTexture(
             "assets/test_image.jpg", VK_FORMAT_R8G8B8A8_SRGB);
@@ -56,13 +57,18 @@ void Window::cleanup() {
 
     if (renderer) renderer->cleanup();
 
+    if (swapchain) swapchain->cleanup();
+
     if (textureMgr) textureMgr->cleanup();
 
     if (bufferMgr) bufferMgr->cleanup();
 
     if (ctx) ctx->cleanup();
 
-    if (window) glfwDestroyWindow(window);
+    if (window) {
+        glfwDestroyWindow(window);
+        window = nullptr;
+    }
 
     glfwTerminate();
 }

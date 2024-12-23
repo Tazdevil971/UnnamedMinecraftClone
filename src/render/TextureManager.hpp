@@ -2,19 +2,23 @@
 
 #include <vector>
 
-#include "Context.hpp"
 #include "BufferManager.hpp"
+#include "Context.hpp"
 #include "Mesh.hpp"
 
 namespace render {
 
 class TextureManager {
-public:
-    static std::shared_ptr<TextureManager> create(std::shared_ptr<Context> ctx, std::shared_ptr<BufferManager> bufferMgr, uint32_t poolSize) {
-        return std::make_shared<TextureManager>(std::move(ctx), std::move(bufferMgr), poolSize);
+   public:
+    static std::shared_ptr<TextureManager> create(
+        std::shared_ptr<Context> ctx, std::shared_ptr<BufferManager> bufferMgr,
+        uint32_t poolSize) {
+        return std::make_shared<TextureManager>(std::move(ctx),
+                                                std::move(bufferMgr), poolSize);
     }
 
-    TextureManager(std::shared_ptr<Context> ctx, std::shared_ptr<BufferManager> bufferMgr, uint32_t poolSize);
+    TextureManager(std::shared_ptr<Context> ctx,
+                   std::shared_ptr<BufferManager> bufferMgr, uint32_t poolSize);
 
     void cleanup();
 
@@ -24,7 +28,7 @@ public:
 
     void deallocateSimpleTexture(SimpleTexture texture);
 
-private:
+   private:
     void createLayout();
     void createPool(uint32_t size);
     void createDescriptorSets(uint32_t size);
@@ -38,4 +42,4 @@ private:
     VkDescriptorPool pool{VK_NULL_HANDLE};
 };
 
-}
+}  // namespace render
