@@ -14,8 +14,7 @@ find_package(Vulkan REQUIRED)
 
 set(SOURCES 
     src/main.cpp 
-    # src/Window2.cpp
-    src/Window.cpp
+    src/PlayerController.cpp
     src/render/Context.cpp
     src/render/Swapchain.cpp
     src/render/Framebuffer.cpp
@@ -23,6 +22,7 @@ set(SOURCES
     src/render/TextureManager.cpp
     src/render/VmaImplementation.cpp
     src/render/Renderer.cpp
+    src/render/Window.cpp
     # src/world/World.cpp
     # src/world/Chunk.cpp
     )

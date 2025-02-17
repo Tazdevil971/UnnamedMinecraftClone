@@ -1,28 +1,24 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include <memory>
 
 #include "render/BufferManager.hpp"
 #include "render/Context.hpp"
 #include "render/Renderer.hpp"
 #include "render/TextureManager.hpp"
+#include "render/Window.hpp"
 
-class Window {
+class PlayerController : public render::Window {
    public:
-    Window();
+    PlayerController();
 
-    void mainLoop();
     void cleanup();
 
-    void onResize(int width, int height);
+   protected:
+    void onFrame() override;
+    void onResize(int width, int height) override;
 
    private:
-    float getTime();
-
-    GLFWwindow *window;
     bool windowResized{false};
 
     std::shared_ptr<render::Context> ctx;

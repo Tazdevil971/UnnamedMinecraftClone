@@ -36,6 +36,8 @@ class Context {
     VkShaderModule loadShaderModule(const std::string &path) const;
     VkShaderModule loadShaderModule(const uint32_t *code, size_t size) const;
 
+    void waitDeviceIdle();
+
     struct DeviceInfo {
         QueueFamilies queues;
         VkPhysicalDevice device{VK_NULL_HANDLE};

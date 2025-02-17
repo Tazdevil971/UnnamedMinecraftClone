@@ -362,3 +362,5 @@ VkShaderModule Context::loadShaderModule(const uint32_t *code,
 
     return shaderModule;
 }
+
+void Context::waitDeviceIdle() { vkDeviceWaitIdle(getDevice()); }
