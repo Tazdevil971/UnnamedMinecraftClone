@@ -1,6 +1,5 @@
 #include "Renderer.hpp"
 
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 #include <list>
 
@@ -47,9 +46,7 @@ void Renderer::render(const Camera &camera, std::list<SimpleModel> models,
 
     float ratio = static_cast<float>(swapchain->getExtent().width) /
                   static_cast<float>(swapchain->getExtent().height);
-    glm::mat4 proj = glm::perspective(glm::radians(camera.fov), ratio,
-                                      camera.nearPlane, camera.farPlane);
-    glm::mat4 vp = proj * camera.view;
+    glm::mat4 vp = camera.computeVP(ratio);
 
     for (const auto &model : models)
         recordCommandBuffer(frame.index, model, vp);

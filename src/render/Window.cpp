@@ -1,6 +1,7 @@
 #include "Window.hpp"
 
 #include <chrono>
+#include <iostream>
 
 using namespace render;
 
@@ -15,17 +16,79 @@ Window::Window(std::string name) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    window =
-        glfwCreateWindow(1280, 720, name.c_str(), nullptr, nullptr);
+    window = glfwCreateWindow(1280, 720, name.c_str(), nullptr, nullptr);
 
     glfwSetWindowUserPointer(window, this);
     glfwSetFramebufferSizeCallback(window, glfwOnResizeCallback);
+
+    // Set sticky keys
+    glfwSetInputMode(window, GLFW_STICKY_KEYS, GLFW_TRUE);
+    glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    captureMouse = true;
 }
 
 void Window::mainLoop() {
+    InputState input;
+
+    double xLast, yLast;
+    glfwGetCursorPos(window, &xLast, &yLast);
+
+    float timeLast = getTime();
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        onFrame();
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS &&
+            !captureMouse) {
+            glfwGetCursorPos(window, &xLast, &yLast);
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            captureMouse = true;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS && captureMouse) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            captureMouse = false;
+        }
+
+        if (captureMouse) {
+            input.forward = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
+            input.backward = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
+            input.left = glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS;
+            input.right = glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS;
+            input.jump = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+            input.crouch =
+                glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS;
+            input.place = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) ==
+                          GLFW_PRESS;
+            input.destroy = glfwGetMouseButton(
+                                window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+
+            double x, y;
+            glfwGetCursorPos(window, &x, &y);
+
+            input.viewDelta.x = xLast - x;
+            input.viewDelta.y = yLast - y;
+
+            xLast = x;
+            yLast = y;
+
+        } else {
+            input.forward = false;
+            input.backward = false;
+            input.left = false;
+            input.right = false;
+            input.jump = false;
+            input.crouch = false;
+            input.place = false;
+            input.deltaTime = false;
+            input.viewDelta = glm::vec2(0.0f, 0.0f);
+        }
+
+        float time = getTime();
+        input.deltaTime = timeLast - time;
+        timeLast = time;
+
+        onFrame(input);
     }
 }
 

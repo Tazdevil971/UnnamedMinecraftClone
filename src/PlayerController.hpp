@@ -15,11 +15,17 @@ class PlayerController : public render::Window {
     void cleanup();
 
    protected:
-    void onFrame() override;
+    void onFrame(InputState &input) override;
     void onResize(int width, int height) override;
 
    private:
+    void handleInput(InputState &input);
+
     bool windowResized{false};
+
+    glm::vec3 pos{0.0f, 0.0f, 0.0f};
+    float yaw{0.0f};
+    float pitch{0.0f};
 
     std::shared_ptr<render::Context> ctx;
     std::shared_ptr<render::Swapchain> swapchain;
