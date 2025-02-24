@@ -1,6 +1,7 @@
 #pragma once
 
-#include <glm.hpp>
+#include <glm/glm.hpp>
+#include <memory>
 
 #include "../render/TextureManager.hpp"
 #include "Block.hpp"
@@ -21,6 +22,11 @@ class AtlasManager {
 
         glm::vec2 getBottomLeft() const { return {bottomRight.y, topLeft.x}; }
     };
+
+    static std::shared_ptr<AtlasManager> create(
+        std::shared_ptr<render::TextureManager> textureMgr) {
+        return std::make_shared<AtlasManager>(std::move(textureMgr));
+    }
 
     AtlasManager(std::shared_ptr<render::TextureManager> textureMgr);
 

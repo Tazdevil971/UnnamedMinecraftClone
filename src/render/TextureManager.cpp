@@ -41,8 +41,8 @@ SimpleTexture TextureManager::createSimpleTexture(const std::string& path,
 
     VkSamplerCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    createInfo.magFilter = VK_FILTER_LINEAR;
-    createInfo.minFilter = VK_FILTER_LINEAR;
+    createInfo.magFilter = VK_FILTER_NEAREST;
+    createInfo.minFilter = VK_FILTER_NEAREST;
     createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     createInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;

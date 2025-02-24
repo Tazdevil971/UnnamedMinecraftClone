@@ -8,6 +8,8 @@
 #include "render/TextureManager.hpp"
 #include "render/Window.hpp"
 
+#include "world/AtlasManager.hpp"
+
 class PlayerController : public render::Window {
    public:
     PlayerController();
@@ -26,6 +28,8 @@ class PlayerController : public render::Window {
     glm::vec3 pos{0.0f, 0.0f, 0.0f};
     float yaw{0.0f};
     float pitch{0.0f};
+
+    std::shared_ptr<world::AtlasManager> atlasMgr;
 
     std::shared_ptr<render::Context> ctx;
     std::shared_ptr<render::Swapchain> swapchain;

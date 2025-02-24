@@ -6,6 +6,7 @@
 #include <iostream>
 
 using namespace render;
+using namespace world;
 
 PlayerController::PlayerController() : Window("UnnamedMinecraftClone") {
     try {
@@ -15,20 +16,23 @@ PlayerController::PlayerController() : Window("UnnamedMinecraftClone") {
         swapchain = Swapchain::create(ctx, bufferMgr);
         renderer = Renderer::create(ctx, textureMgr, swapchain);
 
-        model.texture = textureMgr->createSimpleTexture(
-            "assets/test_image.jpg", VK_FORMAT_R8G8B8A8_SRGB);
+        atlasMgr = AtlasManager::create(textureMgr);
+
+        model.texture = atlasMgr->getAtlas();
+
+        auto bounds = atlasMgr->getAtlasBounds(Block::DIRT, Side::TOP);
 
         model.mesh = bufferMgr->allocateSimpleMesh(
             {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4},
-            {{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-             {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-             {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-             {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+            {{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, bounds.getTopLeft()},
+             {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, bounds.getTopRight()},
+             {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, bounds.getBottomRight()},
+             {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, bounds.getBottomLeft()},
 
-             {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-             {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-             {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-             {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}});
+             {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, bounds.getTopLeft()},
+             {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, bounds.getTopRight()},
+             {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, bounds.getBottomRight()},
+             {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, bounds.getBottomLeft()}});
 
     } catch (...) {
         cleanup();

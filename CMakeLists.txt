@@ -23,6 +23,7 @@ set(SOURCES
     src/render/VmaImplementation.cpp
     src/render/Renderer.cpp
     src/render/Window.cpp
+    src/world/AtlasManager.cpp
     # src/world/World.cpp
     # src/world/Chunk.cpp
     )
@@ -32,7 +33,8 @@ set(SHADERS
     src/shaders/SimpleFrag.frag)
 
 set(ASSETS
-    assets/test_image.jpg)
+    assets/test_image.jpg
+    assets/block_atlas.png)
 
 add_executable(UnnamedMinecraftClone ${SOURCES})
 target_compile_features(UnnamedMinecraftClone PRIVATE cxx_std_17)
