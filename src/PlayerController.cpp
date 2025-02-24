@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <iostream>
+#include <math.h>
 
 using namespace render;
 using namespace world;
@@ -20,7 +21,7 @@ PlayerController::PlayerController() : Window("UnnamedMinecraftClone") {
 
         model.texture = atlasMgr->getAtlas();
 
-        auto bounds = atlasMgr->getAtlasBounds(Block::DIRT, Side::TOP);
+        auto bounds = atlasMgr->getAtlasBounds(Block::CHERRY_LEAF, Side::TOP);
 
         model.mesh = bufferMgr->allocateSimpleMesh(
             {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4},

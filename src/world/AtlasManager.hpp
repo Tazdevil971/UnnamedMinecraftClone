@@ -18,9 +18,9 @@ class AtlasManager {
 
         glm::vec2 getBottomRight() const { return bottomRight; }
 
-        glm::vec2 getTopRight() const { return {topLeft.y, bottomRight.x}; }
+        glm::vec2 getTopRight() const { return {bottomRight.x, topLeft.y}; }
 
-        glm::vec2 getBottomLeft() const { return {bottomRight.y, topLeft.x}; }
+        glm::vec2 getBottomLeft() const { return {topLeft.x, bottomRight.y}; }
     };
 
     static std::shared_ptr<AtlasManager> create(
@@ -36,8 +36,12 @@ class AtlasManager {
 
     AtlasBounds getAtlasBounds(Block block, Side side) const;
 
+
+
    private:
     glm::vec2 convertIntCoords(glm::ivec2 coords) const;
+
+    AtlasBounds computeAtlasBound(glm::ivec2 coords) const;
 
     render::SimpleTexture atlas;
 
