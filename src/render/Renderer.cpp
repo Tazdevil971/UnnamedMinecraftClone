@@ -44,13 +44,29 @@ void Renderer::render(const Camera &camera, std::list<SimpleModel> models,
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
         throw std::runtime_error{"failed to begin recording command buffer!"};
 
+    VkRenderPassBeginInfo renderPassBeginInfo{};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = renderPass;
+    renderPassBeginInfo.framebuffer = framebuffer->getFrame(frame.index);
+    renderPassBeginInfo.renderArea = framebuffer->getRenderArea();
+
+    VkClearValue clearValues[2] = {};
+    clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+    clearValues[1].depthStencil = {1.0f, 0};
+
+    renderPassBeginInfo.clearValueCount = 2;
+    renderPassBeginInfo.pClearValues = clearValues;
+
+    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo,
+                         VK_SUBPASS_CONTENTS_INLINE);
+
     float ratio = static_cast<float>(swapchain->getExtent().width) /
                   static_cast<float>(swapchain->getExtent().height);
     glm::mat4 vp = camera.computeVP(ratio);
 
-    for (const auto &model : models)
-        recordCommandBuffer(frame.index, model, vp);
+    for (const auto &model : models) recordSimpleModelRender(model, vp);
 
+    vkCmdEndRenderPass(commandBuffer);
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
         throw std::runtime_error{"failed to record command buffer!"};
 
@@ -341,24 +357,8 @@ void Renderer::createSyncObjects() {
         throw std::runtime_error{"failed to create sync objects!"};
 }
 
-void Renderer::recordCommandBuffer(uint32_t frameIndex,
-                                   const SimpleModel &model,
-                                   glm::mat4 viewProjection) {
-    VkRenderPassBeginInfo renderPassBeginInfo{};
-    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = renderPass;
-    renderPassBeginInfo.framebuffer = framebuffer->getFrame(frameIndex);
-    renderPassBeginInfo.renderArea = framebuffer->getRenderArea();
-
-    VkClearValue clearValues[2] = {};
-    clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
-    clearValues[1].depthStencil = {1.0f, 0};
-
-    renderPassBeginInfo.clearValueCount = 2;
-    renderPassBeginInfo.pClearValues = clearValues;
-
-    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo,
-                         VK_SUBPASS_CONTENTS_INLINE);
+void Renderer::recordSimpleModelRender(const SimpleModel &model,
+                                       glm::mat4 viewProjection) {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             pipelineLayout, 0, 1, &model.texture.descriptor, 0,
@@ -378,8 +378,6 @@ void Renderer::recordCommandBuffer(uint32_t frameIndex,
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     vkCmdDrawIndexed(commandBuffer, model.mesh.indexCount, 1, 0, 0, 0);
-
-    vkCmdEndRenderPass(commandBuffer);
 }
 
 void Renderer::cleanup() {

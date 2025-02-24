@@ -37,5 +37,6 @@ class PlayerController : public render::Window {
     std::shared_ptr<render::TextureManager> textureMgr;
     std::shared_ptr<render::Renderer> renderer;
 
-    render::SimpleModel model;
+    render::SimpleModel debugCube1;
+    render::SimpleModel debugCube2;
 };

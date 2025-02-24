@@ -15,6 +15,7 @@ find_package(Vulkan REQUIRED)
 set(SOURCES 
     src/main.cpp 
     src/PlayerController.cpp
+    src/VoxelRaytracer.cpp
     src/render/Context.cpp
     src/render/Swapchain.cpp
     src/render/Framebuffer.cpp
@@ -34,7 +35,8 @@ set(SHADERS
 
 set(ASSETS
     assets/test_image.jpg
-    assets/block_atlas.png)
+    assets/block_atlas.png
+    assets/debug.png)
 
 add_executable(UnnamedMinecraftClone ${SOURCES})
 target_compile_features(UnnamedMinecraftClone PRIVATE cxx_std_17)

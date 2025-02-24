@@ -48,7 +48,7 @@ class Renderer {
     void createCommandPool();
     void createCommandBuffer();
     void createSyncObjects();
-    void recordCommandBuffer(uint32_t frameIndex, const SimpleModel& model,
-                             glm::mat4 viewProjection);
+    void recordSimpleModelRender(const SimpleModel& model,
+                                 glm::mat4 viewProjection);
 };
 }  // namespace render

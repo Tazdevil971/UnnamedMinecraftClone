@@ -19,22 +19,46 @@ PlayerController::PlayerController() : Window("UnnamedMinecraftClone") {
 
         atlasMgr = AtlasManager::create(textureMgr);
 
-        model.texture = atlasMgr->getAtlas();
-
-        auto bounds = atlasMgr->getAtlasBounds(Block::CHERRY_LEAF, Side::TOP);
-
-        model.mesh = bufferMgr->allocateSimpleMesh(
-            {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4},
-            {{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, bounds.getTopLeft()},
-             {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, bounds.getTopRight()},
-             {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, bounds.getBottomRight()},
-             {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, bounds.getBottomLeft()},
-
-             {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, bounds.getTopLeft()},
-             {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, bounds.getTopRight()},
-             {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, bounds.getBottomRight()},
-             {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, bounds.getBottomLeft()}});
-
+        // clang-format off
+        debugCube2.texture = debugCube1.texture = textureMgr->createSimpleTexture("assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
+        debugCube2.mesh = debugCube1.mesh = bufferMgr->allocateSimpleMesh(
+            {0,  1,  2,   2,  3,  0,
+             4,  5,  6,   6,  7,  4,
+             8,  9,  10,  10, 11, 8,
+             12, 13, 14,  14, 15, 12,
+             
+             16, 17, 18,  18, 19, 16,
+             20, 21, 22,  22, 23, 20},
+            {{{-0.05f, -0.05f, 0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+             {{ 0.05f, -0.05f, 0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+             {{ 0.05f,  0.05f, 0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+             {{-0.05f,  0.05f, 0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+             
+             {{ 0.05f, -0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+             {{-0.05f, -0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+             {{-0.05f,  0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+             {{ 0.05f,  0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+             
+             {{-0.05f, 0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+             {{ 0.05f, 0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+             {{ 0.05f, 0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+             {{-0.05f, 0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+             
+             {{ 0.05f, -0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+             {{-0.05f, -0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+             {{-0.05f, -0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+             {{ 0.05f, -0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+             
+             {{0.05f, -0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+             {{0.05f,  0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+             {{0.05f,  0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+             {{0.05f, -0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+             
+             {{-0.05f,  0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+             {{-0.05f, -0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+             {{-0.05f, -0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+             {{-0.05f,  0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}}});
+        // clang-format on
     } catch (...) {
         cleanup();
         throw;
@@ -45,8 +69,10 @@ void PlayerController::cleanup() {
     // Wait for the device to finish rendering before cleaning up!
     ctx->waitDeviceIdle();
 
-    textureMgr->deallocateSimpleTexture(model.texture);
-    bufferMgr->deallocateSimpleMesh(model.mesh);
+    if (atlasMgr) atlasMgr->cleanup();
+
+    textureMgr->deallocateSimpleTexture(debugCube1.texture);
+    bufferMgr->deallocateSimpleMesh(debugCube1.mesh);
 
     if (renderer) renderer->cleanup();
 
@@ -64,21 +90,13 @@ void PlayerController::cleanup() {
 void PlayerController::onFrame(InputState &input) {
     handleInput(input);
 
-    Camera camera{
-        glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f),
-                    glm::vec3(0.0f, 0.0f, -1.0f)),
-        45.0f,
-        0.1f,
-        10.0f,
-        pos,
-        yaw,
-        pitch};
+    Camera camera{45.0f, 0.1f, 10.0f, pos, yaw, pitch};
 
-    model.modelMatrix =
-        glm::rotate(glm::mat4(1.0f), getTime() * glm::radians(90.0f),
-                    glm::vec3(0.0f, 0.0f, 1.0f));
+    debugCube2.modelMatrix = glm::mat4(1.0f);
+    debugCube1.modelMatrix = glm::rotate(
+        glm::mat4(1.0f), getTime() * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
-    renderer->render(camera, {model}, windowResized);
+    renderer->render(camera, {debugCube2, debugCube1}, windowResized);
     windowResized = false;
 }
 

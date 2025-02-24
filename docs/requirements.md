@@ -59,6 +59,21 @@ Requirements and goals of the project.
     + void render(glm::vec3 cameraPos, list<Chunk> chunks)
   }
 
+  class AtlasBounds {
+    + glm::vec2 topLeft;
+    + glm::vec2 bottomRight;
+  }
+
+  enum Side {
+    TOP, BOTTOM, SIDE
+  }
+
+  class TextureAtlasManager {
+    - vk::SimpleTexture atlas;
+    + vk::SimpleTexture &getAtlas();
+    + AtlasBounds getBounds(Block block, Side side);
+  }
+
   class Chunk {
     - Block blocks[16][16][16]
     - GpuBuffer buffer

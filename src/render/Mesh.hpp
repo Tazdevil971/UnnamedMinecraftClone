@@ -87,7 +87,6 @@ struct SimpleModel {
 };
 
 struct Camera {
-    glm::mat4 view;
     float fov;
     float nearPlane;
     float farPlane;
@@ -95,18 +94,29 @@ struct Camera {
     float yaw;
     float pitch;
 
-    glm::mat4 computeVP(float ratio) const {
+    glm::mat4 computeProj(float ratio) const {
         glm::mat4 proj =
             glm::perspective(glm::radians(fov), ratio, nearPlane, farPlane);
         proj[1][1] *= -1;
 
-        glm::mat4 view =
-            glm::rotate(glm::mat4(1.0f), -pitch, glm::vec3(1.0f, 0.0f, 0.0f)) *
-            glm::rotate(glm::mat4(1.0f), -yaw, glm::vec3(0.0f, 1.0f, 0.0f)) *
-            glm::translate(glm::mat4(1.0f),
-                           pos * glm::vec3(-1.0f, 1.0f, -1.0f));
+        return proj;
+    }
 
-        return proj * view;
+    glm::mat4 computeRot() const {
+        return glm::rotate(glm::mat4(1.0f), -pitch,
+                           glm::vec3(1.0f, 0.0f, 0.0f)) *
+               glm::rotate(glm::mat4(1.0f), -yaw, glm::vec3(0.0f, 1.0f, 0.0f));
+    }
+
+    glm::mat4 computeTrans() const {
+        return glm::translate(glm::mat4(1.0f),
+                              pos * glm::vec3(-1.0f, 1.0f, -1.0f));
+    }
+
+    glm::mat4 computeView() const { return computeRot() * computeTrans(); }
+
+    glm::mat4 computeVP(float ratio) const {
+        return computeProj(ratio) * computeView();
     }
 };
 
