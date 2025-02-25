@@ -119,9 +119,7 @@ struct Camera {
         return computeProjMat(ratio) * computeViewMat();
     }
 
-    glm::vec3 computeViewDir() const {
-        return {0, 0, 0};  // TODO:
-    }
+    glm::vec3 computeViewDir() const { return rot * glm::vec3{0, 0, -1.0f}; }
 };
 
 }  // namespace render

@@ -7,6 +7,8 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <iostream>
 
+#include "VoxelRaytracer.hpp"
+
 using namespace render;
 using namespace world;
 
@@ -21,8 +23,8 @@ PlayerController::PlayerController() : Window("UnnamedMinecraftClone") {
         atlasMgr = AtlasManager::create(textureMgr);
 
         // clang-format off
-        debugCube2.texture = debugCube1.texture = textureMgr->createSimpleTexture("assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
-        debugCube2.mesh = debugCube1.mesh = bufferMgr->allocateSimpleMesh(
+        debugTexture = textureMgr->createSimpleTexture("assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
+        debugCubeMesh = bufferMgr->allocateSimpleMesh(
             {0,  1,  2,   2,  3,  0,
              4,  5,  6,   6,  7,  4,
              8,  9,  10,  10, 11, 8,
@@ -72,8 +74,8 @@ void PlayerController::cleanup() {
 
     if (atlasMgr) atlasMgr->cleanup();
 
-    textureMgr->deallocateSimpleTexture(debugCube1.texture);
-    bufferMgr->deallocateSimpleMesh(debugCube1.mesh);
+    textureMgr->deallocateSimpleTexture(debugTexture);
+    bufferMgr->deallocateSimpleMesh(debugCubeMesh);
 
     if (renderer) renderer->cleanup();
 
@@ -90,14 +92,24 @@ void PlayerController::cleanup() {
 
 void PlayerController::onFrame(InputState& input) {
     handleInput(input);
+    models.clear();
 
     Camera camera{45.0f, 0.1f, 10.0f, pos, glm::vec3{pitch, yaw, 0.0f}};
 
-    // debugCube1.rot = glm::vec3{0.0f, getTime() * glm::radians(90.0f), 0.0f};
-    debugCube1.pos = glm::vec3{0.5f, 0.5f, 0.5f};
-    debugCube1.rot = glm::vec3{0.0f, getTime() * glm::radians(90.0f), 0.0f};
+    utils::VoxelRaytracer tracer(camera.pos, camera.computeViewDir());
+    tracer.getNextHit();
+    for (int i = 0; i < 10; i++) {
+        auto hit = tracer.getNextHit();
+        pushDebugCube(glm::vec3(hit.pos) + glm::vec3(0.5f, 0.5f, 0.5f),
+                      glm::vec3(0.0f, 0.0f, 0.0f));
+        pushDebugCube(glm::vec3(hit.pos) + glm::vec3(0.5f, 0.5f, 0.5f) +
+                          glm::vec3(hit.dir) * 0.10f,
+                      glm::vec3(0.0f, 0.0f, 0.0f));
+        // pushDebugCube(camera.pos + camera.computeViewDir() * hit.dist,
+        //               glm::vec3(0.0f, 0.0f, 0.0f));
+    }
 
-    renderer->render(camera, {debugCube2, debugCube1}, windowResized);
+    renderer->render(camera, models, windowResized);
     windowResized = false;
 }
 
@@ -145,4 +157,8 @@ void PlayerController::handleInput(InputState& input) {
 
     // Clamp to prevent gimbal lock
     pitch = std::clamp(pitch, -(float)M_PI_2 + 1e-4f, (float)M_PI_2 - 1e-4f);
+}
+
+void PlayerController::pushDebugCube(glm::vec3 pos, glm::quat rot) {
+    models.push_back(SimpleModel{debugCubeMesh, debugTexture, pos, rot});
 }

@@ -7,7 +7,6 @@
 #include "render/Renderer.hpp"
 #include "render/TextureManager.hpp"
 #include "render/Window.hpp"
-
 #include "world/AtlasManager.hpp"
 
 class PlayerController : public render::Window {
@@ -23,6 +22,8 @@ class PlayerController : public render::Window {
    private:
     void handleInput(InputState &input);
 
+    void pushDebugCube(glm::vec3 pos, glm::quat rot);
+
     bool windowResized{false};
 
     glm::vec3 pos{0.0f, 0.0f, 0.0f};
@@ -37,6 +38,9 @@ class PlayerController : public render::Window {
     std::shared_ptr<render::TextureManager> textureMgr;
     std::shared_ptr<render::Renderer> renderer;
 
-    render::SimpleModel debugCube1;
-    render::SimpleModel debugCube2;
+    render::SimpleMesh debugCubeMesh;
+    render::SimpleTexture debugTexture;
+
+    // Per frame stuff
+    std::list<render::SimpleModel> models;
 };
