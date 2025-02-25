@@ -5,8 +5,8 @@
 
 using namespace render;
 
-void Window::glfwOnResizeCallback(GLFWwindow *window, int width, int height) {
-    auto app = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+void Window::glfwOnResizeCallback(GLFWwindow* window, int width, int height) {
+    auto app = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
     app->onResize(width, height);
 }
 
@@ -85,7 +85,7 @@ void Window::mainLoop() {
         }
 
         float time = getTime();
-        input.deltaTime = timeLast - time;
+        input.deltaTime = time - timeLast;
         timeLast = time;
 
         onFrame(input);

@@ -5,7 +5,10 @@
 
 #include <array>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 namespace render {
 
@@ -31,6 +34,7 @@ struct SimpleMesh {
         vkCmdBindIndexBuffer(commandBuffer, buffer, indicesOffset,
                              VK_INDEX_TYPE_UINT16);
     }
+
     static VkVertexInputBindingDescription getBindingDescription() {
         VkVertexInputBindingDescription description{};
         description.binding = 0;
@@ -83,7 +87,12 @@ struct SimpleTexture {
 struct SimpleModel {
     SimpleMesh mesh;
     SimpleTexture texture;
-    glm::mat4 modelMatrix;
+    glm::vec3 pos;
+    glm::quat rot;
+
+    glm::mat4 computeModelMat() const {
+        return glm::translate(glm::mat4(1.0f), pos) * glm::toMat4(rot);
+    }
 };
 
 struct Camera {
@@ -91,10 +100,9 @@ struct Camera {
     float nearPlane;
     float farPlane;
     glm::vec3 pos;
-    float yaw;
-    float pitch;
+    glm::quat rot;
 
-    glm::mat4 computeProj(float ratio) const {
+    glm::mat4 computeProjMat(float ratio) const {
         glm::mat4 proj =
             glm::perspective(glm::radians(fov), ratio, nearPlane, farPlane);
         proj[1][1] *= -1;
@@ -102,21 +110,17 @@ struct Camera {
         return proj;
     }
 
-    glm::mat4 computeRot() const {
-        return glm::rotate(glm::mat4(1.0f), -pitch,
-                           glm::vec3(1.0f, 0.0f, 0.0f)) *
-               glm::rotate(glm::mat4(1.0f), -yaw, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 computeViewMat() const {
+        // TODO: Can we make this faster? Removing the matrix inversion?
+        return glm::translate(glm::affineInverse(glm::toMat4(rot)), -pos);
     }
 
-    glm::mat4 computeTrans() const {
-        return glm::translate(glm::mat4(1.0f),
-                              pos * glm::vec3(-1.0f, 1.0f, -1.0f));
+    glm::mat4 computeVPMat(float ratio) const {
+        return computeProjMat(ratio) * computeViewMat();
     }
 
-    glm::mat4 computeView() const { return computeRot() * computeTrans(); }
-
-    glm::mat4 computeVP(float ratio) const {
-        return computeProj(ratio) * computeView();
+    glm::vec3 computeViewDir() const {
+        return {0, 0, 0};  // TODO:
     }
 };
 

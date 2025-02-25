@@ -1,10 +1,11 @@
 #include "PlayerController.hpp"
 
+#include <math.h>
+
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <iostream>
-#include <math.h>
 
 using namespace render;
 using namespace world;
@@ -87,14 +88,14 @@ void PlayerController::cleanup() {
     Window::cleanup();
 }
 
-void PlayerController::onFrame(InputState &input) {
+void PlayerController::onFrame(InputState& input) {
     handleInput(input);
 
-    Camera camera{45.0f, 0.1f, 10.0f, pos, yaw, pitch};
+    Camera camera{45.0f, 0.1f, 10.0f, pos, glm::vec3{pitch, yaw, 0.0f}};
 
-    debugCube2.modelMatrix = glm::mat4(1.0f);
-    debugCube1.modelMatrix = glm::rotate(
-        glm::mat4(1.0f), getTime() * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    // debugCube1.rot = glm::vec3{0.0f, getTime() * glm::radians(90.0f), 0.0f};
+    debugCube1.pos = glm::vec3{0.5f, 0.5f, 0.5f};
+    debugCube1.rot = glm::vec3{0.0f, getTime() * glm::radians(90.0f), 0.0f};
 
     renderer->render(camera, {debugCube2, debugCube1}, windowResized);
     windowResized = false;
@@ -102,24 +103,24 @@ void PlayerController::onFrame(InputState &input) {
 
 void PlayerController::onResize(int width, int height) { windowResized = true; }
 
-void PlayerController::handleInput(InputState &input) {
+void PlayerController::handleInput(InputState& input) {
     const float SENSIBILITY = 1e-3f;
     const float SPEED = 2.0f;
 
     glm::vec3 mov{0.0f, 0.0f, 0.0f};
 
     if (input.forward) {
-        mov.z = 1.0f;
+        mov.z = -1.0f;
     }
     if (input.backward) {
-        mov.z = -1.0f;
+        mov.z = 1.0f;
     }
 
     if (input.left) {
-        mov.x = 1.0f;
+        mov.x = -1.0f;
     }
     if (input.right) {
-        mov.x = -1.0f;
+        mov.x = 1.0f;
     }
 
     // Normalize movement vector

@@ -36,8 +36,6 @@ class AtlasManager {
 
     AtlasBounds getAtlasBounds(Block block, Side side) const;
 
-
-
    private:
     glm::vec2 convertIntCoords(glm::ivec2 coords) const;
 

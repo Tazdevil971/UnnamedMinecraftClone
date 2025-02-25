@@ -27,7 +27,7 @@ Renderer::Renderer(std::shared_ptr<Context> ctx,
     }
 }
 
-void Renderer::render(const Camera &camera, std::list<SimpleModel> models,
+void Renderer::render(const Camera& camera, std::list<SimpleModel> models,
                       bool windowResized) {
     vkWaitForFences(ctx->getDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
 
@@ -62,9 +62,9 @@ void Renderer::render(const Camera &camera, std::list<SimpleModel> models,
 
     float ratio = static_cast<float>(swapchain->getExtent().width) /
                   static_cast<float>(swapchain->getExtent().height);
-    glm::mat4 vp = camera.computeVP(ratio);
+    glm::mat4 vp = camera.computeVPMat(ratio);
 
-    for (const auto &model : models) recordSimpleModelRender(model, vp);
+    for (const auto& model : models) recordSimpleModelRender(model, vp);
 
     vkCmdEndRenderPass(commandBuffer);
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -357,8 +357,7 @@ void Renderer::createSyncObjects() {
         throw std::runtime_error{"failed to create sync objects!"};
 }
 
-void Renderer::recordSimpleModelRender(const SimpleModel &model,
-                                       glm::mat4 viewProjection) {
+void Renderer::recordSimpleModelRender(const SimpleModel& model, glm::mat4 vp) {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             pipelineLayout, 0, 1, &model.texture.descriptor, 0,
@@ -366,7 +365,7 @@ void Renderer::recordSimpleModelRender(const SimpleModel &model,
 
     model.mesh.bind(commandBuffer);
 
-    glm::mat4 mvp = viewProjection * model.modelMatrix;
+    glm::mat4 mvp = vp * model.computeModelMat();
 
     vkCmdPushConstants(commandBuffer, pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mvp);
