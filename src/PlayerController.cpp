@@ -12,6 +12,57 @@
 using namespace render;
 using namespace world;
 
+// clang-format off
+std::vector<uint16_t> DEBUG_CUBE_INDICES = {
+    0,  1,  2,  0,  2,  3,
+    4,  5,  6,  4,  6,  7,
+
+    8,  9,  10, 8,  10, 11,
+    12, 13, 14, 12, 14, 15,
+
+    16, 17, 18, 16, 18, 19,
+    20, 21, 22, 20, 22, 23,
+};
+
+std::vector<Vertex> DEBUG_CUBE_VERTICES = {
+    // Z- side
+    {{+0.05f, -0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+    {{-0.05f, -0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+    {{-0.05f, +0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{+0.05f, +0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+
+    // Z+ side
+    {{-0.05f, -0.05f, +0.05f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+    {{+0.05f, -0.05f, +0.05f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+    {{+0.05f, +0.05f, +0.05f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{-0.05f, +0.05f, +0.05f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+
+    // Bottom
+    {{-0.05f, -0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+    {{+0.05f, -0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+    {{+0.05f, -0.05f, +0.05f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{-0.05f, -0.05f, +0.05f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+
+    // Top
+    {{-0.05f, +0.05f, +0.05f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+    {{+0.05f, +0.05f, +0.05f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+    {{+0.05f, +0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{-0.05f, +0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+
+    // X- side
+    {{-0.05f, -0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+    {{-0.05f, -0.05f, +0.05f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+    {{-0.05f, +0.05f, +0.05f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{-0.05f, +0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+
+    // X+ side
+    {{+0.05f, -0.05f, +0.05f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+    {{+0.05f, -0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+    {{+0.05f, +0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{+0.05f, +0.05f, +0.05f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}
+};
+// clang-format on
+
 PlayerController::PlayerController() : Window("UnnamedMinecraftClone") {
     try {
         Context::create(getWindow());
@@ -25,46 +76,11 @@ PlayerController::PlayerController() : Window("UnnamedMinecraftClone") {
         chunk = Chunk::genChunk({0, 0, 0});
         chunk.updateBlock({1, 3, 1}, Block::WOOD_LOG);
 
-        // clang-format off
-        debugTexture = TextureManager::get().createSimpleTexture("assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
+        debugTexture = TextureManager::get().createSimpleTexture(
+            "assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
         debugCubeMesh = BufferManager::get().allocateSimpleMesh(
-            {0,  1,  2,   2,  3,  0,
-             4,  5,  6,   6,  7,  4,
-             8,  9,  10,  10, 11, 8,
-             12, 13, 14,  14, 15, 12,
-             
-             16, 17, 18,  18, 19, 16,
-             20, 21, 22,  22, 23, 20},
-            {{{-0.05f, -0.05f, 0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-             {{ 0.05f, -0.05f, 0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-             {{ 0.05f,  0.05f, 0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-             {{-0.05f,  0.05f, 0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-             
-             {{ 0.05f, -0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-             {{-0.05f, -0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-             {{-0.05f,  0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-             {{ 0.05f,  0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-             
-             {{-0.05f, 0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-             {{ 0.05f, 0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-             {{ 0.05f, 0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-             {{-0.05f, 0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-             
-             {{ 0.05f, -0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-             {{-0.05f, -0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-             {{-0.05f, -0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-             {{ 0.05f, -0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-             
-             {{0.05f, -0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-             {{0.05f,  0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-             {{0.05f,  0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-             {{0.05f, -0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-             
-             {{-0.05f,  0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-             {{-0.05f, -0.05f, -0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-             {{-0.05f, -0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-             {{-0.05f,  0.05f,  0.05f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}}});
-        // clang-format on
+            DEBUG_CUBE_INDICES, DEBUG_CUBE_VERTICES);
+
     } catch (...) {
         cleanup();
         throw;
@@ -76,7 +92,7 @@ void PlayerController::cleanup() {
     Context::get().waitDeviceIdle();
 
     chunk.cleanup();
-    
+
     AtlasManager::destroy();
 
     TextureManager::get().deallocateSimpleTexture(debugTexture);
@@ -94,8 +110,7 @@ void PlayerController::cleanup() {
 void PlayerController::onFrame(InputState& input) {
     handleInput(input);
     models.clear();
-    
-    
+
     Camera camera{45.0f, 0.1f, 1000.0f, pos, glm::vec3{pitch, yaw, 0.0f}};
     utils::VoxelRaytracer raytracer(camera.pos, camera.computeViewDir());
 
@@ -111,8 +126,8 @@ void PlayerController::onFrame(InputState& input) {
 
                 if (input.place) {
                     auto pos = hit.pos + hit.dir;
-                    if (pos.x >= 0 && pos.x < 16 && pos.y >= 0 &&
-                        pos.y < 16 && pos.z >= 0 && pos.z < 16) {
+                    if (pos.x >= 0 && pos.x < 16 && pos.y >= 0 && pos.y < 16 &&
+                        pos.z >= 0 && pos.z < 16) {
                         chunk.updateBlock(pos, Block::DIAMOND);
                     }
                 }
@@ -131,22 +146,13 @@ void PlayerController::onFrame(InputState& input) {
     model.rot = glm::vec3(0.0f, 0.0f, 0.0f);
     models.push_back(model);
 
-
-
-
     utils::VoxelRaytracer tracer(camera.pos, camera.computeViewDir());
-    pushDebugCube(glm::vec3(1.0f, 0.0f, 0.0f),
-                  glm::vec3(getTime() * glm::radians(45.0f), 0.0f, 0.0f));
-    pushDebugCube(glm::vec3(-1.0f, 0.0f, 0.0f),
-                  glm::vec3(getTime() * glm::radians(45.0f), 0.0f, 0.0f));
-    pushDebugCube(glm::vec3(0.0f, 1.0f, 0.0f),
-                  glm::vec3(getTime() * glm::radians(45.0f), 0.0f, 0.0f));
-    pushDebugCube(glm::vec3(0.0f, -1.0f, 0.0f),
-                  glm::vec3(getTime() * glm::radians(45.0f), 0.0f, 0.0f));
-    pushDebugCube(glm::vec3(0.0f, 0.0f, 1.0f),
-                  glm::vec3(getTime() * glm::radians(45.0f), 0.0f, 0.0f));
-    pushDebugCube(glm::vec3(0.0f, 0.0f, -1.0f),
-                  glm::vec3(getTime() * glm::radians(45.0f), 0.0f, 0.0f));
+    pushDebugCube(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    pushDebugCube(glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    pushDebugCube(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    pushDebugCube(glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    pushDebugCube(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+    pushDebugCube(glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
     Renderer::get().render(camera, models, windowResized);
     windowResized = false;
