@@ -33,7 +33,7 @@ AtlasManager::AtlasBounds AtlasManager::getAtlasBounds(Block block,
         // WOOD
     } else if (block == Block::WOOD_LOG) {
         if ((side == Side::BOTTOM) || (side == Side::TOP)) {
-            return computeAtlasBound({64, 16});
+            return computeAtlasBound({32, 16});
         } else {
             return computeAtlasBound({48, 0});
         }
@@ -49,7 +49,7 @@ AtlasManager::AtlasBounds AtlasManager::getAtlasBounds(Block block,
 
         // DIAMOND
     } else if (block == Block::DIAMOND) {
-        return computeAtlasBound({32, 16});
+        return computeAtlasBound({16, 16});
     } else {
         // In case everything else fails, just return dirt
         return computeAtlasBound({0, 0});
