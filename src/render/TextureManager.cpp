@@ -23,6 +23,8 @@ TextureManager::TextureManager(uint32_t poolSize) {
 TextureManager::~TextureManager() { cleanup(); }
 
 void TextureManager::cleanup() {
+    flushDeferOperations();
+
     if (pool != VK_NULL_HANDLE) {
         vkDestroyDescriptorPool(Context::get().getDevice(), pool, nullptr);
         pool = VK_NULL_HANDLE;
@@ -35,12 +37,19 @@ void TextureManager::cleanup() {
     }
 }
 
+void TextureManager::flushDeferOperations() {
+    for (auto& simpleTexture : simpleTextureDeallocateDefer)
+        deallocateSimpleTextureNow(simpleTexture);
+
+    simpleTextureDeallocateDefer.clear();
+}
+
 SimpleTexture TextureManager::createSimpleTexture(const std::string& path,
                                                   VkFormat format) {
     SimpleImage image = BufferManager::get().allocateSimpleImage(path, format);
 
     auto imageDefer =
-        Defer{[&]() { BufferManager::get().deallocateSimpleImage(image); }};
+        Defer{[&]() { BufferManager::get().deallocateSimpleImageNow(image); }};
 
     VkSamplerCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -101,18 +110,20 @@ SimpleTexture TextureManager::createSimpleTexture(const std::string& path,
     return {image, sampler, descriptor};
 }
 
-void TextureManager::deallocateSimpleTexture(SimpleTexture texture) {
-    if (texture.descriptor != VK_NULL_HANDLE) {
+void TextureManager::deallocateSimpleTextureDefer(SimpleTexture& texture) {
+    simpleTextureDeallocateDefer.push_back(texture);
+    texture = SimpleTexture{};
+}
+
+void TextureManager::deallocateSimpleTextureNow(SimpleTexture& texture) {
+    if (texture.descriptor != VK_NULL_HANDLE)
         descriptorSets.push_back(texture.descriptor);
-        texture.descriptor = VK_NULL_HANDLE;
-    }
 
-    if (texture.sampler != VK_NULL_HANDLE) {
+    if (texture.sampler != VK_NULL_HANDLE)
         vkDestroySampler(Context::get().getDevice(), texture.sampler, nullptr);
-        texture.sampler = VK_NULL_HANDLE;
-    }
 
-    BufferManager::get().deallocateSimpleImage(texture.image);
+    BufferManager::get().deallocateSimpleImageNow(texture.image);
+    texture = SimpleTexture{};
 }
 
 void TextureManager::createLayout() {

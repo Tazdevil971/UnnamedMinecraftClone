@@ -29,6 +29,9 @@ class PlayerController : public render::Window {
 
     world::Chunk chunk;
 
+    float lastPlace{0.0f};
+    float lastDestroy{0.0f};
+
     glm::vec3 pos{0.0f, 0.0f, 0.0f};
     float yaw{0.0f};
     float pitch{0.0f};

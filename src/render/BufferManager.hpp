@@ -26,13 +26,16 @@ class BufferManager {
     }
 
     static void destroy() { INSTANCE.reset(); }
-    
+
     ~BufferManager();
+
+    void flushDeferOperations();
 
     SimpleMesh allocateSimpleMesh(const std::vector<uint16_t>& indices,
                                   const std::vector<Vertex>& vertices);
 
-    void deallocateSimpleMesh(SimpleMesh mesh);
+    void deallocateSimpleMeshDefer(SimpleMesh& mesh);
+    void deallocateSimpleMeshNow(SimpleMesh& mesh);
 
     DepthImage allocateDepthImage(uint32_t width, uint32_t height);
 
@@ -42,7 +45,8 @@ class BufferManager {
                                     uint32_t height, VkFormat format);
     SimpleImage allocateSimpleImage(const std::string& path, VkFormat format);
 
-    void deallocateSimpleImage(SimpleImage image);
+    void deallocateSimpleImageDefer(SimpleImage& image);
+    void deallocateSimpleImageNow(SimpleImage& image);
 
    private:
     BufferManager();
@@ -76,6 +80,9 @@ class BufferManager {
     void submitAndWait();
 
     VmaAllocator vma{VK_NULL_HANDLE};
+
+    std::vector<SimpleImage> simpleImageDeallocateDefer;
+    std::vector<SimpleMesh> simpleMeshDeallocateDefer;
 
     VkCommandPool commandPool{VK_NULL_HANDLE};
     VkCommandBuffer commandBuffer{VK_NULL_HANDLE};

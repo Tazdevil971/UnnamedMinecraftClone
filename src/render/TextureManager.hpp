@@ -29,11 +29,14 @@ class TextureManager {
 
     ~TextureManager();
 
+    void flushDeferOperations();
+
     VkDescriptorSetLayout getSimpleLayout() const { return simpleLayout; }
 
     SimpleTexture createSimpleTexture(const std::string& path, VkFormat format);
 
-    void deallocateSimpleTexture(SimpleTexture texture);
+    void deallocateSimpleTextureDefer(SimpleTexture& texture);
+    void deallocateSimpleTextureNow(SimpleTexture& texture);
 
    private:
     TextureManager(uint32_t poolSize);
@@ -43,6 +46,8 @@ class TextureManager {
     void createLayout();
     void createPool(uint32_t size);
     void createDescriptorSets(uint32_t size);
+
+    std::vector<SimpleTexture> simpleTextureDeallocateDefer;
 
     std::vector<VkDescriptorSet> descriptorSets;
 

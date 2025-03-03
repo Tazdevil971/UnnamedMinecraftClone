@@ -73,6 +73,10 @@ void Renderer::render(const Camera& camera, std::list<SimpleModel> models,
     vkWaitForFences(Context::get().getDevice(), 1, &inFlightFence, VK_TRUE,
                     UINT64_MAX);
 
+    // The GPU is idle, flush pending buffers
+    TextureManager::get().flushDeferOperations();
+    BufferManager::get().flushDeferOperations();
+
     Swapchain::Frame frame =
         Swapchain::get().acquireFrame(imageAvailableSemaphore);
 

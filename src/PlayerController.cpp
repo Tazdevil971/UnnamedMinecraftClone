@@ -88,15 +88,15 @@ PlayerController::PlayerController() : Window("UnnamedMinecraftClone") {
 }
 
 void PlayerController::cleanup() {
-    // Wait for the device to finish rendering before cleaning up!
-    Context::get().waitDeviceIdle();
-
     chunk.cleanup();
 
     AtlasManager::destroy();
 
-    TextureManager::get().deallocateSimpleTexture(debugTexture);
-    BufferManager::get().deallocateSimpleMesh(debugCubeMesh);
+    TextureManager::get().deallocateSimpleTextureDefer(debugTexture);
+    BufferManager::get().deallocateSimpleMeshDefer(debugCubeMesh);
+
+    // Wait for the device to finish rendering before cleaning up!
+    Context::get().waitDeviceIdle();
 
     Renderer::destroy();
     Swapchain::destroy();
@@ -111,6 +111,9 @@ void PlayerController::onFrame(InputState& input) {
     handleInput(input);
     models.clear();
 
+    if (!input.destroy) lastDestroy = 0.0f;
+    if (!input.place) lastPlace = 0.0f;
+
     Camera camera{45.0f, 0.1f, 1000.0f, pos, glm::vec3{pitch, yaw, 0.0f}};
     utils::VoxelRaytracer raytracer(camera.pos, camera.computeViewDir());
 
@@ -120,11 +123,13 @@ void PlayerController::onFrame(InputState& input) {
             hit.pos.y < 16 && hit.pos.z >= 0 && hit.pos.z < 16) {
             auto block = chunk.getBlock(hit.pos);
             if (block != Block::AIR) {
-                if (input.destroy) {
+                if (input.destroy && (getTime() > lastDestroy + 0.25f)) {
+                    lastDestroy = getTime();
                     chunk.updateBlock(hit.pos, Block::AIR);
                 }
 
-                if (input.place) {
+                if (input.place && (getTime() > lastPlace + 0.25f)) {
+                    lastPlace = getTime();
                     auto pos = hit.pos + hit.dir;
                     if (pos.x >= 0 && pos.x < 16 && pos.y >= 0 && pos.y < 16 &&
                         pos.z >= 0 && pos.z < 16) {

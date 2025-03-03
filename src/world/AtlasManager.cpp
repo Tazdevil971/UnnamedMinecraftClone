@@ -12,7 +12,7 @@ AtlasManager::AtlasManager() {
 AtlasManager::~AtlasManager() { cleanup(); }
 
 void AtlasManager::cleanup() {
-    render::TextureManager::get().deallocateSimpleTexture(atlas);
+    render::TextureManager::get().deallocateSimpleTextureDefer(atlas);
 }
 
 AtlasManager::AtlasBounds AtlasManager::getAtlasBounds(Block block,

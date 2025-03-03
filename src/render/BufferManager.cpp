@@ -27,6 +27,8 @@ BufferManager::BufferManager() {
 BufferManager::~BufferManager() { cleanup(); }
 
 void BufferManager::cleanup() {
+    flushDeferOperations();
+
     if (syncFence != VK_NULL_HANDLE) {
         vkDestroyFence(Context::get().getDevice(), syncFence, nullptr);
         syncFence = VK_NULL_HANDLE;
@@ -41,6 +43,17 @@ void BufferManager::cleanup() {
         vmaDestroyAllocator(vma);
         vma = VK_NULL_HANDLE;
     }
+}
+
+void BufferManager::flushDeferOperations() {
+    for (auto& simpleImage : simpleImageDeallocateDefer)
+        deallocateSimpleImageNow(simpleImage);
+
+    for (auto& simpleMesh : simpleMeshDeallocateDefer)
+        deallocateSimpleMeshNow(simpleMesh);
+
+    simpleImageDeallocateDefer.clear();
+    simpleMeshDeallocateDefer.clear();
 }
 
 SimpleMesh BufferManager::allocateSimpleMesh(
@@ -95,12 +108,16 @@ SimpleMesh BufferManager::allocateSimpleMesh(
             indicesOffset, vertices.size(), indices.size()};
 }
 
-void BufferManager::deallocateSimpleMesh(SimpleMesh mesh) {
-    if (mesh.memory != VK_NULL_HANDLE) {
+void BufferManager::deallocateSimpleMeshDefer(SimpleMesh& mesh) {
+    simpleMeshDeallocateDefer.push_back(mesh);
+    mesh = SimpleMesh{};
+}
+
+void BufferManager::deallocateSimpleMeshNow(SimpleMesh& mesh) {
+    if (mesh.memory != VK_NULL_HANDLE)
         vmaDestroyBuffer(vma, mesh.buffer, mesh.memory);
-        mesh.memory = VK_NULL_HANDLE;
-        mesh.buffer = VK_NULL_HANDLE;
-    }
+
+    mesh = SimpleMesh{};
 }
 
 DepthImage BufferManager::allocateDepthImage(uint32_t width, uint32_t height) {
@@ -190,17 +207,19 @@ SimpleImage BufferManager::allocateSimpleImage(const uint8_t* pixels,
     return {memory, image, imageView, width, height, format};
 }
 
-void BufferManager::deallocateSimpleImage(SimpleImage image) {
-    if (image.view != VK_NULL_HANDLE) {
-        vkDestroyImageView(Context::get().getDevice(), image.view, nullptr);
-        image.view = VK_NULL_HANDLE;
-    }
+void BufferManager::deallocateSimpleImageDefer(SimpleImage& image) {
+    simpleImageDeallocateDefer.push_back(image);
+    image = SimpleImage{};
+}
 
-    if (image.memory != VK_NULL_HANDLE) {
+void BufferManager::deallocateSimpleImageNow(SimpleImage& image) {
+    if (image.view != VK_NULL_HANDLE)
+        vkDestroyImageView(Context::get().getDevice(), image.view, nullptr);
+
+    if (image.memory != VK_NULL_HANDLE)
         vmaDestroyImage(vma, image.image, image.memory);
-        image.memory = VK_NULL_HANDLE;
-        image.image = VK_NULL_HANDLE;
-    }
+
+    image = SimpleImage{};
 }
 
 void BufferManager::createVma() {
