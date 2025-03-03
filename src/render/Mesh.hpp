@@ -22,11 +22,11 @@ struct SimpleMesh {
     VmaAllocation memory{VK_NULL_HANDLE};
     VkBuffer buffer{VK_NULL_HANDLE};
 
-    VkDeviceSize vertexOffset;
-    VkDeviceSize indicesOffset;
+    VkDeviceSize vertexOffset{0};
+    VkDeviceSize indicesOffset{0};
 
-    size_t vertexCount;
-    size_t indexCount;
+    size_t vertexCount{0};
+    size_t indexCount{0};
 
     void bind(VkCommandBuffer commandBuffer) const {
         VkDeviceSize offsets[] = {vertexOffset};

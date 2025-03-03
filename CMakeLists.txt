@@ -26,7 +26,7 @@ set(SOURCES
     src/render/Window.cpp
     src/world/AtlasManager.cpp
     # src/world/World.cpp
-    # src/world/Chunk.cpp
+    src/world/Chunk.cpp
     )
 
 set(SHADERS

@@ -8,6 +8,7 @@
 #include "render/TextureManager.hpp"
 #include "render/Window.hpp"
 #include "world/AtlasManager.hpp"
+#include "world/Chunk.hpp"
 
 class PlayerController : public render::Window {
    public:
@@ -25,6 +26,8 @@ class PlayerController : public render::Window {
     void pushDebugCube(glm::vec3 pos, glm::quat rot);
 
     bool windowResized{false};
+
+    world::Chunk chunk;
 
     glm::vec3 pos{0.0f, 0.0f, 0.0f};
     float yaw{0.0f};

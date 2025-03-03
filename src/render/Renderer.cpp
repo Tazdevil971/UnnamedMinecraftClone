@@ -277,7 +277,7 @@ void Renderer::createGraphicsPipeline() {
     rasterizerStateInfo.rasterizerDiscardEnable = VK_FALSE;
     rasterizerStateInfo.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizerStateInfo.lineWidth = 1.0f;
-    rasterizerStateInfo.cullMode = VK_CULL_MODE_NONE;
+    rasterizerStateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
     rasterizerStateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizerStateInfo.depthBiasEnable = VK_FALSE;
     rasterizerStateInfo.depthBiasConstantFactor = 0.0f;

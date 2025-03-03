@@ -22,6 +22,9 @@ PlayerController::PlayerController() : Window("UnnamedMinecraftClone") {
 
         AtlasManager::create();
 
+        chunk = Chunk::genChunk({0, 0, 0});
+        chunk.updateBlock({1, 3, 1}, Block::WOOD_LOG);
+
         // clang-format off
         debugTexture = TextureManager::get().createSimpleTexture("assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
         debugCubeMesh = BufferManager::get().allocateSimpleMesh(
@@ -72,6 +75,8 @@ void PlayerController::cleanup() {
     // Wait for the device to finish rendering before cleaning up!
     Context::get().waitDeviceIdle();
 
+    chunk.cleanup();
+    
     AtlasManager::destroy();
 
     TextureManager::get().deallocateSimpleTexture(debugTexture);
@@ -89,8 +94,45 @@ void PlayerController::cleanup() {
 void PlayerController::onFrame(InputState& input) {
     handleInput(input);
     models.clear();
+    
+    
+    Camera camera{45.0f, 0.1f, 1000.0f, pos, glm::vec3{pitch, yaw, 0.0f}};
+    utils::VoxelRaytracer raytracer(camera.pos, camera.computeViewDir());
 
-    Camera camera{45.0f, 0.1f, 10.0f, pos, glm::vec3{pitch, yaw, 0.0f}};
+    for (int i = 0; i < 100; i++) {
+        auto hit = raytracer.getNextHit();
+        if (hit.pos.x >= 0 && hit.pos.x < 16 && hit.pos.y >= 0 &&
+            hit.pos.y < 16 && hit.pos.z >= 0 && hit.pos.z < 16) {
+            auto block = chunk.getBlock(hit.pos);
+            if (block != Block::AIR) {
+                if (input.destroy) {
+                    chunk.updateBlock(hit.pos, Block::AIR);
+                }
+
+                if (input.place) {
+                    auto pos = hit.pos + hit.dir;
+                    if (pos.x >= 0 && pos.x < 16 && pos.y >= 0 &&
+                        pos.y < 16 && pos.z >= 0 && pos.z < 16) {
+                        chunk.updateBlock(pos, Block::DIAMOND);
+                    }
+                }
+
+                pushDebugCube(camera.pos + camera.computeViewDir() * hit.dist,
+                              glm::vec3(0.0f, 0.0f, 0.0f));
+                break;
+            }
+        }
+    }
+
+    SimpleModel model;
+    model.mesh = chunk.getMesh();
+    model.texture = AtlasManager::get().getAtlas();
+    model.pos = glm::vec3(0.0f, 0.0f, 0.0f);
+    model.rot = glm::vec3(0.0f, 0.0f, 0.0f);
+    models.push_back(model);
+
+
+
 
     utils::VoxelRaytracer tracer(camera.pos, camera.computeViewDir());
     pushDebugCube(glm::vec3(1.0f, 0.0f, 0.0f),
