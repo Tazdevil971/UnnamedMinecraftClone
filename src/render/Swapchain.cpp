@@ -7,9 +7,9 @@
 
 using namespace render;
 
-Swapchain::Swapchain(std::shared_ptr<Context> ctx,
-                     std::shared_ptr<BufferManager> bufferMgr)
-    : ctx{ctx}, bufferMgr{bufferMgr} {
+std::unique_ptr<Swapchain> Swapchain::INSTANCE;
+
+Swapchain::Swapchain() {
     try {
         createSwapchain();
     } catch (...) {
@@ -17,6 +17,8 @@ Swapchain::Swapchain(std::shared_ptr<Context> ctx,
         throw;
     }
 }
+
+Swapchain::~Swapchain() { cleanup(); }
 
 void Swapchain::recreate() {
     waitForRecreateReady();
@@ -28,7 +30,7 @@ void Swapchain::recreate() {
 
 void Swapchain::cleanup() {
     if (swapchain != VK_NULL_HANDLE) {
-        vkDestroySwapchainKHR(ctx->getDevice(), swapchain, nullptr);
+        vkDestroySwapchainKHR(Context::get().getDevice(), swapchain, nullptr);
         swapchain = VK_NULL_HANDLE;
     }
 
@@ -41,14 +43,15 @@ void Swapchain::cleanup() {
 Swapchain::Frame Swapchain::acquireFrame(VkSemaphore semaphore) {
     uint32_t index;
     VkResult result =
-        vkAcquireNextImageKHR(ctx->getDevice(), swapchain, UINT64_MAX,
+        vkAcquireNextImageKHR(Context::get().getDevice(), swapchain, UINT64_MAX,
                               semaphore, VK_NULL_HANDLE, &index);
 
     while (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreate();
 
-        result = vkAcquireNextImageKHR(ctx->getDevice(), swapchain, UINT64_MAX,
-                                       semaphore, VK_NULL_HANDLE, &index);
+        result = vkAcquireNextImageKHR(Context::get().getDevice(), swapchain,
+                                       UINT64_MAX, semaphore, VK_NULL_HANDLE,
+                                       &index);
     }
 
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
@@ -61,8 +64,8 @@ std::shared_ptr<Framebuffer> Swapchain::createFramebuffer(
     VkRenderPass renderPass) {
     assert(!framebuffer);
 
-    framebuffer = std::shared_ptr<Framebuffer>(new Framebuffer(
-        ctx, bufferMgr, swapchain, extent, colorFormat, renderPass));
+    framebuffer = std::shared_ptr<Framebuffer>(
+        new Framebuffer(swapchain, extent, colorFormat, renderPass));
     return framebuffer;
 }
 
@@ -77,7 +80,8 @@ void Swapchain::present(const Frame &frame, VkSemaphore semaphore,
     presentInfo.pSwapchains = &swapchain;
     presentInfo.pImageIndices = &frame.index;
 
-    VkResult result = vkQueuePresentKHR(ctx->getPresentQueue(), &presentInfo);
+    VkResult result =
+        vkQueuePresentKHR(Context::get().getPresentQueue(), &presentInfo);
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
         recreate();
     else if (result != VK_SUCCESS)
@@ -92,24 +96,26 @@ void Swapchain::createSwapchain() {
 
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = ctx->getSurface();
+    createInfo.surface = Context::get().getSurface();
     createInfo.minImageCount = shape.minImageCount;
-    createInfo.imageFormat = ctx->getDeviceInfo().surfaceFormat.format;
-    createInfo.imageColorSpace = ctx->getDeviceInfo().surfaceFormat.colorSpace;
+    createInfo.imageFormat =
+        Context::get().getDeviceInfo().surfaceFormat.format;
+    createInfo.imageColorSpace =
+        Context::get().getDeviceInfo().surfaceFormat.colorSpace;
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     createInfo.imageExtent = shape.extent;
     createInfo.preTransform = shape.preTransform;
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = ctx->getDeviceInfo().presentMode;
+    createInfo.presentMode = Context::get().getDeviceInfo().presentMode;
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = oldSwapchain;
 
     const uint32_t queueIndices[] = {
-        ctx->getDeviceInfo().queues.graphics.value(),
-        ctx->getDeviceInfo().queues.present.value()};
+        Context::get().getDeviceInfo().queues.graphics.value(),
+        Context::get().getDeviceInfo().queues.present.value()};
 
-    if (ctx->getDeviceInfo().queues.hasDedicatedPresentQueue()) {
+    if (Context::get().getDeviceInfo().queues.hasDedicatedPresentQueue()) {
         // The swapchain will be shared between submit queues
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
@@ -121,12 +127,13 @@ void Swapchain::createSwapchain() {
         createInfo.pQueueFamilyIndices = nullptr;
     }
 
-    if (vkCreateSwapchainKHR(ctx->getDevice(), &createInfo, nullptr,
+    if (vkCreateSwapchainKHR(Context::get().getDevice(), &createInfo, nullptr,
                              &swapchain) != VK_SUCCESS)
         throw std::runtime_error{"failed to create swapchain!"};
 
     if (oldSwapchain != VK_NULL_HANDLE)
-        vkDestroySwapchainKHR(ctx->getDevice(), oldSwapchain, nullptr);
+        vkDestroySwapchainKHR(Context::get().getDevice(), oldSwapchain,
+                              nullptr);
 
     extent = createInfo.imageExtent;
     colorFormat = createInfo.imageFormat;
@@ -136,20 +143,21 @@ void Swapchain::waitForRecreateReady() {
     // First wait for the window to actually be ready, GLFW reports 0 size when
     // it detects the window to be minimized.
     int width = 0, height = 0;
-    glfwGetFramebufferSize(ctx->getWindow(), &width, &height);
+    glfwGetFramebufferSize(Context::get().getWindow(), &width, &height);
     while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(ctx->getWindow(), &width, &height);
+        glfwGetFramebufferSize(Context::get().getWindow(), &width, &height);
         glfwWaitEvents();
     }
 
     // Then wait for the device to be free
-    vkDeviceWaitIdle(ctx->getDevice());
+    vkDeviceWaitIdle(Context::get().getDevice());
 }
 
 Swapchain::Shape Swapchain::getSwapchainShape() {
     VkSurfaceCapabilitiesKHR capabilities;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(ctx->getDeviceInfo().device,
-                                              ctx->getSurface(), &capabilities);
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+        Context::get().getDeviceInfo().device, Context::get().getSurface(),
+        &capabilities);
 
     uint32_t minImageCount = capabilities.minImageCount + 1;
     if (capabilities.maxImageCount > 0 &&
@@ -162,7 +170,7 @@ Swapchain::Shape Swapchain::getSwapchainShape() {
         extent = capabilities.currentExtent;
     } else {
         int width, height;
-        glfwGetFramebufferSize(ctx->getWindow(), &width, &height);
+        glfwGetFramebufferSize(Context::get().getWindow(), &width, &height);
 
         extent.width = std::clamp(static_cast<uint32_t>(width),
                                   capabilities.minImageExtent.width,

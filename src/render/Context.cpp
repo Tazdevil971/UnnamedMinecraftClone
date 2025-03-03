@@ -14,6 +14,8 @@ std::vector<const char *> getGlfwExtensions() {
     return {extensions, extensions + count};
 }
 
+std::unique_ptr<Context> Context::INSTANCE;
+
 Context::Context(GLFWwindow *window) : window{window} {
     try {
         createInstance();
@@ -25,6 +27,8 @@ Context::Context(GLFWwindow *window) : window{window} {
         throw;
     }
 }
+
+Context::~Context() { cleanup(); }
 
 void Context::cleanup() {
     if (device != VK_NULL_HANDLE) {

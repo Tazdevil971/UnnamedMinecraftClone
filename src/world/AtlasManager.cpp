@@ -2,13 +2,18 @@
 
 using namespace world;
 
-AtlasManager::AtlasManager(std::shared_ptr<render::TextureManager> textureMgr)
-    : textureMgr{textureMgr} {
-    atlas = textureMgr->createSimpleTexture("assets/block_atlas.png",
-                                            VK_FORMAT_R8G8B8A8_SRGB);
+std::unique_ptr<AtlasManager> AtlasManager::INSTANCE;
+
+AtlasManager::AtlasManager() {
+    atlas = render::TextureManager::get().createSimpleTexture(
+        "assets/block_atlas.png", VK_FORMAT_R8G8B8A8_SRGB);
 }
 
-void AtlasManager::cleanup() { textureMgr->deallocateSimpleTexture(atlas); }
+AtlasManager::~AtlasManager() { cleanup(); }
+
+void AtlasManager::cleanup() {
+    render::TextureManager::get().deallocateSimpleTexture(atlas);
+}
 
 AtlasManager::AtlasBounds AtlasManager::getAtlasBounds(Block block,
                                                        Side side) const {

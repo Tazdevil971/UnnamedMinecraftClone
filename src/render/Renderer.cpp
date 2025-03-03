@@ -9,13 +9,12 @@
 
 using namespace render;
 
-Renderer::Renderer(std::shared_ptr<Context> ctx,
-                   std::shared_ptr<TextureManager> textureMgr,
-                   std::shared_ptr<Swapchain> swapchain)
-    : ctx{ctx}, swapchain{swapchain}, textureMgr{textureMgr} {
+std::unique_ptr<Renderer> Renderer::INSTANCE;
+
+Renderer::Renderer() {
     try {
         createRenderPass();
-        framebuffer = swapchain->createFramebuffer(renderPass);
+        framebuffer = Swapchain::get().createFramebuffer(renderPass);
 
         createGraphicsPipeline();
         createCommandPool();
@@ -27,13 +26,57 @@ Renderer::Renderer(std::shared_ptr<Context> ctx,
     }
 }
 
+Renderer::~Renderer() { cleanup(); }
+
+void Renderer::cleanup() {
+    if (imageAvailableSemaphore != VK_NULL_HANDLE) {
+        vkDestroySemaphore(Context::get().getDevice(), imageAvailableSemaphore,
+                           nullptr);
+        imageAvailableSemaphore = VK_NULL_HANDLE;
+    }
+
+    if (renderFinishedSemaphore != VK_NULL_HANDLE) {
+        vkDestroySemaphore(Context::get().getDevice(), renderFinishedSemaphore,
+                           nullptr);
+        renderFinishedSemaphore = VK_NULL_HANDLE;
+    }
+
+    if (inFlightFence != VK_NULL_HANDLE) {
+        vkDestroyFence(Context::get().getDevice(), inFlightFence, nullptr);
+        inFlightFence = VK_NULL_HANDLE;
+    }
+
+    if (commandPool != VK_NULL_HANDLE) {
+        vkDestroyCommandPool(Context::get().getDevice(), commandPool, nullptr);
+        commandPool = VK_NULL_HANDLE;
+    }
+
+    if (pipeline != VK_NULL_HANDLE) {
+        vkDestroyPipeline(Context::get().getDevice(), pipeline, nullptr);
+        pipeline = VK_NULL_HANDLE;
+    }
+
+    if (pipelineLayout != VK_NULL_HANDLE) {
+        vkDestroyPipelineLayout(Context::get().getDevice(), pipelineLayout,
+                                nullptr);
+        pipelineLayout = VK_NULL_HANDLE;
+    }
+
+    if (renderPass != VK_NULL_HANDLE) {
+        vkDestroyRenderPass(Context::get().getDevice(), renderPass, nullptr);
+        renderPass = VK_NULL_HANDLE;
+    }
+}
+
 void Renderer::render(const Camera& camera, std::list<SimpleModel> models,
                       bool windowResized) {
-    vkWaitForFences(ctx->getDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+    vkWaitForFences(Context::get().getDevice(), 1, &inFlightFence, VK_TRUE,
+                    UINT64_MAX);
 
-    Swapchain::Frame frame = swapchain->acquireFrame(imageAvailableSemaphore);
+    Swapchain::Frame frame =
+        Swapchain::get().acquireFrame(imageAvailableSemaphore);
 
-    vkResetFences(ctx->getDevice(), 1, &inFlightFence);
+    vkResetFences(Context::get().getDevice(), 1, &inFlightFence);
 
     vkResetCommandBuffer(commandBuffer, 0);
     VkCommandBufferBeginInfo beginInfo{};
@@ -60,8 +103,8 @@ void Renderer::render(const Camera& camera, std::list<SimpleModel> models,
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo,
                          VK_SUBPASS_CONTENTS_INLINE);
 
-    float ratio = static_cast<float>(swapchain->getExtent().width) /
-                  static_cast<float>(swapchain->getExtent().height);
+    float ratio = static_cast<float>(Swapchain::get().getExtent().width) /
+                  static_cast<float>(Swapchain::get().getExtent().height);
     glm::mat4 vp = camera.computeVPMat(ratio);
 
     for (const auto& model : models) recordSimpleModelRender(model, vp);
@@ -85,16 +128,17 @@ void Renderer::render(const Camera& camera, std::list<SimpleModel> models,
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
-    if (vkQueueSubmit(ctx->getGraphicsQueue(), 1, &submitInfo, inFlightFence) !=
-        VK_SUCCESS)
+    if (vkQueueSubmit(Context::get().getGraphicsQueue(), 1, &submitInfo,
+                      inFlightFence) != VK_SUCCESS)
         throw std::runtime_error{"failed to submit draw command buffer!"};
 
-    swapchain->present(frame, renderFinishedSemaphore, windowResized);
+    Swapchain::get().present(frame, renderFinishedSemaphore, windowResized);
 }
 
 void Renderer::createRenderPass() {
     VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = ctx->getDeviceInfo().surfaceFormat.format;
+    colorAttachment.format =
+        Context::get().getDeviceInfo().surfaceFormat.format;
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -104,7 +148,7 @@ void Renderer::createRenderPass() {
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     VkAttachmentDescription depthAttachment{};
-    depthAttachment.format = ctx->getDeviceInfo().depthFormat;
+    depthAttachment.format = Context::get().getDeviceInfo().depthFormat;
     depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -150,13 +194,14 @@ void Renderer::createRenderPass() {
     renderPassCreateInfo.pSubpasses = &subpass;
     renderPassCreateInfo.dependencyCount = 1;
     renderPassCreateInfo.pDependencies = &dependency;
-    if (vkCreateRenderPass(ctx->getDevice(), &renderPassCreateInfo, nullptr,
-                           &renderPass) != VK_SUCCESS)
+    if (vkCreateRenderPass(Context::get().getDevice(), &renderPassCreateInfo,
+                           nullptr, &renderPass) != VK_SUCCESS)
         throw std::runtime_error{"failed to create render pass!"};
 }
 
 void Renderer::createGraphicsPipeline() {
-    VkDescriptorSetLayout descriptorSetLayout = textureMgr->getSimpleLayout();
+    VkDescriptorSetLayout descriptorSetLayout =
+        TextureManager::get().getSimpleLayout();
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
@@ -169,12 +214,15 @@ void Renderer::createGraphicsPipeline() {
     pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
     pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
-    if (vkCreatePipelineLayout(ctx->getDevice(), &pipelineLayoutCreateInfo,
-                               nullptr, &pipelineLayout) != VK_SUCCESS)
+    if (vkCreatePipelineLayout(Context::get().getDevice(),
+                               &pipelineLayoutCreateInfo, nullptr,
+                               &pipelineLayout) != VK_SUCCESS)
         throw std::runtime_error{"failed to create pipeline layout!"};
 
-    auto vertShaderModule = ctx->loadShaderModule("SimpleVert.vert.spv");
-    auto fragShaderModule = ctx->loadShaderModule("SimpleFrag.frag.spv");
+    auto vertShaderModule =
+        Context::get().loadShaderModule("SimpleVert.vert.spv");
+    auto fragShaderModule =
+        Context::get().loadShaderModule("SimpleFrag.frag.spv");
 
     VkPipelineShaderStageCreateInfo vertStageInfo{};
     vertStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -304,22 +352,25 @@ void Renderer::createGraphicsPipeline() {
     pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineCreateInfo.basePipelineIndex = -1;
 
-    if (vkCreateGraphicsPipelines(ctx->getDevice(), VK_NULL_HANDLE, 1,
+    if (vkCreateGraphicsPipelines(Context::get().getDevice(), VK_NULL_HANDLE, 1,
                                   &pipelineCreateInfo, nullptr,
                                   &pipeline) != VK_SUCCESS)
         throw std::runtime_error{"failed to create graphics pipeline"};
 
-    vkDestroyShaderModule(ctx->getDevice(), vertShaderModule, nullptr);
-    vkDestroyShaderModule(ctx->getDevice(), fragShaderModule, nullptr);
+    vkDestroyShaderModule(Context::get().getDevice(), vertShaderModule,
+                          nullptr);
+    vkDestroyShaderModule(Context::get().getDevice(), fragShaderModule,
+                          nullptr);
 }
 
 void Renderer::createCommandPool() {
     VkCommandPoolCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    createInfo.queueFamilyIndex = ctx->getDeviceInfo().queues.graphics.value();
+    createInfo.queueFamilyIndex =
+        Context::get().getDeviceInfo().queues.graphics.value();
 
-    if (vkCreateCommandPool(ctx->getDevice(), &createInfo, nullptr,
+    if (vkCreateCommandPool(Context::get().getDevice(), &createInfo, nullptr,
                             &commandPool) != VK_SUCCESS)
         throw std::runtime_error{"failed to create command pool!"};
 }
@@ -331,7 +382,7 @@ void Renderer::createCommandBuffer() {
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = 1;
 
-    if (vkAllocateCommandBuffers(ctx->getDevice(), &allocInfo,
+    if (vkAllocateCommandBuffers(Context::get().getDevice(), &allocInfo,
                                  &commandBuffer) != VK_SUCCESS)
         throw std::runtime_error{"failed to create command buffer!"};
 }
@@ -344,15 +395,15 @@ void Renderer::createSyncObjects() {
     fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    if (vkCreateSemaphore(ctx->getDevice(), &semaphoreCreateInfo, nullptr,
-                          &imageAvailableSemaphore) != VK_SUCCESS)
+    if (vkCreateSemaphore(Context::get().getDevice(), &semaphoreCreateInfo,
+                          nullptr, &imageAvailableSemaphore) != VK_SUCCESS)
         throw std::runtime_error{"failed to create sync objects!"};
 
-    if (vkCreateSemaphore(ctx->getDevice(), &semaphoreCreateInfo, nullptr,
-                          &renderFinishedSemaphore) != VK_SUCCESS)
+    if (vkCreateSemaphore(Context::get().getDevice(), &semaphoreCreateInfo,
+                          nullptr, &renderFinishedSemaphore) != VK_SUCCESS)
         throw std::runtime_error{"failed to create sync objects!"};
 
-    if (vkCreateFence(ctx->getDevice(), &fenceCreateInfo, nullptr,
+    if (vkCreateFence(Context::get().getDevice(), &fenceCreateInfo, nullptr,
                       &inFlightFence) != VK_SUCCESS)
         throw std::runtime_error{"failed to create sync objects!"};
 }
@@ -377,41 +428,4 @@ void Renderer::recordSimpleModelRender(const SimpleModel& model, glm::mat4 vp) {
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     vkCmdDrawIndexed(commandBuffer, model.mesh.indexCount, 1, 0, 0, 0);
-}
-
-void Renderer::cleanup() {
-    if (imageAvailableSemaphore != VK_NULL_HANDLE) {
-        vkDestroySemaphore(ctx->getDevice(), imageAvailableSemaphore, nullptr);
-        imageAvailableSemaphore = VK_NULL_HANDLE;
-    }
-
-    if (renderFinishedSemaphore != VK_NULL_HANDLE) {
-        vkDestroySemaphore(ctx->getDevice(), renderFinishedSemaphore, nullptr);
-        renderFinishedSemaphore = VK_NULL_HANDLE;
-    }
-
-    if (inFlightFence != VK_NULL_HANDLE) {
-        vkDestroyFence(ctx->getDevice(), inFlightFence, nullptr);
-        inFlightFence = VK_NULL_HANDLE;
-    }
-
-    if (commandPool != VK_NULL_HANDLE) {
-        vkDestroyCommandPool(ctx->getDevice(), commandPool, nullptr);
-        commandPool = VK_NULL_HANDLE;
-    }
-
-    if (pipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(ctx->getDevice(), pipeline, nullptr);
-        pipeline = VK_NULL_HANDLE;
-    }
-
-    if (pipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(ctx->getDevice(), pipelineLayout, nullptr);
-        pipelineLayout = VK_NULL_HANDLE;
-    }
-
-    if (renderPass != VK_NULL_HANDLE) {
-        vkDestroyRenderPass(ctx->getDevice(), renderPass, nullptr);
-        renderPass = VK_NULL_HANDLE;
-    }
 }

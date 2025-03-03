@@ -3,15 +3,19 @@
 #include <glm/vec3.hpp>
 
 #include "Block.hpp"
+#include "../render/Mesh.hpp"
+#include "../render/BufferManager.hpp"
 
 class Chunk {
    private:
     Block blocks[16][16][16];
-    // GpuBuffer buffer;
+    render::SimpleMesh mesh;
    public:
     Chunk();
     Block getBlock(glm::ivec3 pos);
-    // GpuBuffer getMesh();
-    static Chunk genChunk(glm::ivec3 pos);
-    void updateBlock(glm::ivec3 pos, Block newBlock, vk::BufferManager *bufMgr);
+    render::SimpleMesh getMesh();
+    static Chunk genChunk(glm::ivec3 pos, render::BufferManager *bufMgr);
+    void updateBlock(glm::ivec3 pos, Block newBlock, render::BufferManager *bufMgr);
+private:
+    void updateMesh(render::BufferManager *bufMgr);
 };

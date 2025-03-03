@@ -14,17 +14,17 @@ using namespace world;
 
 PlayerController::PlayerController() : Window("UnnamedMinecraftClone") {
     try {
-        ctx = Context::create(getWindow());
-        bufferMgr = BufferManager::create(ctx);
-        textureMgr = TextureManager::create(ctx, bufferMgr, 10);
-        swapchain = Swapchain::create(ctx, bufferMgr);
-        renderer = Renderer::create(ctx, textureMgr, swapchain);
+        Context::create(getWindow());
+        BufferManager::create();
+        TextureManager::create(10);
+        Swapchain::create();
+        Renderer::create();
 
-        atlasMgr = AtlasManager::create(textureMgr);
+        AtlasManager::create();
 
         // clang-format off
-        debugTexture = textureMgr->createSimpleTexture("assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
-        debugCubeMesh = bufferMgr->allocateSimpleMesh(
+        debugTexture = TextureManager::get().createSimpleTexture("assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
+        debugCubeMesh = BufferManager::get().allocateSimpleMesh(
             {0,  1,  2,   2,  3,  0,
              4,  5,  6,   6,  7,  4,
              8,  9,  10,  10, 11, 8,
@@ -70,22 +70,18 @@ PlayerController::PlayerController() : Window("UnnamedMinecraftClone") {
 
 void PlayerController::cleanup() {
     // Wait for the device to finish rendering before cleaning up!
-    ctx->waitDeviceIdle();
+    Context::get().waitDeviceIdle();
 
-    if (atlasMgr) atlasMgr->cleanup();
+    AtlasManager::destroy();
 
-    textureMgr->deallocateSimpleTexture(debugTexture);
-    bufferMgr->deallocateSimpleMesh(debugCubeMesh);
+    TextureManager::get().deallocateSimpleTexture(debugTexture);
+    BufferManager::get().deallocateSimpleMesh(debugCubeMesh);
 
-    if (renderer) renderer->cleanup();
-
-    if (swapchain) swapchain->cleanup();
-
-    if (textureMgr) textureMgr->cleanup();
-
-    if (bufferMgr) bufferMgr->cleanup();
-
-    if (ctx) ctx->cleanup();
+    Renderer::destroy();
+    Swapchain::destroy();
+    TextureManager::destroy();
+    BufferManager::destroy();
+    Context::destroy();
 
     Window::cleanup();
 }
@@ -97,19 +93,20 @@ void PlayerController::onFrame(InputState& input) {
     Camera camera{45.0f, 0.1f, 10.0f, pos, glm::vec3{pitch, yaw, 0.0f}};
 
     utils::VoxelRaytracer tracer(camera.pos, camera.computeViewDir());
-    tracer.getNextHit();
-    for (int i = 0; i < 10; i++) {
-        auto hit = tracer.getNextHit();
-        pushDebugCube(glm::vec3(hit.pos) + glm::vec3(0.5f, 0.5f, 0.5f),
-                      glm::vec3(0.0f, 0.0f, 0.0f));
-        pushDebugCube(glm::vec3(hit.pos) + glm::vec3(0.5f, 0.5f, 0.5f) +
-                          glm::vec3(hit.dir) * 0.10f,
-                      glm::vec3(0.0f, 0.0f, 0.0f));
-        // pushDebugCube(camera.pos + camera.computeViewDir() * hit.dist,
-        //               glm::vec3(0.0f, 0.0f, 0.0f));
-    }
+    pushDebugCube(glm::vec3(1.0f, 0.0f, 0.0f),
+                  glm::vec3(getTime() * glm::radians(45.0f), 0.0f, 0.0f));
+    pushDebugCube(glm::vec3(-1.0f, 0.0f, 0.0f),
+                  glm::vec3(getTime() * glm::radians(45.0f), 0.0f, 0.0f));
+    pushDebugCube(glm::vec3(0.0f, 1.0f, 0.0f),
+                  glm::vec3(getTime() * glm::radians(45.0f), 0.0f, 0.0f));
+    pushDebugCube(glm::vec3(0.0f, -1.0f, 0.0f),
+                  glm::vec3(getTime() * glm::radians(45.0f), 0.0f, 0.0f));
+    pushDebugCube(glm::vec3(0.0f, 0.0f, 1.0f),
+                  glm::vec3(getTime() * glm::radians(45.0f), 0.0f, 0.0f));
+    pushDebugCube(glm::vec3(0.0f, 0.0f, -1.0f),
+                  glm::vec3(getTime() * glm::radians(45.0f), 0.0f, 0.0f));
 
-    renderer->render(camera, models, windowResized);
+    Renderer::get().render(camera, models, windowResized);
     windowResized = false;
 }
 
@@ -156,7 +153,7 @@ void PlayerController::handleInput(InputState& input) {
     pitch += input.viewDelta.y * SENSIBILITY;
 
     // Clamp to prevent gimbal lock
-    pitch = std::clamp(pitch, -(float)M_PI_2 + 1e-4f, (float)M_PI_2 - 1e-4f);
+    pitch = std::clamp(pitch, -(float)M_PI_2 + 1e-6f, (float)M_PI_2 - 1e-6f);
 }
 
 void PlayerController::pushDebugCube(glm::vec3 pos, glm::quat rot) {

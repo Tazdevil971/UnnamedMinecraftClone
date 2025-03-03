@@ -9,18 +9,25 @@
 namespace render {
 
 class TextureManager {
+   private:
+    static std::unique_ptr<TextureManager> INSTANCE;
+
    public:
-    static std::shared_ptr<TextureManager> create(
-        std::shared_ptr<Context> ctx, std::shared_ptr<BufferManager> bufferMgr,
-        uint32_t poolSize) {
-        return std::make_shared<TextureManager>(std::move(ctx),
-                                                std::move(bufferMgr), poolSize);
+    static void create(uint32_t poolSize) {
+        INSTANCE.reset(new TextureManager(poolSize));
     }
 
-    TextureManager(std::shared_ptr<Context> ctx,
-                   std::shared_ptr<BufferManager> bufferMgr, uint32_t poolSize);
+    static TextureManager& get() {
+        if (INSTANCE) {
+            return *INSTANCE;
+        } else {
+            throw std::runtime_error{"TextureManager not yet created"};
+        }
+    }
 
-    void cleanup();
+    static void destroy() { INSTANCE.reset(); }
+
+    ~TextureManager();
 
     VkDescriptorSetLayout getSimpleLayout() const { return simpleLayout; }
 
@@ -29,12 +36,13 @@ class TextureManager {
     void deallocateSimpleTexture(SimpleTexture texture);
 
    private:
+    TextureManager(uint32_t poolSize);
+
+    void cleanup();
+
     void createLayout();
     void createPool(uint32_t size);
     void createDescriptorSets(uint32_t size);
-
-    std::shared_ptr<Context> ctx;
-    std::shared_ptr<BufferManager> bufferMgr;
 
     std::vector<VkDescriptorSet> descriptorSets;
 

@@ -13,7 +13,7 @@ Block Chunk::getBlock(glm::ivec3 pos) {
     return buffer;
 }*/
 
-static Chunk Chunk::genChunk(glm::ivec3 pos) {
+Chunk Chunk::genChunk(glm::ivec3 pos) {
     Chunk chunk;
     for (int x = 0; x < 16; x++) {
         for (int y = 0; y < 16; y++) {

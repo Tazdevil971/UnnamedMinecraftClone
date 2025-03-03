@@ -30,14 +30,6 @@ class PlayerController : public render::Window {
     float yaw{0.0f};
     float pitch{0.0f};
 
-    std::shared_ptr<world::AtlasManager> atlasMgr;
-
-    std::shared_ptr<render::Context> ctx;
-    std::shared_ptr<render::Swapchain> swapchain;
-    std::shared_ptr<render::BufferManager> bufferMgr;
-    std::shared_ptr<render::TextureManager> textureMgr;
-    std::shared_ptr<render::Renderer> renderer;
-
     render::SimpleMesh debugCubeMesh;
     render::SimpleTexture debugTexture;
 

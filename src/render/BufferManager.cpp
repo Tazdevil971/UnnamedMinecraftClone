@@ -10,7 +10,9 @@
 
 using namespace render;
 
-BufferManager::BufferManager(std::shared_ptr<Context> ctx) : ctx{ctx} {
+std::unique_ptr<BufferManager> BufferManager::INSTANCE;
+
+BufferManager::BufferManager() {
     try {
         createVma();
         createCommandPool();
@@ -22,14 +24,16 @@ BufferManager::BufferManager(std::shared_ptr<Context> ctx) : ctx{ctx} {
     }
 }
 
+BufferManager::~BufferManager() { cleanup(); }
+
 void BufferManager::cleanup() {
     if (syncFence != VK_NULL_HANDLE) {
-        vkDestroyFence(ctx->getDevice(), syncFence, nullptr);
+        vkDestroyFence(Context::get().getDevice(), syncFence, nullptr);
         syncFence = VK_NULL_HANDLE;
     }
 
     if (commandPool != VK_NULL_HANDLE) {
-        vkDestroyCommandPool(ctx->getDevice(), commandPool, nullptr);
+        vkDestroyCommandPool(Context::get().getDevice(), commandPool, nullptr);
         commandPool = VK_NULL_HANDLE;
     }
 
@@ -102,7 +106,7 @@ void BufferManager::deallocateSimpleMesh(SimpleMesh mesh) {
 DepthImage BufferManager::allocateDepthImage(uint32_t width, uint32_t height) {
     VmaAllocation memory;
     VkImage image;
-    VkFormat format = ctx->getDeviceInfo().depthFormat;
+    VkFormat format = Context::get().getDeviceInfo().depthFormat;
 
     createImage(width, height, format,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -188,7 +192,7 @@ SimpleImage BufferManager::allocateSimpleImage(const uint8_t* pixels,
 
 void BufferManager::deallocateSimpleImage(SimpleImage image) {
     if (image.view != VK_NULL_HANDLE) {
-        vkDestroyImageView(ctx->getDevice(), image.view, nullptr);
+        vkDestroyImageView(Context::get().getDevice(), image.view, nullptr);
         image.view = VK_NULL_HANDLE;
     }
 
@@ -203,11 +207,11 @@ void BufferManager::createVma() {
     VmaAllocatorCreateInfo createInfo{};
     createInfo.flags = 0;
     createInfo.vulkanApiVersion = VK_API_VERSION_1_0;
-    createInfo.instance = ctx->getInstance();
-    createInfo.physicalDevice = ctx->getDeviceInfo().device;
-    createInfo.device = ctx->getDevice();
+    createInfo.instance = Context::get().getInstance();
+    createInfo.physicalDevice = Context::get().getDeviceInfo().device;
+    createInfo.device = Context::get().getDevice();
 
-    if (ctx->getDeviceInfo().hasKHRDedicatedAllocation)
+    if (Context::get().getDeviceInfo().hasKHRDedicatedAllocation)
         createInfo.flags |= VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT;
 
     if (vmaCreateAllocator(&createInfo, &vma) != VK_SUCCESS)
@@ -219,9 +223,10 @@ void BufferManager::createCommandPool() {
     createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT |
                        VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    createInfo.queueFamilyIndex = ctx->getDeviceInfo().queues.graphics.value();
+    createInfo.queueFamilyIndex =
+        Context::get().getDeviceInfo().queues.graphics.value();
 
-    if (vkCreateCommandPool(ctx->getDevice(), &createInfo, nullptr,
+    if (vkCreateCommandPool(Context::get().getDevice(), &createInfo, nullptr,
                             &commandPool) != VK_SUCCESS)
         throw std::runtime_error{"failed to create command pool!"};
 }
@@ -233,7 +238,7 @@ void BufferManager::createCommandBuffer() {
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = 1;
 
-    if (vkAllocateCommandBuffers(ctx->getDevice(), &allocInfo,
+    if (vkAllocateCommandBuffers(Context::get().getDevice(), &allocInfo,
                                  &commandBuffer) != VK_SUCCESS)
         throw std::runtime_error{"failed to create command buffer!"};
 }
@@ -242,8 +247,8 @@ void BufferManager::createSyncObjects() {
     VkFenceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 
-    if (vkCreateFence(ctx->getDevice(), &createInfo, nullptr, &syncFence) !=
-        VK_SUCCESS)
+    if (vkCreateFence(Context::get().getDevice(), &createInfo, nullptr,
+                      &syncFence) != VK_SUCCESS)
         throw std::runtime_error{"failed to create sync fence!"};
 }
 
@@ -310,8 +315,8 @@ void BufferManager::createImageView(VkImage image, VkFormat format,
     createInfo.subresourceRange.baseArrayLayer = 0;
     createInfo.subresourceRange.layerCount = 1;
 
-    if (vkCreateImageView(ctx->getDevice(), &createInfo, nullptr, &imageView) !=
-        VK_SUCCESS)
+    if (vkCreateImageView(Context::get().getDevice(), &createInfo, nullptr,
+                          &imageView) != VK_SUCCESS)
         throw std::runtime_error("failed to create texture image view!");
 }
 
@@ -415,9 +420,10 @@ void BufferManager::submitAndWait() {
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    vkQueueSubmit(ctx->getGraphicsQueue(), 1, &submitInfo, syncFence);
-    vkWaitForFences(ctx->getDevice(), 1, &syncFence, VK_TRUE, UINT64_MAX);
+    vkQueueSubmit(Context::get().getGraphicsQueue(), 1, &submitInfo, syncFence);
+    vkWaitForFences(Context::get().getDevice(), 1, &syncFence, VK_TRUE,
+                    UINT64_MAX);
 
     vkResetCommandBuffer(commandBuffer, 0);
-    vkResetFences(ctx->getDevice(), 1, &syncFence);
+    vkResetFences(Context::get().getDevice(), 1, &syncFence);
 }

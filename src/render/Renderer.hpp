@@ -9,23 +9,32 @@
 namespace render {
 
 class Renderer {
+   private:
+    static std::unique_ptr<Renderer> INSTANCE;
+
    public:
-    static std::shared_ptr<Renderer> create(
-        std::shared_ptr<Context> ctx,
-        std::shared_ptr<TextureManager> textureMgr,
-        std::shared_ptr<Swapchain> swapchain) {
-        return std::make_shared<Renderer>(std::move(ctx), std::move(textureMgr),
-                                          std::move(swapchain));
+    static void create() { INSTANCE.reset(new Renderer()); }
+
+    static Renderer& get() {
+        if (INSTANCE) {
+            return *INSTANCE;
+        } else {
+            throw std::runtime_error{"Renderer not yet created"};
+        }
     }
 
-    Renderer(std::shared_ptr<Context> ctx,
-             std::shared_ptr<TextureManager> textureMgr,
-             std::shared_ptr<Swapchain> swapchain);
+    static void destroy() { INSTANCE.reset(); }
+
+    ~Renderer();
+
     void render(const Camera& camera, std::list<SimpleModel> models,
                 bool windowResized);
-    void cleanup();
 
    private:
+    Renderer();
+
+    void cleanup();
+
     VkRenderPass renderPass{VK_NULL_HANDLE};
     VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
@@ -33,10 +42,7 @@ class Renderer {
 
     VkCommandPool commandPool{VK_NULL_HANDLE};
 
-    std::shared_ptr<Context> ctx;
-    std::shared_ptr<Swapchain> swapchain;
     std::shared_ptr<Framebuffer> framebuffer;
-    std::shared_ptr<TextureManager> textureMgr;
 
     VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
     VkSemaphore imageAvailableSemaphore{VK_NULL_HANDLE};

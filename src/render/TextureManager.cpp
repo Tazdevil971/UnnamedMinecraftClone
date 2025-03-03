@@ -7,10 +7,9 @@
 
 using namespace render;
 
-TextureManager::TextureManager(std::shared_ptr<Context> ctx,
-                               std::shared_ptr<BufferManager> bufferMgr,
-                               uint32_t poolSize)
-    : ctx{ctx}, bufferMgr{bufferMgr} {
+std::unique_ptr<TextureManager> TextureManager::INSTANCE;
+
+TextureManager::TextureManager(uint32_t poolSize) {
     try {
         createLayout();
         createPool(poolSize);
@@ -21,23 +20,27 @@ TextureManager::TextureManager(std::shared_ptr<Context> ctx,
     }
 }
 
+TextureManager::~TextureManager() { cleanup(); }
+
 void TextureManager::cleanup() {
     if (pool != VK_NULL_HANDLE) {
-        vkDestroyDescriptorPool(ctx->getDevice(), pool, nullptr);
+        vkDestroyDescriptorPool(Context::get().getDevice(), pool, nullptr);
         pool = VK_NULL_HANDLE;
     }
 
     if (simpleLayout != VK_NULL_HANDLE) {
-        vkDestroyDescriptorSetLayout(ctx->getDevice(), simpleLayout, nullptr);
+        vkDestroyDescriptorSetLayout(Context::get().getDevice(), simpleLayout,
+                                     nullptr);
         simpleLayout = VK_NULL_HANDLE;
     }
 }
 
 SimpleTexture TextureManager::createSimpleTexture(const std::string& path,
                                                   VkFormat format) {
-    SimpleImage image = bufferMgr->allocateSimpleImage(path, format);
+    SimpleImage image = BufferManager::get().allocateSimpleImage(path, format);
 
-    auto imageDefer = Defer{[&]() { bufferMgr->deallocateSimpleImage(image); }};
+    auto imageDefer =
+        Defer{[&]() { BufferManager::get().deallocateSimpleImage(image); }};
 
     VkSamplerCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -47,7 +50,8 @@ SimpleTexture TextureManager::createSimpleTexture(const std::string& path,
     createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     createInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     createInfo.anisotropyEnable = VK_TRUE;
-    createInfo.maxAnisotropy = ctx->getDeviceInfo().maxSamplerAnisotropy;
+    createInfo.maxAnisotropy =
+        Context::get().getDeviceInfo().maxSamplerAnisotropy;
     createInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
     createInfo.unnormalizedCoordinates = VK_FALSE;
     createInfo.compareEnable = VK_FALSE;
@@ -59,12 +63,13 @@ SimpleTexture TextureManager::createSimpleTexture(const std::string& path,
 
     VkSampler sampler;
 
-    if (vkCreateSampler(ctx->getDevice(), &createInfo, nullptr, &sampler) !=
-        VK_SUCCESS)
+    if (vkCreateSampler(Context::get().getDevice(), &createInfo, nullptr,
+                        &sampler) != VK_SUCCESS)
         throw std::runtime_error{"failed to create texture sampler!"};
 
-    auto samplerDefer =
-        Defer{[&]() { vkDestroySampler(ctx->getDevice(), sampler, nullptr); }};
+    auto samplerDefer = Defer{[&]() {
+        vkDestroySampler(Context::get().getDevice(), sampler, nullptr);
+    }};
 
     if (descriptorSets.size() == 0)
         throw std::runtime_error{"not enough descriptor sets!"};
@@ -88,7 +93,8 @@ SimpleTexture TextureManager::createSimpleTexture(const std::string& path,
     descriptorWrite.pImageInfo = &imageInfo;
     descriptorWrite.pTexelBufferView = nullptr;
 
-    vkUpdateDescriptorSets(ctx->getDevice(), 1, &descriptorWrite, 0, nullptr);
+    vkUpdateDescriptorSets(Context::get().getDevice(), 1, &descriptorWrite, 0,
+                           nullptr);
 
     imageDefer.defuse();
     samplerDefer.defuse();
@@ -102,11 +108,11 @@ void TextureManager::deallocateSimpleTexture(SimpleTexture texture) {
     }
 
     if (texture.sampler != VK_NULL_HANDLE) {
-        vkDestroySampler(ctx->getDevice(), texture.sampler, nullptr);
+        vkDestroySampler(Context::get().getDevice(), texture.sampler, nullptr);
         texture.sampler = VK_NULL_HANDLE;
     }
 
-    bufferMgr->deallocateSimpleImage(texture.image);
+    BufferManager::get().deallocateSimpleImage(texture.image);
 }
 
 void TextureManager::createLayout() {
@@ -124,8 +130,9 @@ void TextureManager::createLayout() {
     descriptorSetLayoutInfo.bindingCount = 1;
     descriptorSetLayoutInfo.pBindings = &samplerLayoutBinding;
 
-    if (vkCreateDescriptorSetLayout(ctx->getDevice(), &descriptorSetLayoutInfo,
-                                    nullptr, &simpleLayout) != VK_SUCCESS)
+    if (vkCreateDescriptorSetLayout(Context::get().getDevice(),
+                                    &descriptorSetLayoutInfo, nullptr,
+                                    &simpleLayout) != VK_SUCCESS)
         throw std::runtime_error{
             "failed to create descriptor set layout info!"};
 }
@@ -141,8 +148,8 @@ void TextureManager::createPool(uint32_t size) {
     poolInfo.pPoolSizes = &combinedSamplerPoolSize;
     poolInfo.maxSets = size;
 
-    if (vkCreateDescriptorPool(ctx->getDevice(), &poolInfo, nullptr, &pool) !=
-        VK_SUCCESS)
+    if (vkCreateDescriptorPool(Context::get().getDevice(), &poolInfo, nullptr,
+                               &pool) != VK_SUCCESS)
         throw std::runtime_error{"failed to create descriptor pool!"};
 }
 
@@ -158,7 +165,7 @@ void TextureManager::createDescriptorSets(uint32_t size) {
     allocInfo.descriptorSetCount = size;
     allocInfo.pSetLayouts = layouts.data();
 
-    if (vkAllocateDescriptorSets(ctx->getDevice(), &allocInfo,
+    if (vkAllocateDescriptorSets(Context::get().getDevice(), &allocInfo,
                                  descriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error{"failed to create descriptor set!"};
 }

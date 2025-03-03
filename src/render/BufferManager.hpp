@@ -11,14 +11,23 @@
 namespace render {
 
 class BufferManager {
+   private:
+    static std::unique_ptr<BufferManager> INSTANCE;
+
    public:
-    static std::shared_ptr<BufferManager> create(std::shared_ptr<Context> ctx) {
-        return std::make_shared<BufferManager>(std::move(ctx));
+    static void create() { INSTANCE.reset(new BufferManager()); }
+
+    static BufferManager& get() {
+        if (INSTANCE) {
+            return *INSTANCE;
+        } else {
+            throw std::runtime_error{"BufferManager not yet created"};
+        }
     }
 
-    BufferManager(std::shared_ptr<Context> ctx);
-
-    void cleanup();
+    static void destroy() { INSTANCE.reset(); }
+    
+    ~BufferManager();
 
     SimpleMesh allocateSimpleMesh(const std::vector<uint16_t>& indices,
                                   const std::vector<Vertex>& vertices);
@@ -36,6 +45,10 @@ class BufferManager {
     void deallocateSimpleImage(SimpleImage image);
 
    private:
+    BufferManager();
+
+    void cleanup();
+
     void createVma();
     void createCommandPool();
     void createCommandBuffer();
@@ -61,8 +74,6 @@ class BufferManager {
     void transitionImageLayout(VkImage image, VkImageLayout oldLayout,
                                VkImageLayout newLayout, VkFormat format);
     void submitAndWait();
-
-    std::shared_ptr<Context> ctx;
 
     VmaAllocator vma{VK_NULL_HANDLE};
 

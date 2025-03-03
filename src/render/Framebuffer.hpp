@@ -40,9 +40,7 @@ class Framebuffer {
     }
 
    private:
-    Framebuffer(std::shared_ptr<Context> ctx,
-                std::shared_ptr<BufferManager> bufferMgr,
-                VkSwapchainKHR swapchain, VkExtent2D extent,
+    Framebuffer(VkSwapchainKHR swapchain, VkExtent2D extent,
                 VkFormat colorFormat, VkRenderPass renderPass);
 
     void recreate(VkSwapchainKHR swapchain, VkExtent2D extent,
@@ -53,9 +51,6 @@ class Framebuffer {
     void createColorImages(VkSwapchainKHR swapchain);
     void createDepthImages();
     void createFramebuffers();
-
-    std::shared_ptr<Context> ctx;
-    std::shared_ptr<BufferManager> bufferMgr;
 
     VkRenderPass renderPass{VK_NULL_HANDLE};
     VkExtent2D extent;

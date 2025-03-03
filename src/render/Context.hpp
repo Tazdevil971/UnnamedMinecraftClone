@@ -6,12 +6,32 @@
 #include <fstream>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <vector>
 
 namespace render {
 
 class Context {
+   private:
+    static std::unique_ptr<Context> INSTANCE;
+
    public:
+    static void create(GLFWwindow *window) {
+        INSTANCE.reset(new Context(window));
+    }
+
+    static Context &get() {
+        if (INSTANCE) {
+            return *INSTANCE;
+        } else {
+            throw std::runtime_error{"Context not yet created"};
+        }
+    }
+
+    static void destroy() { INSTANCE.reset(); }
+
+    ~Context();
+
     struct QueueFamilies {
         std::optional<uint32_t> graphics;
         std::optional<uint32_t> present;
@@ -49,14 +69,6 @@ class Context {
         float maxSamplerAnisotropy;
     };
 
-    static std::shared_ptr<Context> create(GLFWwindow *window) {
-        return std::make_shared<Context>(window);
-    }
-
-    Context(GLFWwindow *window);
-
-    void cleanup();
-
     VkDevice getDevice() const { return device; }
     GLFWwindow *getWindow() const { return window; }
     VkInstance getInstance() const { return instance; }
@@ -66,6 +78,10 @@ class Context {
     const DeviceInfo &getDeviceInfo() const { return deviceInfo; }
 
    private:
+    Context(GLFWwindow *window);
+
+    void cleanup();
+
     struct InstanceExtensions {
         bool hasKHRPortabilityEnumeration;
     };

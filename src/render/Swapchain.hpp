@@ -9,26 +9,32 @@
 namespace render {
 
 class Swapchain {
+   private:
+    static std::unique_ptr<Swapchain> INSTANCE;
+
    public:
+    static void create() { INSTANCE.reset(new Swapchain()); }
+
+    static Swapchain& get() {
+        if (INSTANCE) {
+            return *INSTANCE;
+        } else {
+            throw std::runtime_error{"Swapchain not yet created"};
+        }
+    }
+
+    static void destroy() { INSTANCE.reset(); }
+
+    ~Swapchain();
+
     struct Frame {
         uint32_t index;
     };
 
-    static std::shared_ptr<Swapchain> create(
-        std::shared_ptr<Context> ctx,
-        std::shared_ptr<BufferManager> bufferMgr) {
-        return std::make_shared<Swapchain>(std::move(ctx),
-                                           std::move(bufferMgr));
-    }
-
-    Swapchain(std::shared_ptr<Context> ctx,
-              std::shared_ptr<BufferManager> bufferMgr);
-
     void recreate();
-    void cleanup();
 
     Frame acquireFrame(VkSemaphore semaphore);
-    void present(const Frame &frame, VkSemaphore semaphore,
+    void present(const Frame& frame, VkSemaphore semaphore,
                  bool forceRecreate = false);
 
     VkExtent2D getExtent() const { return extent; }
@@ -37,6 +43,10 @@ class Swapchain {
     std::shared_ptr<Framebuffer> createFramebuffer(VkRenderPass renderPass);
 
    private:
+    Swapchain();
+
+    void cleanup();
+
     struct Shape {
         VkExtent2D extent;
         uint32_t minImageCount;
@@ -48,8 +58,6 @@ class Swapchain {
     void waitForRecreateReady();
     Shape getSwapchainShape();
 
-    std::shared_ptr<Context> ctx;
-    std::shared_ptr<BufferManager> bufferMgr;
     std::shared_ptr<Framebuffer> framebuffer;
 
     VkSwapchainKHR swapchain{VK_NULL_HANDLE};
