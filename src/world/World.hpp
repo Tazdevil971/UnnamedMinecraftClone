@@ -34,7 +34,7 @@ class World {
     void cleanup();
 
     template <typename F>
-    void getChunkInAread(glm::ivec3 pos, int radius, const F& f);
+    void getChunkInArea(glm::ivec3 pos, int radius, const F& f);
 
     Chunk& getChunk(glm::ivec3 pos);
     Block getBlock(glm::ivec3 pos);
@@ -43,14 +43,14 @@ class World {
 };
 
 template <typename F>
-void World::getChunkInAread(glm::ivec3 pos, int radius, const F& f) {
+void World::getChunkInArea(glm::ivec3 pos, int radius, const F& f) {
     // Get pos in chunk coord system
     pos /= Chunk::DIM;
 
     for (int x = -radius; x < radius; x++) {
         for (int z = -radius; z < radius; z++) {
             for (int y = 0; y < HEIGHT; y++) {
-                glm::ivec3 pos2 = pos + glm::ivec3{x, y, z};
+                glm::ivec3 pos2{pos.x + x, y, pos.z + z};
                 Chunk& chunk = getChunk(pos2);
                 f(pos2, chunk);
             }

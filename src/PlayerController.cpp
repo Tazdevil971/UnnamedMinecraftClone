@@ -137,7 +137,7 @@ void PlayerController::onFrame(InputState& input) {
         }
     }
 
-    world.getChunkInAread(camera.pos, 3, [this](glm::ivec3 pos, Chunk& chunk) {
+    world.getChunkInArea(camera.pos, 3, [this](glm::ivec3 pos, Chunk& chunk) {
         models.push_back(chunk.getModel(pos));
     });
 
