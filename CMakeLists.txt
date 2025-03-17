@@ -25,7 +25,7 @@ set(SOURCES
     src/render/Renderer.cpp
     src/render/Window.cpp
     src/world/AtlasManager.cpp
-    # src/world/World.cpp
+    src/world/World.cpp
     src/world/Chunk.cpp
     )
 

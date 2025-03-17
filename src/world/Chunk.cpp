@@ -28,6 +28,11 @@ Block Chunk::getBlock(glm::ivec3 pos) {
 
 render::SimpleMesh Chunk::getMesh() { return mesh; }
 
+render::SimpleModel Chunk::getModel(glm::ivec3 pos) {
+    return SimpleModel{mesh, AtlasManager::get().getAtlas(), pos * DIM,
+                       glm::vec3(0.0f, 0.0f, 0.0f)};
+}
+
 void Chunk::updateMesh() {
     std::vector<uint16_t> indices;
     std::vector<Vertex> vertices;

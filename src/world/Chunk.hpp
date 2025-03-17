@@ -15,6 +15,7 @@ class Chunk {
    private:
     Block blocks[DIM.x][DIM.y][DIM.z];
     render::SimpleMesh mesh;
+
     void updateMesh();
 
    public:
@@ -27,6 +28,7 @@ class Chunk {
     void updateBlock(glm::ivec3 pos, Block newBlock);
 
     render::SimpleMesh getMesh();
+    render::SimpleModel getModel(glm::ivec3 pos);
 };
 
 }  // namespace world

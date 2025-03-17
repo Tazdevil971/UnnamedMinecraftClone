@@ -1,37 +1,57 @@
 #include "World.hpp"
 
-#include <cmath>
-#include <glm/geometric.hpp>
+#include <iostream>
+
+using namespace world;
+using namespace render;
 
 World::World() {}
 
-Chunk World::createChunk(glm::ivec3 pos) {
-    Chunk chunk = Chunk::genChunk(pos);
-    chunks[pos] = chunk;
-    return chunk;
+void World::cleanup() {
+    for (auto& it : chunks) {
+        it.second.cleanup();
+    }
+
+    chunks.clear();
 }
 
-Chunk& World::getChunk(glm::ivec3 pos) { return chunks[pos]; }
-
-std::list<Chunk> World::getChunkInArea(glm::ivec3 pos, float radius) {
-    std::list<Chunk> chunksInArea;
-    for (auto& [key, value] : chunks) {
-        if (glm::distance(pos, key) <= radius) {
-            chunksInArea.push_back(value);
-        }
+Chunk& World::getChunk(glm::ivec3 pos) {
+    // Get an existing chunk or create a new one
+    auto it = chunks.find(pos);
+    if (it == chunks.end()) {
+        it = chunks.insert({pos, Chunk::genChunk(pos)}).first;
+        return it->second;
+    } else {
+        return it->second;
     }
-    return chunksInArea;
 }
 
 Block World::getBlock(glm::ivec3 pos) {
-    Chunk chunk = getChunk(pos);
-    Block block = chunk.getBlock(pos / 16);
-    return block;
+    auto [chunkPos, inChunkPos] = splitWorldCoords(pos);
+    return getChunk(chunkPos).getBlock(inChunkPos);
 }
 
 void World::updateBlock(glm::ivec3 pos, Block newBlock) {
-    Chunk chunk = getChunk(pos);
-    Block block = chunk.getBlock(pos / 16);
-    block = newBlock;
-    return;
+    auto [chunkPos, inChunkPos] = splitWorldCoords(pos);
+    getChunk(chunkPos).updateBlock(inChunkPos, newBlock);
+}
+
+// Division towards "bottom"
+int fixedDiv(int value, int div) {
+    return value >= 0 ? (value / div) : ((value - div + 1) / div);
+}
+
+int fixedMod(int value, int mod) {
+    return value >= 0 ? (value % mod) : (((value % mod) + mod) % mod);
+}
+
+std::pair<glm::ivec3, glm::ivec3> World::splitWorldCoords(glm::ivec3 pos) {
+    glm::ivec3 chunkPos{fixedDiv(pos.x, Chunk::DIM.x),
+                        fixedDiv(pos.y, Chunk::DIM.y),
+                        fixedDiv(pos.z, Chunk::DIM.z)};
+    glm::ivec3 inChunkPos{fixedMod(pos.x, Chunk::DIM.x),
+                          fixedMod(pos.y, Chunk::DIM.y),
+                          fixedMod(pos.z, Chunk::DIM.z)};
+
+    return {chunkPos, inChunkPos};
 }

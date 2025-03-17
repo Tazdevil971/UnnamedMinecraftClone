@@ -9,6 +9,7 @@
 #include "render/Window.hpp"
 #include "world/AtlasManager.hpp"
 #include "world/Chunk.hpp"
+#include "world/World.hpp"
 
 class PlayerController : public render::Window {
    public:
@@ -27,7 +28,7 @@ class PlayerController : public render::Window {
 
     bool windowResized{false};
 
-    world::Chunk chunk;
+    world::World world{};
 
     float lastPlace{0.0f};
     float lastDestroy{0.0f};
