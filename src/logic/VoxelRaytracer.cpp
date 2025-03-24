@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-using namespace utils;
+using namespace logic;
 
 VoxelRaytracer::VoxelRaytracer(glm::vec3 start, glm::vec3 dir) {
     // Convert start into integer position

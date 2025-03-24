@@ -14,8 +14,7 @@ find_package(Vulkan REQUIRED)
 
 set(SOURCES 
     src/main.cpp 
-    src/PlayerController.cpp
-    src/VoxelRaytracer.cpp
+    src/MainWindow.cpp
     src/render/Context.cpp
     src/render/Swapchain.cpp
     src/render/Framebuffer.cpp
@@ -27,7 +26,10 @@ set(SOURCES
     src/world/AtlasManager.cpp
     src/world/World.cpp
     src/world/Chunk.cpp
-    src/world/Collision.cpp
+    src/logic/Collision.cpp
+    src/logic/AIController.cpp
+    src/logic/PlayerController.cpp
+    src/logic/VoxelRaytracer.cpp
     )
 
 set(SHADERS

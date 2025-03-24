@@ -11,14 +11,6 @@ namespace render {
 
 class Window {
    public:
-    Window(std::string name);
-
-    void mainLoop();
-    void cleanup();
-
-    float getTime();
-
-   protected:
     struct InputState {
         bool forward;
         bool backward;
@@ -28,10 +20,18 @@ class Window {
         bool crouch;
         bool place;
         bool destroy;
-        glm::vec2 viewDelta;
+        glm::vec2 cursorPos;
         float deltaTime;
     };
 
+    Window(std::string name);
+
+    void mainLoop();
+    void cleanup();
+
+    float getTime();
+
+   protected:
     virtual void onFrame(InputState &input) {}
     virtual void onResize(int width, int height) {}
 

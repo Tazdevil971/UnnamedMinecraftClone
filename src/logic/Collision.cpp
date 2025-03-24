@@ -2,13 +2,14 @@
 
 #include <iostream>
 
+using namespace logic;
 using namespace world;
 
 void SimulatedBoxCollider::update(World &world, glm::vec3 acc) {
     acc += GRAVITY;
 
     glm::vec3 speed = pos - prevPos;
-    std::cout << speed.x << " " << speed.y << " " << speed.z << std::endl;
+    // std::cout << speed.x << " " << speed.y << " " << speed.z << std::endl;
 
     acc -= speed * glm::abs(speed) * DRAG;
 
@@ -131,75 +132,3 @@ bool SimulatedBoxCollider::checkCollision(const BlockRange &range,
     });
     return willCollide;
 }
-
-/*
-PhysicBox::PhysicBox(glm::vec3 pos, glm::vec3 size) : pos{pos}, prevPos{pos},
-size{size} {}
-
-void PhysicBox::update(World &world) {
-    glm::vec3 acc = PhysicBox::GRAVITY;
-
-    glm::vec3 newVel = pos - prevPos + acc;
-    // Clamp max speed (to account for air drag for example)
-    newVel = glm::clamp(newVel, -PhysicBox::MAX_SPEED, PhysicBox::MAX_SPEED);
-
-    glm::vec3 newPos = pos;
-
-    // Slowly integrate velocity
-    while (glm::length(newVel) > 0.0f) {
-        if (newVel.y < 0.0f) {
-            auto [dist, collided] = getSafeDistanceBottom(newPos, world);
-            dist = std::max(-dist, newVel.y);
-
-            newPos.y += dist;
-            newVel.y -= dist;
-
-
-            if(collided)
-                newVel.y = 0;
-        }
-
-        if (newVel.y > 0.0f) {
-            newPos.y += newVel.y;
-            newVel.y -= newVel.y;
-        }
-    }
-
-    prevPos = pos;
-    pos = newPos;
-}
-
-glm::vec3 PhysicBox::getPos() {
-    return pos;
-}
-
-std::pair<float, bool> PhysicBox::getSafeDistanceBottom(glm::vec3 pos, World
-&world) { int startX = glm::floor(pos.x - size.x / 2); int endX =
-glm::ceil(pos.x + size.x / 2);
-
-    int startZ = glm::floor(pos.z - size.z / 2);
-    int endZ = glm::ceil(pos.z + size.z / 2);
-
-    int y = glm::floor(pos.y) - 1;
-
-    bool wouldCollide = false;
-
-    for(int x = startX; x < endX; x++) {
-        for(int z = startZ; z < endZ; z++) {
-            if(world.getBlock({x, y, z}) != Block::AIR) {
-                wouldCollide = true;
-                break;
-            }
-        }
-
-        if (wouldCollide)
-            break;
-    }
-
-    if (wouldCollide) {
-        return std::make_pair(pos.y - (y + 1), true);
-    } else {
-        return std::make_pair(1.0f, false);
-    }
-}
-*/

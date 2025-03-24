@@ -30,6 +30,8 @@ Window::Window(std::string name) {
 
 void Window::mainLoop() {
     InputState input;
+    input.cursorPos.x = 0.0f;
+    input.cursorPos.y = 0.0f;
 
     double xLast, yLast;
     glfwGetCursorPos(window, &xLast, &yLast);
@@ -38,18 +40,6 @@ void Window::mainLoop() {
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS &&
-            !captureMouse) {
-            glfwGetCursorPos(window, &xLast, &yLast);
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            captureMouse = true;
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS && captureMouse) {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            captureMouse = false;
-        }
-
         if (captureMouse) {
             input.forward = glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS;
             input.backward = glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS;
@@ -66,8 +56,8 @@ void Window::mainLoop() {
             double x, y;
             glfwGetCursorPos(window, &x, &y);
 
-            input.viewDelta.x = xLast - x;
-            input.viewDelta.y = yLast - y;
+            input.cursorPos.x += xLast - x;
+            input.cursorPos.y += yLast - y;
 
             xLast = x;
             yLast = y;
@@ -81,7 +71,18 @@ void Window::mainLoop() {
             input.crouch = false;
             input.place = false;
             input.deltaTime = false;
-            input.viewDelta = glm::vec2(0.0f, 0.0f);
+        }
+
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS &&
+            !captureMouse) {
+            glfwGetCursorPos(window, &xLast, &yLast);
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            captureMouse = true;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS && captureMouse) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            captureMouse = false;
         }
 
         float time = getTime();

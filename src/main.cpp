@@ -1,16 +1,14 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "PlayerController.hpp"
-#include "VoxelRaytracer.hpp"
+#include "MainWindow.hpp"
 #include "backward.hpp"
 
 backward::SignalHandling sh;
 
 int main() {
-    std::unique_ptr<PlayerController> player;
-    player = std::make_unique<PlayerController>();
-    player->mainLoop();
-    player->cleanup();
+    std::unique_ptr<MainWindow> window = std::make_unique<MainWindow>();
+    window->mainLoop();
+    window->cleanup();
     return 0;
 }

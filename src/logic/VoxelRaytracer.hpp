@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-namespace utils {
+namespace logic {
 
 class VoxelRaytracer {
 public:

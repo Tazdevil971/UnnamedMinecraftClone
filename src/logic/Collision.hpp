@@ -2,9 +2,9 @@
 
 #include <glm/glm.hpp>
 
-#include "World.hpp"
+#include "../world/World.hpp"
 
-namespace world {
+namespace logic {
 
 struct BlockRange {
     glm::ivec3 corner;
@@ -58,9 +58,9 @@ struct BoxCollider {
         glm::ivec3 corner1 = glm::ivec3{glm::floor(pos.x - size.x / 2),
                                         glm::ceil(pos.y + size.y),
                                         glm::floor(pos.z - size.z / 2)};
-        glm::ivec3 corner2 =
-            glm::ivec3{glm::ceil(pos.x + size.x / 2), glm::ceil(pos.y + size.y + 1),
-                       glm::ceil(pos.z + size.z / 2)};
+        glm::ivec3 corner2 = glm::ivec3{glm::ceil(pos.x + size.x / 2),
+                                        glm::ceil(pos.y + size.y + 1),
+                                        glm::ceil(pos.z + size.z / 2)};
 
         return BlockRange{corner1, corner2 - corner1};
     }
@@ -141,17 +141,18 @@ class SimulatedBoxCollider {
     SimulatedBoxCollider(glm::vec3 pos, glm::vec3 size)
         : pos{pos}, prevPos{pos}, size{size} {}
 
-    void update(World &world, glm::vec3 acc);
+    void update(world::World &world, glm::vec3 acc);
     void teleport(glm::vec3 newPos);
 
     glm::vec3 computeAccForSpeed(glm::vec3 speed);
 
     BoxCollider getCollider() const { return BoxCollider{pos, size}; }
+    glm::vec3 getPos() const { return pos; }
     bool isOnGround() const { return onGround; }
     bool isAgainstWall() const { return againstWall; }
 
    private:
-    static bool checkCollision(const BlockRange &range, World &world);
+    static bool checkCollision(const BlockRange &range, world::World &world);
 
     glm::vec3 pos;
     glm::vec3 prevPos;
@@ -161,4 +162,4 @@ class SimulatedBoxCollider {
     bool againstWall{false};
 };
 
-}  // namespace world
+}  // namespace logic
