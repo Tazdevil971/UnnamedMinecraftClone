@@ -111,7 +111,20 @@ void PlayerController::onFrame(InputState& input) {
     if (!input.destroy) lastDestroy = 0.0f;
     if (!input.place) lastPlace = 0.0f;
 
-    Camera camera{45.0f, 0.1f, 1000.0f, pos, glm::vec3{pitch, yaw, 0.0f}};
+    totalTime += input.deltaTime;
+    while ((totalTime - simulatedTime) > 0.005f) {
+        // Run physics at 200Hz
+        playerCollider.update(world, acc);
+        simulatedTime += 0.005f;
+
+        // Reset impulse for all other
+        acc = {0.0f, 0.0f, 0.0f};
+    }
+
+    Camera camera{
+        45.0f, 0.1f, 1000.0f,
+        playerCollider.getCollider().pos + glm::vec3{0.0f, 1.4f, 0.0f},
+        glm::vec3{pitch, yaw, 0.0f}};
     utils::VoxelRaytracer raytracer(camera.pos, camera.computeViewDir());
 
     for (int i = 0; i < 20; i++) {
@@ -128,7 +141,10 @@ void PlayerController::onFrame(InputState& input) {
             if (input.place && (getTime() > lastPlace + 0.25f)) {
                 lastPlace = getTime();
                 auto pos = hit.pos + hit.dir;
-                world.updateBlock(pos, Block::DIAMOND);
+                if (!playerCollider.getCollider().getBlockRange().isInside(
+                        pos)) {
+                    world.updateBlock(pos, Block::DIAMOND);
+                }
             }
 
             pushDebugCube(camera.pos + camera.computeViewDir() * hit.dist,
@@ -157,7 +173,8 @@ void PlayerController::onResize(int width, int height) { windowResized = true; }
 
 void PlayerController::handleInput(InputState& input) {
     const float SENSIBILITY = 1e-3f;
-    const float SPEED = 2.0f;
+    const float SPEED = 0.03f;
+    const float JUMP = 0.04f;
 
     glm::vec3 mov{0.0f, 0.0f, 0.0f};
 
@@ -181,17 +198,24 @@ void PlayerController::handleInput(InputState& input) {
     // Rotate according to current view angle
     mov = glm::rotate(mov, yaw, glm::vec3(0.0f, 1.0f, 0.0f));
     // Scale according to delta time and speed
-    mov *= input.deltaTime * SPEED;
+    mov *= SPEED;
+
+    acc = playerCollider.computeAccForSpeed(mov);
+    acc.y = 0.0f;
 
     // Add free flight
-    if (input.jump) {
-        mov.y = input.deltaTime;
-    }
-    if (input.crouch) {
-        mov.y = -input.deltaTime;
+    if (input.jump && playerCollider.isOnGround()) {
+        acc.y = JUMP;
     }
 
-    pos += mov;
+    // if (input.jump) {
+    //     mov.y = input.deltaTime;
+    // }
+    // if (input.crouch) {
+    //     mov.y = -input.deltaTime;
+    // }
+    // pos += mov;
+
     yaw += input.viewDelta.x * SENSIBILITY;
     pitch += input.viewDelta.y * SENSIBILITY;
 

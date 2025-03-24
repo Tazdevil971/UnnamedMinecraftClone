@@ -27,6 +27,7 @@ set(SOURCES
     src/world/AtlasManager.cpp
     src/world/World.cpp
     src/world/Chunk.cpp
+    src/world/Collision.cpp
     )
 
 set(SHADERS
