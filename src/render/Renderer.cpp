@@ -413,6 +413,9 @@ void Renderer::createSyncObjects() {
 }
 
 void Renderer::recordSimpleModelRender(const SimpleModel& model, glm::mat4 vp) {
+    if (model.mesh.isNull())
+        return;
+
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             pipelineLayout, 0, 1, &model.texture.descriptor, 0,

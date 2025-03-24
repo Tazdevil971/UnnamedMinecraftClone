@@ -28,6 +28,10 @@ struct SimpleMesh {
     size_t vertexCount{0};
     size_t indexCount{0};
 
+    bool isNull() const {
+        return memory == VK_NULL_HANDLE && buffer == VK_NULL_HANDLE;
+    }
+
     void bind(VkCommandBuffer commandBuffer) const {
         VkDeviceSize offsets[] = {vertexOffset};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &buffer, offsets);
@@ -70,6 +74,11 @@ struct SimpleImage {
     VmaAllocation memory{VK_NULL_HANDLE};
     VkImage image{VK_NULL_HANDLE};
     VkImageView view{VK_NULL_HANDLE};
+
+    bool isNull() const {
+        return memory == VK_NULL_HANDLE && image == VK_NULL_HANDLE &&
+               view == VK_NULL_HANDLE;
+    }
 
     uint32_t width;
     uint32_t height;

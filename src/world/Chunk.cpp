@@ -17,7 +17,11 @@ Chunk::Chunk() {
     }
 }
 
-void Chunk::cleanup() { BufferManager::get().deallocateSimpleMeshDefer(mesh); }
+void Chunk::cleanup() {
+    if (!mesh.isNull()) {
+        BufferManager::get().deallocateSimpleMeshDefer(mesh);
+    }
+}
 
 Block Chunk::getBlock(glm::ivec3 pos) {
     int x = pos.x;
@@ -186,8 +190,15 @@ void Chunk::updateMesh() {
         }
     }
 
-    BufferManager::get().deallocateSimpleMeshDefer(mesh);
-    mesh = BufferManager::get().allocateSimpleMesh(indices, vertices);
+    if (!mesh.isNull()) {
+        BufferManager::get().deallocateSimpleMeshDefer(mesh);
+    }
+
+    if (indices.size() > 0 || vertices.size() > 0) {
+        mesh = BufferManager::get().allocateSimpleMesh(indices, vertices);
+    } else {
+        mesh = SimpleMesh{};
+    }
 }
 
 Chunk Chunk::genChunk(glm::ivec3 pos) {
