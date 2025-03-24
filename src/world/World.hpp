@@ -23,7 +23,7 @@ struct IVec3Hash {
 
 class World {
    public:
-    static constexpr int HEIGHT = 1;
+    static constexpr int HEIGHT = 4;
 
    private:
     std::unordered_map<glm::ivec3, Chunk, IVec3Hash> chunks;

@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <glm/vec3.hpp>
+#include <glm/gtc/noise.hpp>
 
 #include "../render/BufferManager.hpp"
 #include "../render/Mesh.hpp"
@@ -17,6 +18,7 @@ class Chunk {
     render::SimpleMesh mesh;
 
     void updateMesh();
+    static void genTree(glm::ivec3 pos, Chunk &chunk, Block block);
 
    public:
     Chunk();
