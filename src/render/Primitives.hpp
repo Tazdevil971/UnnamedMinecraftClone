@@ -15,7 +15,7 @@ namespace render {
 struct GeometryVertex {
     glm::vec3 pos;
     glm::vec3 color;
-    // glm::vec3 normal;
+    glm::vec3 normal;
     glm::vec2 uv;
 };
 
@@ -58,28 +58,28 @@ struct GeometryMesh : BaseMesh {
         return description;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 3>
+    static std::array<VkVertexInputAttributeDescription, 4>
     getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 3> descriptions{};
+        std::array<VkVertexInputAttributeDescription, 4> descriptions{};
         descriptions[0].binding = 0;
         descriptions[0].location = 0;
         descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        descriptions[0].offset = offsetof(Vertex, pos);
+        descriptions[0].offset = offsetof(GeometryVertex, pos);
 
         descriptions[1].binding = 0;
         descriptions[1].location = 1;
         descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        descriptions[1].offset = offsetof(Vertex, color);
-
-        // descriptions[2].binding = 0;
-        // descriptions[2].location = 2;
-        // descriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
-        // descriptions[2].offset = offsetof(Vertex, normal);
+        descriptions[1].offset = offsetof(GeometryVertex, color);
 
         descriptions[2].binding = 0;
         descriptions[2].location = 2;
-        descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-        descriptions[2].offset = offsetof(Vertex, uv);
+        descriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+        descriptions[2].offset = offsetof(GeometryVertex, normal);
+
+        descriptions[3].binding = 0;
+        descriptions[3].location = 3;
+        descriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
+        descriptions[3].offset = offsetof(GeometryVertex, uv);
 
         return descriptions;
     }
@@ -103,12 +103,12 @@ struct UiMesh : BaseMesh {
         descriptions[0].binding = 0;
         descriptions[0].location = 0;
         descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-        descriptions[0].offset = offsetof(Vertex, pos);
+        descriptions[0].offset = offsetof(UiVertex, pos);
 
         descriptions[1].binding = 0;
         descriptions[1].location = 1;
         descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
-        descriptions[1].offset = offsetof(Vertex, uv);
+        descriptions[1].offset = offsetof(UiVertex, uv);
 
         return descriptions;
     }
@@ -146,6 +146,10 @@ struct GeometryModel {
     glm::mat4 computeModelMat() const {
         return glm::translate(glm::mat4(1.0f), pos) * glm::toMat4(rot);
     }
+
+    glm::mat4 computeNormalMat() const {
+        return glm::toMat4(rot);
+    }
 };
 
 struct Camera {
@@ -173,6 +177,11 @@ struct Camera {
     }
 
     glm::vec3 computeViewDir() const { return rot * glm::vec3{0, 0, -1.0f}; }
+};
+
+struct Light {
+    glm::vec4 pos;
+    glm::vec4 color;
 };
 
 }  // namespace render

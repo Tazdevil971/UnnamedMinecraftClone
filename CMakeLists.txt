@@ -33,8 +33,8 @@ set(SOURCES
     )
 
 set(SHADERS
-    src/shaders/SimpleVert.vert
-    src/shaders/SimpleFrag.frag)
+    src/shaders/GeometryVert.vert
+    src/shaders/GeometryFrag.frag)
 
 set(ASSETS
     assets/test_image.jpg

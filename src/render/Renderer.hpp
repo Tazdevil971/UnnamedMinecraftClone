@@ -36,8 +36,7 @@ class Renderer {
     void cleanup();
 
     VkRenderPass renderPass{VK_NULL_HANDLE};
-    VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
-    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
+    VkPipelineLayout geometryPipelineLayout{VK_NULL_HANDLE};
     VkPipeline geometryPipeline{VK_NULL_HANDLE};
 
     VkCommandPool commandPool{VK_NULL_HANDLE};

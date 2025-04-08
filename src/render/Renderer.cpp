@@ -51,15 +51,10 @@ void Renderer::cleanup() {
         commandPool = VK_NULL_HANDLE;
     }
 
-    if (geometryPipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(Context::get().getDevice(), geometryPipeline, nullptr);
-        geometryPipeline = VK_NULL_HANDLE;
-    }
-
-    if (pipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(Context::get().getDevice(), pipelineLayout,
+    if (geometryPipelineLayout != VK_NULL_HANDLE) {
+        vkDestroyPipelineLayout(Context::get().getDevice(), geometryPipelineLayout,
                                 nullptr);
-        pipelineLayout = VK_NULL_HANDLE;
+        geometryPipelineLayout = VK_NULL_HANDLE;
     }
 
     if (renderPass != VK_NULL_HANDLE) {
@@ -206,10 +201,10 @@ void Renderer::createRenderPass() {
 void Renderer::createGeometryGraphicsPipeline() {
     VkDescriptorSetLayout descriptorSetLayout =
         TextureManager::get().getSimpleLayout();
-    VkPushConstantRange pushConstantRange{};
+    VkPushConstantRange pushConstantRange = {};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(glm::mat4);
+    pushConstantRange.size = sizeof(glm::mat4) * 2;
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
     pipelineLayoutCreateInfo.sType =
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -220,13 +215,13 @@ void Renderer::createGeometryGraphicsPipeline() {
 
     if (vkCreatePipelineLayout(Context::get().getDevice(),
                                &pipelineLayoutCreateInfo, nullptr,
-                               &pipelineLayout) != VK_SUCCESS)
+                               &geometryPipelineLayout) != VK_SUCCESS)
         throw std::runtime_error{"failed to create pipeline layout!"};
 
     auto vertShaderModule =
-        Context::get().loadShaderModule("SimpleVert.vert.spv");
+        Context::get().loadShaderModule("GeometryVert.vert.spv");
     auto fragShaderModule =
-        Context::get().loadShaderModule("SimpleFrag.frag.spv");
+        Context::get().loadShaderModule("GeometryFrag.frag.spv");
 
     VkPipelineShaderStageCreateInfo vertStageInfo{};
     vertStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -350,7 +345,7 @@ void Renderer::createGeometryGraphicsPipeline() {
     pipelineCreateInfo.pDepthStencilState = &depthStencilStateInfo;
     pipelineCreateInfo.pColorBlendState = &colorBlendStateInfo;
     pipelineCreateInfo.pDynamicState = &dynamicStateInfo;
-    pipelineCreateInfo.layout = pipelineLayout;
+    pipelineCreateInfo.layout = geometryPipelineLayout;
     pipelineCreateInfo.renderPass = renderPass;
     pipelineCreateInfo.subpass = 0;
     pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -412,21 +407,24 @@ void Renderer::createSyncObjects() {
         throw std::runtime_error{"failed to create sync objects!"};
 }
 
-void Renderer::recordGeometryModelRender(const GeometryModel& model, glm::mat4 vp) {
-    if (model.mesh.isNull())
-        return;
+void Renderer::recordGeometryModelRender(const GeometryModel& model,
+                                         glm::mat4 vp) {
+    if (model.mesh.isNull()) return;
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geometryPipeline);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      geometryPipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            pipelineLayout, 0, 1, &model.texture.descriptor, 0,
+                            geometryPipelineLayout, 0, 1, &model.texture.descriptor, 0,
                             nullptr);
 
     model.mesh.bind(commandBuffer);
 
-    glm::mat4 mvp = vp * model.computeModelMat();
+    glm::mat4 m = model.computeModelMat();
+    glm::mat4 pushBuffer[2] = {m, vp};
 
-    vkCmdPushConstants(commandBuffer, pipelineLayout,
-                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mvp);
+    vkCmdPushConstants(commandBuffer, geometryPipelineLayout,
+                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4) * 2,
+                       pushBuffer);
 
     VkViewport viewport = framebuffer->getViewport();
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
