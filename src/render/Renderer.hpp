@@ -38,7 +38,7 @@ class Renderer {
     VkRenderPass renderPass{VK_NULL_HANDLE};
     VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
-    VkPipeline pipeline{VK_NULL_HANDLE};
+    VkPipeline geometryPipeline{VK_NULL_HANDLE};
 
     VkCommandPool commandPool{VK_NULL_HANDLE};
 
@@ -50,7 +50,7 @@ class Renderer {
     VkFence inFlightFence{VK_NULL_HANDLE};
 
     void createRenderPass();
-    void createGraphicsPipeline();
+    void createGeometryGraphicsPipeline();
     void createCommandPool();
     void createCommandBuffer();
     void createSyncObjects();

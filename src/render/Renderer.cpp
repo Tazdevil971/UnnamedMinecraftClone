@@ -16,7 +16,7 @@ Renderer::Renderer() {
         createRenderPass();
         framebuffer = Swapchain::get().createFramebuffer(renderPass);
 
-        createGraphicsPipeline();
+        createGeometryGraphicsPipeline();
         createCommandPool();
         createCommandBuffer();
         createSyncObjects();
@@ -51,9 +51,9 @@ void Renderer::cleanup() {
         commandPool = VK_NULL_HANDLE;
     }
 
-    if (pipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(Context::get().getDevice(), pipeline, nullptr);
-        pipeline = VK_NULL_HANDLE;
+    if (geometryPipeline != VK_NULL_HANDLE) {
+        vkDestroyPipeline(Context::get().getDevice(), geometryPipeline, nullptr);
+        geometryPipeline = VK_NULL_HANDLE;
     }
 
     if (pipelineLayout != VK_NULL_HANDLE) {
@@ -203,7 +203,7 @@ void Renderer::createRenderPass() {
         throw std::runtime_error{"failed to create render pass!"};
 }
 
-void Renderer::createGraphicsPipeline() {
+void Renderer::createGeometryGraphicsPipeline() {
     VkDescriptorSetLayout descriptorSetLayout =
         TextureManager::get().getSimpleLayout();
     VkPushConstantRange pushConstantRange{};
@@ -358,7 +358,7 @@ void Renderer::createGraphicsPipeline() {
 
     if (vkCreateGraphicsPipelines(Context::get().getDevice(), VK_NULL_HANDLE, 1,
                                   &pipelineCreateInfo, nullptr,
-                                  &pipeline) != VK_SUCCESS)
+                                  &geometryPipeline) != VK_SUCCESS)
         throw std::runtime_error{"failed to create graphics pipeline"};
 
     vkDestroyShaderModule(Context::get().getDevice(), vertShaderModule,
@@ -416,7 +416,7 @@ void Renderer::recordGeometryModelRender(const GeometryModel& model, glm::mat4 v
     if (model.mesh.isNull())
         return;
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geometryPipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             pipelineLayout, 0, 1, &model.texture.descriptor, 0,
                             nullptr);
