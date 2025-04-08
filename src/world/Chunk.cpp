@@ -239,7 +239,7 @@ void Chunk::genTree(glm::ivec3 pos, Chunk &chunk, Block block){
         chunk.blocks[x + 1][y][z - 1] == Block::WOOD_LOG ||
         chunk.blocks[x - 1][y][z + 1] == Block::WOOD_LOG)
         {
-        chunk.blocks[x][y][z] == Block::AIR;
+        chunk.blocks[x][y][z] = Block::AIR;
         return;
     }
 

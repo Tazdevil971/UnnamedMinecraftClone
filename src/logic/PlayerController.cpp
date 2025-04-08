@@ -5,6 +5,7 @@
 #include "VoxelRaytracer.hpp"
 
 #include <iostream>
+#include <algorithm>
 
 using namespace logic;
 using namespace world;
