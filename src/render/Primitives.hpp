@@ -152,6 +152,12 @@ struct GeometryModel {
     }
 };
 
+struct UiModel {
+    UiMesh mesh;
+    SimpleTexture texture;
+    glm::vec2 pos;
+};
+
 struct Camera {
     float fov;
     float nearPlane;

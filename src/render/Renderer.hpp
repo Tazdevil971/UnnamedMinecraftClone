@@ -27,7 +27,7 @@ class Renderer {
 
     ~Renderer();
 
-    void render(const Camera& camera, std::list<GeometryModel> models,
+    void render(const Camera& camera, std::list<GeometryModel> models, std::list<UiModel> uiModels,
                 bool windowResized);
 
    private:
@@ -38,6 +38,8 @@ class Renderer {
     VkRenderPass renderPass{VK_NULL_HANDLE};
     VkPipelineLayout geometryPipelineLayout{VK_NULL_HANDLE};
     VkPipeline geometryPipeline{VK_NULL_HANDLE};
+    VkPipelineLayout uiPipelineLayout{VK_NULL_HANDLE};
+    VkPipeline uiPipeline{VK_NULL_HANDLE};
 
     VkCommandPool commandPool{VK_NULL_HANDLE};
 
@@ -50,9 +52,11 @@ class Renderer {
 
     void createRenderPass();
     void createGeometryGraphicsPipeline();
+    void createUiGraphicsPipeline();
     void createCommandPool();
     void createCommandBuffer();
     void createSyncObjects();
     void recordGeometryModelRender(const GeometryModel& model, glm::mat4 vp);
+    void recordUiModelRender(const UiModel& model, glm::vec2 pos);
 };
 }  // namespace render

@@ -74,6 +74,13 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
             "assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
         debugCubeMesh = BufferManager::get().allocateMesh<GeometryMesh>(
             DEBUG_CUBE_INDICES, DEBUG_CUBE_VERTICES);
+        uiMesh = BufferManager::get().allocateMesh<UiMesh>(
+            {0, 1, 2}, {
+                           {{0, 0}, {0, 0}},
+                           {{0, 1}, {0, 1}},
+                           {{1, 0}, {1, 0}},
+
+                       });
 
     } catch (...) {
         cleanup();
@@ -88,6 +95,7 @@ void MainWindow::cleanup() {
 
     BufferManager::get().deallocateSimpleTextureDefer(debugTexture);
     BufferManager::get().deallocateMeshDefer(debugCubeMesh);
+    BufferManager::get().deallocateMeshDefer(uiMesh);
 
     // Wait for the device to finish rendering before cleaning up!
     Context::get().waitDeviceIdle();
@@ -118,7 +126,11 @@ void MainWindow::onFrame(InputState& input) {
         models.push_back(chunk.getModel(pos));
     });
 
-    Renderer::get().render(playerController.getCamera(), models, windowResized);
+    glm::vec2 pos = {-0.5,0.5};
+
+    uiModels.push_back(UiModel{uiMesh, debugTexture, pos});
+
+    Renderer::get().render(playerController.getCamera(), models, uiModels, windowResized);
     windowResized = false;
 }
 

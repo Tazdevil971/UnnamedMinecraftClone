@@ -36,8 +36,10 @@ class MainWindow : public render::Window {
                                             glm::vec3{0.4f, 0.4f, 0.4f}};
 
     render::GeometryMesh debugCubeMesh;
+    render::UiMesh uiMesh;
     render::SimpleTexture debugTexture;
 
     // Per frame stuff
     std::list<render::GeometryModel> models;
+    std::list<render::UiModel> uiModels;
 };
