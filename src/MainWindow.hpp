@@ -5,7 +5,6 @@
 #include "render/BufferManager.hpp"
 #include "render/Context.hpp"
 #include "render/Renderer.hpp"
-#include "render/TextureManager.hpp"
 #include "render/Window.hpp"
 #include "world/AtlasManager.hpp"
 #include "world/Chunk.hpp"

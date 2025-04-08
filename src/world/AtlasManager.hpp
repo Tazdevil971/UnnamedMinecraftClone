@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 
-#include "../render/TextureManager.hpp"
+#include "../render/BufferManager.hpp"
 #include "Block.hpp"
 
 namespace world {

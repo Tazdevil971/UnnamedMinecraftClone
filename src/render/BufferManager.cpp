@@ -12,12 +12,17 @@ using namespace render;
 
 std::unique_ptr<BufferManager> BufferManager::INSTANCE;
 
-BufferManager::BufferManager() {
+BufferManager::BufferManager(uint32_t simpleTexturePoolSize) {
     try {
         createVma();
         createCommandPool();
         createCommandBuffer();
         createSyncObjects();
+
+        // Create texture stuff
+        createSimpleTextureLayout();
+        createSimpleTextureDescriptorPool(simpleTexturePoolSize);
+        createSimpleTextureDescriptorSets(simpleTexturePoolSize);
     } catch (...) {
         cleanup();
         throw;
@@ -28,6 +33,18 @@ BufferManager::~BufferManager() { cleanup(); }
 
 void BufferManager::cleanup() {
     flushDeferOperations();
+
+    if (simpleTextureDescriptorPool != VK_NULL_HANDLE) {
+        vkDestroyDescriptorPool(Context::get().getDevice(),
+                                simpleTextureDescriptorPool, nullptr);
+        simpleTextureDescriptorPool = VK_NULL_HANDLE;
+    }
+
+    if (simpleTextureLayout != VK_NULL_HANDLE) {
+        vkDestroyDescriptorSetLayout(Context::get().getDevice(),
+                                     simpleTextureLayout, nullptr);
+        simpleTextureLayout = VK_NULL_HANDLE;
+    }
 
     if (syncFence != VK_NULL_HANDLE) {
         vkDestroyFence(Context::get().getDevice(), syncFence, nullptr);
@@ -48,6 +65,9 @@ void BufferManager::cleanup() {
 void BufferManager::flushDeferOperations() {
     for (auto& simpleImage : simpleImageDeallocateDefer)
         deallocateSimpleImageNow(simpleImage);
+
+    for (auto& simpleTexture : simpleTextureDeallocateDefer)
+        deallocateSimpleTextureNow(simpleTexture);
 
     for (auto& mesh : meshDeallocateDefer) deallocateMeshNow(mesh);
 
@@ -221,6 +241,87 @@ void BufferManager::deallocateSimpleImageNow(SimpleImage& image) {
     image = SimpleImage{};
 }
 
+SimpleTexture BufferManager::createSimpleTexture(const std::string& path,
+                                                 VkFormat format) {
+    SimpleImage image = allocateSimpleImage(path, format);
+
+    auto imageDefer = Defer{[&]() { deallocateSimpleImageNow(image); }};
+
+    VkSamplerCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    createInfo.magFilter = VK_FILTER_NEAREST;
+    createInfo.minFilter = VK_FILTER_NEAREST;
+    createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    createInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    createInfo.anisotropyEnable = VK_TRUE;
+    createInfo.maxAnisotropy =
+        Context::get().getDeviceInfo().maxSamplerAnisotropy;
+    createInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    createInfo.unnormalizedCoordinates = VK_FALSE;
+    createInfo.compareEnable = VK_FALSE;
+    createInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    createInfo.mipLodBias = 0.0f;
+    createInfo.minLod = 0.0f;
+    createInfo.maxLod = 0.0f;
+
+    VkSampler sampler;
+
+    if (vkCreateSampler(Context::get().getDevice(), &createInfo, nullptr,
+                        &sampler) != VK_SUCCESS)
+        throw std::runtime_error{"failed to create texture sampler!"};
+
+    auto samplerDefer = Defer{[&]() {
+        vkDestroySampler(Context::get().getDevice(), sampler, nullptr);
+    }};
+
+    if (simpleTextureDescriptorSets.size() == 0)
+        throw std::runtime_error{"not enough descriptor sets!"};
+
+    VkDescriptorSet descriptor = simpleTextureDescriptorSets.back();
+    simpleTextureDescriptorSets.pop_back();
+
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = image.view;
+    imageInfo.sampler = sampler;
+
+    VkWriteDescriptorSet descriptorWrite{};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = descriptor;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pBufferInfo = nullptr;
+    descriptorWrite.pImageInfo = &imageInfo;
+    descriptorWrite.pTexelBufferView = nullptr;
+
+    vkUpdateDescriptorSets(Context::get().getDevice(), 1, &descriptorWrite, 0,
+                           nullptr);
+
+    imageDefer.defuse();
+    samplerDefer.defuse();
+    return {image, sampler, descriptor};
+}
+
+void BufferManager::deallocateSimpleTextureDefer(SimpleTexture& texture) {
+    simpleTextureDeallocateDefer.push_back(texture);
+    texture = SimpleTexture{};
+}
+
+void BufferManager::deallocateSimpleTextureNow(SimpleTexture& texture) {
+    if (texture.descriptor != VK_NULL_HANDLE)
+        simpleTextureDescriptorSets.push_back(texture.descriptor);
+
+    if (texture.sampler != VK_NULL_HANDLE)
+        vkDestroySampler(Context::get().getDevice(), texture.sampler, nullptr);
+
+    deallocateSimpleImageNow(texture.image);
+    texture = SimpleTexture{};
+}
+
 void BufferManager::createVma() {
     VmaAllocatorCreateInfo createInfo{};
     createInfo.flags = 0;
@@ -268,6 +369,62 @@ void BufferManager::createSyncObjects() {
     if (vkCreateFence(Context::get().getDevice(), &createInfo, nullptr,
                       &syncFence) != VK_SUCCESS)
         throw std::runtime_error{"failed to create sync fence!"};
+}
+
+void BufferManager::createSimpleTextureLayout() {
+    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+    samplerLayoutBinding.binding = 0;
+    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.descriptorType =
+        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    samplerLayoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
+    descriptorSetLayoutInfo.sType =
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutInfo.bindingCount = 1;
+    descriptorSetLayoutInfo.pBindings = &samplerLayoutBinding;
+
+    if (vkCreateDescriptorSetLayout(Context::get().getDevice(),
+                                    &descriptorSetLayoutInfo, nullptr,
+                                    &simpleTextureLayout) != VK_SUCCESS)
+        throw std::runtime_error{
+            "failed to create descriptor set layout info!"};
+}
+
+void BufferManager::createSimpleTextureDescriptorPool(uint32_t size) {
+    VkDescriptorPoolSize combinedSamplerPoolSize{};
+    combinedSamplerPoolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    combinedSamplerPoolSize.descriptorCount = size;
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &combinedSamplerPoolSize;
+    poolInfo.maxSets = size;
+
+    if (vkCreateDescriptorPool(Context::get().getDevice(), &poolInfo, nullptr,
+                               &simpleTextureDescriptorPool) != VK_SUCCESS)
+        throw std::runtime_error{"failed to create descriptor pool!"};
+}
+
+void BufferManager::createSimpleTextureDescriptorSets(uint32_t size) {
+    std::vector<VkDescriptorSetLayout> layouts;
+    layouts.resize(size, simpleTextureLayout);
+
+    simpleTextureDescriptorSets.resize(size);
+
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = simpleTextureDescriptorPool;
+    allocInfo.descriptorSetCount = size;
+    allocInfo.pSetLayouts = layouts.data();
+
+    if (vkAllocateDescriptorSets(Context::get().getDevice(), &allocInfo,
+                                 simpleTextureDescriptorSets.data()) !=
+        VK_SUCCESS)
+        throw std::runtime_error{"failed to create descriptor set!"};
 }
 
 void BufferManager::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,

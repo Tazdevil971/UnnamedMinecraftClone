@@ -3,9 +3,10 @@
 #include <glm/mat4x4.hpp>
 #include <list>
 
+#include "BufferManager.hpp"
 #include "Context.hpp"
 #include "Swapchain.hpp"
-#include "TextureManager.hpp"
+
 
 using namespace render;
 
@@ -51,9 +52,15 @@ void Renderer::cleanup() {
         commandPool = VK_NULL_HANDLE;
     }
 
+    if (geometryPipeline != VK_NULL_HANDLE) {
+        vkDestroyPipeline(Context::get().getDevice(), geometryPipeline,
+                          nullptr);
+        geometryPipeline = VK_NULL_HANDLE;
+    }
+
     if (geometryPipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(Context::get().getDevice(), geometryPipelineLayout,
-                                nullptr);
+        vkDestroyPipelineLayout(Context::get().getDevice(),
+                                geometryPipelineLayout, nullptr);
         geometryPipelineLayout = VK_NULL_HANDLE;
     }
 
@@ -69,7 +76,6 @@ void Renderer::render(const Camera& camera, std::list<GeometryModel> models,
                     UINT64_MAX);
 
     // The GPU is idle, flush pending buffers
-    TextureManager::get().flushDeferOperations();
     BufferManager::get().flushDeferOperations();
 
     Swapchain::Frame frame =
@@ -200,7 +206,7 @@ void Renderer::createRenderPass() {
 
 void Renderer::createGeometryGraphicsPipeline() {
     VkDescriptorSetLayout descriptorSetLayout =
-        TextureManager::get().getSimpleLayout();
+        BufferManager::get().getSimpleTextureLayout();
     VkPushConstantRange pushConstantRange = {};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
@@ -414,8 +420,8 @@ void Renderer::recordGeometryModelRender(const GeometryModel& model,
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       geometryPipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            geometryPipelineLayout, 0, 1, &model.texture.descriptor, 0,
-                            nullptr);
+                            geometryPipelineLayout, 0, 1,
+                            &model.texture.descriptor, 0, nullptr);
 
     model.mesh.bind(commandBuffer);
 

@@ -19,7 +19,6 @@ set(SOURCES
     src/render/Swapchain.cpp
     src/render/Framebuffer.cpp
     src/render/BufferManager.cpp
-    src/render/TextureManager.cpp
     src/render/VmaImplementation.cpp
     src/render/Renderer.cpp
     src/render/Window.cpp

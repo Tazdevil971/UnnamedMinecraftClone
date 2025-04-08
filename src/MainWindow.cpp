@@ -64,14 +64,13 @@ std::vector<GeometryVertex> DEBUG_CUBE_VERTICES = {
 MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
     try {
         Context::create(getWindow());
-        BufferManager::create();
-        TextureManager::create(10);
+        BufferManager::create(10);
         Swapchain::create();
         Renderer::create();
 
         AtlasManager::create();
 
-        debugTexture = TextureManager::get().createSimpleTexture(
+        debugTexture = BufferManager::get().createSimpleTexture(
             "assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
         debugCubeMesh = BufferManager::get().allocateMesh<GeometryMesh>(
             DEBUG_CUBE_INDICES, DEBUG_CUBE_VERTICES);
@@ -87,7 +86,7 @@ void MainWindow::cleanup() {
 
     AtlasManager::destroy();
 
-    TextureManager::get().deallocateSimpleTextureDefer(debugTexture);
+    BufferManager::get().deallocateSimpleTextureDefer(debugTexture);
     BufferManager::get().deallocateMeshDefer(debugCubeMesh);
 
     // Wait for the device to finish rendering before cleaning up!
@@ -95,7 +94,6 @@ void MainWindow::cleanup() {
 
     Renderer::destroy();
     Swapchain::destroy();
-    TextureManager::destroy();
     BufferManager::destroy();
     Context::destroy();
 

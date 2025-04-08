@@ -5,14 +5,14 @@ using namespace world;
 std::unique_ptr<AtlasManager> AtlasManager::INSTANCE;
 
 AtlasManager::AtlasManager() {
-    atlas = render::TextureManager::get().createSimpleTexture(
+    atlas = render::BufferManager::get().createSimpleTexture(
         "assets/block_atlas.png", VK_FORMAT_R8G8B8A8_SRGB);
 }
 
 AtlasManager::~AtlasManager() { cleanup(); }
 
 void AtlasManager::cleanup() {
-    render::TextureManager::get().deallocateSimpleTextureDefer(atlas);
+    render::BufferManager::get().deallocateSimpleTextureDefer(atlas);
 }
 
 AtlasManager::AtlasBounds AtlasManager::getAtlasBounds(Block block,
