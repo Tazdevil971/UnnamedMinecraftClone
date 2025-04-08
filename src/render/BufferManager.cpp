@@ -49,20 +49,19 @@ void BufferManager::flushDeferOperations() {
     for (auto& simpleImage : simpleImageDeallocateDefer)
         deallocateSimpleImageNow(simpleImage);
 
-    for (auto& simpleMesh : simpleMeshDeallocateDefer)
-        deallocateSimpleMeshNow(simpleMesh);
+    for (auto& mesh : meshDeallocateDefer) deallocateMeshNow(mesh);
 
     simpleImageDeallocateDefer.clear();
-    simpleMeshDeallocateDefer.clear();
+    meshDeallocateDefer.clear();
 }
 
-SimpleMesh BufferManager::allocateSimpleMesh(
-    const std::vector<uint16_t>& indices, const std::vector<Vertex>& vertices) {
-    VkDeviceSize bufferSize =
-        sizeof(Vertex) * vertices.size() + sizeof(uint16_t) * indices.size();
+BaseMesh BufferManager::allocateMeshInner(
+    const void* indicesData, size_t indicesDataSize, size_t indicesCount,
+    const void* vertexData, size_t vertexDataSize, size_t vertexCount) {
+    VkDeviceSize bufferSize = vertexDataSize + indicesDataSize;
 
     VkDeviceSize vertexOffset = 0;
-    VkDeviceSize indicesOffset = sizeof(Vertex) * vertices.size();
+    VkDeviceSize indicesOffset = vertexDataSize;
 
     VmaAllocation stagingMemory;
     VkBuffer stagingBuffer;
@@ -82,10 +81,10 @@ SimpleMesh BufferManager::allocateSimpleMesh(
     void* data;
     vmaMapMemory(vma, stagingMemory, &data);
 
-    std::memcpy(reinterpret_cast<uint8_t*>(data) + vertexOffset,
-                vertices.data(), vertices.size() * sizeof(Vertex));
-    std::memcpy(reinterpret_cast<uint8_t*>(data) + indicesOffset,
-                indices.data(), indices.size() * sizeof(uint16_t));
+    std::memcpy(reinterpret_cast<uint8_t*>(data) + vertexOffset, vertexData,
+                vertexDataSize);
+    std::memcpy(reinterpret_cast<uint8_t*>(data) + indicesOffset, indicesData,
+                indicesDataSize);
 
     vmaUnmapMemory(vma, stagingMemory);
 
@@ -104,20 +103,20 @@ SimpleMesh BufferManager::allocateSimpleMesh(
     submitAndWait();
 
     outputDefer.defuse();
-    return {memory,        buffer,          vertexOffset,
-            indicesOffset, vertices.size(), indices.size()};
+    return {memory,        buffer,      vertexOffset,
+            indicesOffset, vertexCount, indicesCount};
 }
 
-void BufferManager::deallocateSimpleMeshDefer(SimpleMesh& mesh) {
-    simpleMeshDeallocateDefer.push_back(mesh);
-    mesh = SimpleMesh{};
+void BufferManager::deallocateMeshDefer(BaseMesh& mesh) {
+    meshDeallocateDefer.push_back(mesh);
+    mesh = BaseMesh{};
 }
 
-void BufferManager::deallocateSimpleMeshNow(SimpleMesh& mesh) {
+void BufferManager::deallocateMeshNow(BaseMesh& mesh) {
     if (mesh.memory != VK_NULL_HANDLE)
         vmaDestroyBuffer(vma, mesh.buffer, mesh.memory);
 
-    mesh = SimpleMesh{};
+    mesh = BaseMesh{};
 }
 
 DepthImage BufferManager::allocateDepthImage(uint32_t width, uint32_t height) {

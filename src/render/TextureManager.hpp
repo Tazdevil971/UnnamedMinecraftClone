@@ -4,7 +4,7 @@
 
 #include "BufferManager.hpp"
 #include "Context.hpp"
-#include "Mesh.hpp"
+#include "Primitives.hpp"
 
 namespace render {
 

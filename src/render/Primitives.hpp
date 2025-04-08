@@ -12,13 +12,19 @@
 
 namespace render {
 
-struct Vertex {
+struct GeometryVertex {
     glm::vec3 pos;
     glm::vec3 color;
+    // glm::vec3 normal;
     glm::vec2 uv;
 };
 
-struct SimpleMesh {
+struct UiVertex {
+    glm::vec2 pos;
+    glm::vec2 uv;
+};
+
+struct BaseMesh {
     VmaAllocation memory{VK_NULL_HANDLE};
     VkBuffer buffer{VK_NULL_HANDLE};
 
@@ -38,11 +44,15 @@ struct SimpleMesh {
         vkCmdBindIndexBuffer(commandBuffer, buffer, indicesOffset,
                              VK_INDEX_TYPE_UINT16);
     }
+};
+
+struct GeometryMesh : BaseMesh {
+    using Vertex = GeometryVertex;
 
     static VkVertexInputBindingDescription getBindingDescription() {
         VkVertexInputBindingDescription description{};
         description.binding = 0;
-        description.stride = sizeof(Vertex);
+        description.stride = sizeof(GeometryVertex);
         description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
         return description;
@@ -61,10 +71,44 @@ struct SimpleMesh {
         descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
         descriptions[1].offset = offsetof(Vertex, color);
 
+        // descriptions[2].binding = 0;
+        // descriptions[2].location = 2;
+        // descriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+        // descriptions[2].offset = offsetof(Vertex, normal);
+
         descriptions[2].binding = 0;
         descriptions[2].location = 2;
         descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
         descriptions[2].offset = offsetof(Vertex, uv);
+
+        return descriptions;
+    }
+};
+
+struct UiMesh : BaseMesh {
+    using Vertex = UiVertex;
+
+    static VkVertexInputBindingDescription getBindingDescription() {
+        VkVertexInputBindingDescription description{};
+        description.binding = 0;
+        description.stride = sizeof(UiVertex);
+        description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        return description;
+    }
+
+    static std::array<VkVertexInputAttributeDescription, 2>
+    getAttributeDescriptions() {
+        std::array<VkVertexInputAttributeDescription, 2> descriptions{};
+        descriptions[0].binding = 0;
+        descriptions[0].location = 0;
+        descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+        descriptions[0].offset = offsetof(Vertex, pos);
+
+        descriptions[1].binding = 0;
+        descriptions[1].location = 1;
+        descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+        descriptions[1].offset = offsetof(Vertex, uv);
 
         return descriptions;
     }
@@ -93,8 +137,8 @@ struct SimpleTexture {
     VkDescriptorSet descriptor;
 };
 
-struct SimpleModel {
-    SimpleMesh mesh;
+struct GeometryModel {
+    GeometryMesh mesh;
     SimpleTexture texture;
     glm::vec3 pos;
     glm::quat rot;

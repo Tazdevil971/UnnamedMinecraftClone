@@ -19,7 +19,7 @@ Chunk::Chunk() {
 
 void Chunk::cleanup() {
     if (!mesh.isNull()) {
-        BufferManager::get().deallocateSimpleMeshDefer(mesh);
+        BufferManager::get().deallocateMeshDefer(mesh);
     }
 }
 
@@ -30,16 +30,16 @@ Block Chunk::getBlock(glm::ivec3 pos) {
     return blocks[x][y][z];
 }
 
-render::SimpleMesh Chunk::getMesh() { return mesh; }
+render::GeometryMesh Chunk::getMesh() { return mesh; }
 
-render::SimpleModel Chunk::getModel(glm::ivec3 pos) {
-    return SimpleModel{mesh, AtlasManager::get().getAtlas(), pos * DIM,
+render::GeometryModel Chunk::getModel(glm::ivec3 pos) {
+    return GeometryModel{mesh, AtlasManager::get().getAtlas(), pos * DIM,
                        glm::vec3(0.0f, 0.0f, 0.0f)};
 }
 
 void Chunk::updateMesh() {
     std::vector<uint16_t> indices;
-    std::vector<Vertex> vertices;
+    std::vector<GeometryVertex> vertices;
 
     for (int x = 0; x < DIM.x; x++) {
         for (int y = 0; y < DIM.y; y++) {
@@ -191,13 +191,13 @@ void Chunk::updateMesh() {
     }
 
     if (!mesh.isNull()) {
-        BufferManager::get().deallocateSimpleMeshDefer(mesh);
+        BufferManager::get().deallocateMeshDefer(mesh);
     }
 
     if (indices.size() > 0 || vertices.size() > 0) {
-        mesh = BufferManager::get().allocateSimpleMesh(indices, vertices);
+        mesh = BufferManager::get().allocateMesh<GeometryMesh>(indices, vertices);
     } else {
-        mesh = SimpleMesh{};
+        mesh = GeometryMesh{};
     }
 }
 

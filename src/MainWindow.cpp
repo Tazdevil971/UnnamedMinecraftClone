@@ -22,7 +22,7 @@ std::vector<uint16_t> DEBUG_CUBE_INDICES = {
     20, 21, 22, 20, 22, 23,
 };
 
-std::vector<Vertex> DEBUG_CUBE_VERTICES = {
+std::vector<GeometryVertex> DEBUG_CUBE_VERTICES = {
     // Z- side
     {{+0.05f, -0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
     {{-0.05f, -0.05f, -0.05f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
@@ -73,7 +73,7 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
 
         debugTexture = TextureManager::get().createSimpleTexture(
             "assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
-        debugCubeMesh = BufferManager::get().allocateSimpleMesh(
+        debugCubeMesh = BufferManager::get().allocateMesh<GeometryMesh>(
             DEBUG_CUBE_INDICES, DEBUG_CUBE_VERTICES);
 
     } catch (...) {
@@ -88,7 +88,7 @@ void MainWindow::cleanup() {
     AtlasManager::destroy();
 
     TextureManager::get().deallocateSimpleTextureDefer(debugTexture);
-    BufferManager::get().deallocateSimpleMeshDefer(debugCubeMesh);
+    BufferManager::get().deallocateMeshDefer(debugCubeMesh);
 
     // Wait for the device to finish rendering before cleaning up!
     Context::get().waitDeviceIdle();
@@ -127,5 +127,5 @@ void MainWindow::onFrame(InputState& input) {
 void MainWindow::onResize(int width, int height) { windowResized = true; }
 
 void MainWindow::pushDebugCube(glm::vec3 pos, glm::quat rot) {
-    models.push_back(SimpleModel{debugCubeMesh, debugTexture, pos, rot});
+    models.push_back(GeometryModel{debugCubeMesh, debugTexture, pos, rot});
 }

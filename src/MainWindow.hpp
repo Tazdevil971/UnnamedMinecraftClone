@@ -36,9 +36,9 @@ class MainWindow : public render::Window {
     logic::AIController debugCubeController{glm::vec3{0.0f, 14.0f, 0.0f},
                                             glm::vec3{0.4f, 0.4f, 0.4f}};
 
-    render::SimpleMesh debugCubeMesh;
+    render::GeometryMesh debugCubeMesh;
     render::SimpleTexture debugTexture;
 
     // Per frame stuff
-    std::list<render::SimpleModel> models;
+    std::list<render::GeometryModel> models;
 };

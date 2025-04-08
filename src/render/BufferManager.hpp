@@ -6,7 +6,7 @@
 #include <string>
 
 #include "Context.hpp"
-#include "Mesh.hpp"
+#include "Primitives.hpp"
 
 namespace render {
 
@@ -31,11 +31,12 @@ class BufferManager {
 
     void flushDeferOperations();
 
-    SimpleMesh allocateSimpleMesh(const std::vector<uint16_t>& indices,
-                                  const std::vector<Vertex>& vertices);
+    template <typename T>
+    T allocateMesh(const std::vector<uint16_t>& indices,
+                   const std::vector<typename T::Vertex>& vertices);
 
-    void deallocateSimpleMeshDefer(SimpleMesh& mesh);
-    void deallocateSimpleMeshNow(SimpleMesh& mesh);
+    void deallocateMeshDefer(BaseMesh& mesh);
+    void deallocateMeshNow(BaseMesh& mesh);
 
     DepthImage allocateDepthImage(uint32_t width, uint32_t height);
 
@@ -50,6 +51,10 @@ class BufferManager {
 
    private:
     BufferManager();
+
+    BaseMesh allocateMeshInner(const void* indicesData, size_t indicesDataSize,
+                               size_t indicesCount, const void* vertexData,
+                               size_t vertexDataSize, size_t vertexCount);
 
     void cleanup();
 
@@ -82,11 +87,20 @@ class BufferManager {
     VmaAllocator vma{VK_NULL_HANDLE};
 
     std::vector<SimpleImage> simpleImageDeallocateDefer;
-    std::vector<SimpleMesh> simpleMeshDeallocateDefer;
+    std::vector<BaseMesh> meshDeallocateDefer;
 
     VkCommandPool commandPool{VK_NULL_HANDLE};
     VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
     VkFence syncFence{VK_NULL_HANDLE};
 };
+
+template <typename T>
+T BufferManager::allocateMesh(const std::vector<uint16_t>& indices,
+                              const std::vector<typename T::Vertex>& vertices) {
+    return T{allocateMeshInner(
+        indices.data(), indices.size() * sizeof(uint16_t), indices.size(),
+        vertices.data(), vertices.size() * sizeof(typename T::Vertex),
+        vertices.size())};
+}
 
 }  // namespace render

@@ -27,7 +27,7 @@ class Renderer {
 
     ~Renderer();
 
-    void render(const Camera& camera, std::list<SimpleModel> models,
+    void render(const Camera& camera, std::list<GeometryModel> models,
                 bool windowResized);
 
    private:
@@ -54,6 +54,6 @@ class Renderer {
     void createCommandPool();
     void createCommandBuffer();
     void createSyncObjects();
-    void recordSimpleModelRender(const SimpleModel& model, glm::mat4 vp);
+    void recordGeometryModelRender(const GeometryModel& model, glm::mat4 vp);
 };
 }  // namespace render

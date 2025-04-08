@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../render/Mesh.hpp"
+#include "../render/Primitives.hpp"
 #include "../render/Window.hpp"
 #include "../world/World.hpp"
 #include "Collision.hpp"

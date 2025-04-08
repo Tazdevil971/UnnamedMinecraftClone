@@ -4,7 +4,7 @@
 #include <glm/gtc/noise.hpp>
 
 #include "../render/BufferManager.hpp"
-#include "../render/Mesh.hpp"
+#include "../render/Primitives.hpp"
 #include "Block.hpp"
 
 namespace world {
@@ -15,7 +15,7 @@ class Chunk {
 
    private:
     Block blocks[DIM.x][DIM.y][DIM.z];
-    render::SimpleMesh mesh;
+    render::GeometryMesh mesh;
 
     void updateMesh();
     static void genTree(glm::ivec3 pos, Chunk &chunk, Block block);
@@ -29,8 +29,8 @@ class Chunk {
     Block getBlock(glm::ivec3 pos);
     void updateBlock(glm::ivec3 pos, Block newBlock);
 
-    render::SimpleMesh getMesh();
-    render::SimpleModel getModel(glm::ivec3 pos);
+    render::GeometryMesh getMesh();
+    render::GeometryModel getModel(glm::ivec3 pos);
 };
 
 }  // namespace world

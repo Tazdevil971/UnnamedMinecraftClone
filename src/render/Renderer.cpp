@@ -68,7 +68,7 @@ void Renderer::cleanup() {
     }
 }
 
-void Renderer::render(const Camera& camera, std::list<SimpleModel> models,
+void Renderer::render(const Camera& camera, std::list<GeometryModel> models,
                       bool windowResized) {
     vkWaitForFences(Context::get().getDevice(), 1, &inFlightFence, VK_TRUE,
                     UINT64_MAX);
@@ -111,7 +111,7 @@ void Renderer::render(const Camera& camera, std::list<SimpleModel> models,
                   static_cast<float>(Swapchain::get().getExtent().height);
     glm::mat4 vp = camera.computeVPMat(ratio);
 
-    for (const auto& model : models) recordSimpleModelRender(model, vp);
+    for (const auto& model : models) recordGeometryModelRender(model, vp);
 
     vkCmdEndRenderPass(commandBuffer);
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -249,8 +249,8 @@ void Renderer::createGraphicsPipeline() {
     dynamicStateInfo.dynamicStateCount = 2;
     dynamicStateInfo.pDynamicStates = DYNAMIC_STATES;
 
-    auto bindingDescription = SimpleMesh::getBindingDescription();
-    auto attributeDescriptions = SimpleMesh::getAttributeDescriptions();
+    auto bindingDescription = GeometryMesh::getBindingDescription();
+    auto attributeDescriptions = GeometryMesh::getAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo vertexInputStageInfo{};
     vertexInputStageInfo.sType =
@@ -412,7 +412,7 @@ void Renderer::createSyncObjects() {
         throw std::runtime_error{"failed to create sync objects!"};
 }
 
-void Renderer::recordSimpleModelRender(const SimpleModel& model, glm::mat4 vp) {
+void Renderer::recordGeometryModelRender(const GeometryModel& model, glm::mat4 vp) {
     if (model.mesh.isNull())
         return;
 
