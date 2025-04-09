@@ -114,7 +114,7 @@ struct UiMesh : BaseMesh {
     }
 };
 
-struct SimpleImage {
+struct Image {
     VmaAllocation memory{VK_NULL_HANDLE};
     VkImage image{VK_NULL_HANDLE};
     VkImageView view{VK_NULL_HANDLE};
@@ -129,17 +129,17 @@ struct SimpleImage {
     VkFormat format;
 };
 
-struct DepthImage : SimpleImage {};
+struct DepthImage : Image {};
 
-struct SimpleTexture {
-    SimpleImage image;
+struct Texture {
+    Image image;
     VkSampler sampler;
     VkDescriptorSet descriptor;
 };
 
 struct GeometryModel {
     GeometryMesh mesh;
-    SimpleTexture texture;
+    Texture texture;
     glm::vec3 pos;
     glm::quat rot;
 
@@ -154,7 +154,7 @@ struct GeometryModel {
 
 struct UiModel {
     UiMesh mesh;
-    SimpleTexture texture;
+    Texture texture;
     glm::vec2 pos;
 };
 

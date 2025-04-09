@@ -24,10 +24,10 @@ void Framebuffer::recreate(VkSwapchainKHR swapchain, VkExtent2D extent,
                                  nullptr);
 
     for (auto colorImage : colorImages)
-        BufferManager::get().deallocateSimpleImageNow(colorImage);
+        BufferManager::get().deallocateImageNow(colorImage);
 
     for (auto depthImage : depthImages)
-        BufferManager::get().deallocateSimpleImageNow(depthImage);
+        BufferManager::get().deallocateImageNow(depthImage);
 
     framebuffers.resize(0);
     colorImages.resize(0);
@@ -52,10 +52,10 @@ void Framebuffer::cleanup() {
     }
 
     for (auto colorImage : colorImages)
-        BufferManager::get().deallocateSimpleImageNow(colorImage);
+        BufferManager::get().deallocateImageNow(colorImage);
 
     for (auto depthImage : depthImages)
-        BufferManager::get().deallocateSimpleImageNow(depthImage);
+        BufferManager::get().deallocateImageNow(depthImage);
 
     framebuffers.resize(0);
     colorImages.resize(0);
@@ -75,7 +75,7 @@ void Framebuffer::createColorImages(VkSwapchainKHR swapchain) {
 
     colorImages.resize(imageCount);
     for (uint32_t i = 0; i < imageCount; i++) {
-        colorImages[i] = BufferManager::get().importSimpleImage(
+        colorImages[i] = BufferManager::get().importImage(
             importedImages[i], extent.width, extent.height, colorFormat);
     }
 }

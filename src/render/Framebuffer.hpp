@@ -57,7 +57,7 @@ class Framebuffer {
     VkFormat colorFormat;
 
     uint32_t imageCount{0};
-    std::vector<SimpleImage> colorImages;
+    std::vector<Image> colorImages;
     std::vector<DepthImage> depthImages;
     std::vector<VkFramebuffer> framebuffers;
 };

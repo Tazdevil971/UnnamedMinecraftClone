@@ -37,7 +37,7 @@ class MainWindow : public render::Window {
 
     render::GeometryMesh debugCubeMesh;
     render::UiMesh uiMesh;
-    render::SimpleTexture debugTexture;
+    render::Texture debugTexture;
 
     // Per frame stuff
     std::list<render::GeometryModel> models;

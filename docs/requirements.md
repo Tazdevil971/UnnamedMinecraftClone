@@ -69,8 +69,8 @@ Requirements and goals of the project.
   }
 
   class TextureAtlasManager {
-    - vk::SimpleTexture atlas;
-    + vk::SimpleTexture &getAtlas();
+    - vk::Texture atlas;
+    + vk::Texture &getAtlas();
     + AtlasBounds getBounds(Block block, Side side);
   }
 

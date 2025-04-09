@@ -37,7 +37,7 @@ class AtlasManager {
         glm::vec2 getBottomLeft() const { return {topLeft.x, bottomRight.y}; }
     };
 
-    const render::SimpleTexture& getAtlas() const { return atlas; }
+    const render::Texture& getAtlas() const { return atlas; }
 
     AtlasBounds getAtlasBounds(Block block, Side side) const;
 
@@ -49,7 +49,7 @@ class AtlasManager {
     glm::vec2 convertIntCoords(glm::ivec2 coords) const;
     AtlasBounds computeAtlasBound(glm::ivec2 coords) const;
 
-    render::SimpleTexture atlas;
+    render::Texture atlas;
 };
 
 }  // namespace world

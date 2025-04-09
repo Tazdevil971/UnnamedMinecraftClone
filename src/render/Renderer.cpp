@@ -225,7 +225,7 @@ void Renderer::createRenderPass() {
 
 void Renderer::createGeometryGraphicsPipeline() {
     VkDescriptorSetLayout descriptorSetLayout =
-        BufferManager::get().getSimpleTextureLayout();
+        BufferManager::get().getTextureLayout();
     VkPushConstantRange pushConstantRange = {};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
@@ -389,7 +389,7 @@ void Renderer::createGeometryGraphicsPipeline() {
 
 void Renderer::createUiGraphicsPipeline() {
     VkDescriptorSetLayout descriptorSetLayout =
-        BufferManager::get().getSimpleTextureLayout();
+        BufferManager::get().getTextureLayout();
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;

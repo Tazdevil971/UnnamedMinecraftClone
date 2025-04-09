@@ -70,7 +70,7 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
 
         AtlasManager::create();
 
-        debugTexture = BufferManager::get().createSimpleTexture(
+        debugTexture = BufferManager::get().createTexture(
             "assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
         debugCubeMesh = BufferManager::get().allocateMesh<GeometryMesh>(
             DEBUG_CUBE_INDICES, DEBUG_CUBE_VERTICES);
@@ -93,7 +93,7 @@ void MainWindow::cleanup() {
 
     AtlasManager::destroy();
 
-    BufferManager::get().deallocateSimpleTextureDefer(debugTexture);
+    BufferManager::get().deallocateTextureDefer(debugTexture);
     BufferManager::get().deallocateMeshDefer(debugCubeMesh);
     BufferManager::get().deallocateMeshDefer(uiMesh);
 
@@ -128,7 +128,7 @@ void MainWindow::onFrame(InputState& input) {
 
     glm::vec2 pos = {-0.5,0.5};
 
-    uiModels.push_back(UiModel{uiMesh, debugTexture, pos});
+    // uiModels.push_back(UiModel{uiMesh, debugTexture, pos});
 
     Renderer::get().render(playerController.getCamera(), models, uiModels, windowResized);
     windowResized = false;

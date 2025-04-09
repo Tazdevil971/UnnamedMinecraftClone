@@ -15,8 +15,8 @@ class BufferManager {
     static std::unique_ptr<BufferManager> INSTANCE;
 
    public:
-    static void create(uint32_t simpleTexturePoolSize) {
-        INSTANCE.reset(new BufferManager(simpleTexturePoolSize));
+    static void create(uint32_t texturePoolSize) {
+        INSTANCE.reset(new BufferManager(texturePoolSize));
     }
 
     static BufferManager& get() {
@@ -47,25 +47,25 @@ class BufferManager {
     // Image stuff
     DepthImage allocateDepthImage(uint32_t width, uint32_t height);
 
-    SimpleImage importSimpleImage(VkImage image, uint32_t width,
+    Image importImage(VkImage image, uint32_t width,
                                   uint32_t height, VkFormat format);
-    SimpleImage allocateSimpleImage(const uint8_t* pixels, uint32_t width,
+    Image allocateImage(const uint8_t* pixels, uint32_t width,
                                     uint32_t height, VkFormat format);
-    SimpleImage allocateSimpleImage(const std::string& path, VkFormat format);
+    Image allocateImage(const std::string& path, VkFormat format);
 
-    void deallocateSimpleImageDefer(SimpleImage& image);
-    void deallocateSimpleImageNow(SimpleImage& image);
+    void deallocateImageDefer(Image& image);
+    void deallocateImageNow(Image& image);
 
     // Texture stuff
-    VkDescriptorSetLayout getSimpleTextureLayout() const { return simpleTextureLayout; }
+    VkDescriptorSetLayout getTextureLayout() const { return textureLayout; }
 
-    SimpleTexture createSimpleTexture(const std::string& path, VkFormat format);
+    Texture createTexture(const std::string& path, VkFormat format);
 
-    void deallocateSimpleTextureDefer(SimpleTexture& texture);
-    void deallocateSimpleTextureNow(SimpleTexture& texture);
+    void deallocateTextureDefer(Texture& texture);
+    void deallocateTextureNow(Texture& texture);
 
    private:
-    BufferManager(uint32_t simpleTexturePoolSize);
+    BufferManager(uint32_t texturePoolSize);
 
     BaseMesh allocateMeshInner(const void* indicesData, size_t indicesDataSize,
                                size_t indicesCount, const void* vertexData,
@@ -78,9 +78,9 @@ class BufferManager {
     void createCommandBuffer();
     void createSyncObjects();
 
-    void createSimpleTextureLayout();
-    void createSimpleTextureDescriptorPool(uint32_t size);
-    void createSimpleTextureDescriptorSets(uint32_t size);
+    void createTextureLayout();
+    void createTextureDescriptorPool(uint32_t size);
+    void createTextureDescriptorSets(uint32_t size);
 
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
                       VmaMemoryUsage vmaUsage,
@@ -106,12 +106,12 @@ class BufferManager {
     VmaAllocator vma{VK_NULL_HANDLE};
 
     std::vector<BaseMesh> meshDeallocateDefer;
-    std::vector<SimpleImage> simpleImageDeallocateDefer;
-    std::vector<SimpleTexture> simpleTextureDeallocateDefer;
+    std::vector<Image> imageDeallocateDefer;
+    std::vector<Texture> textureDeallocateDefer;
 
-    std::vector<VkDescriptorSet> simpleTextureDescriptorSets;
-    VkDescriptorSetLayout simpleTextureLayout{VK_NULL_HANDLE};
-    VkDescriptorPool simpleTextureDescriptorPool{VK_NULL_HANDLE};
+    std::vector<VkDescriptorSet> textureDescriptorSets;
+    VkDescriptorSetLayout textureLayout{VK_NULL_HANDLE};
+    VkDescriptorPool textureDescriptorPool{VK_NULL_HANDLE};
 
     VkCommandPool commandPool{VK_NULL_HANDLE};
     VkCommandBuffer commandBuffer{VK_NULL_HANDLE};

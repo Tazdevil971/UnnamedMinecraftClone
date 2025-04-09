@@ -33,7 +33,9 @@ set(SOURCES
 
 set(SHADERS
     src/shaders/GeometryVert.vert
-    src/shaders/GeometryFrag.frag)
+    src/shaders/GeometryFrag.frag
+    src/shaders/UiVert.vert
+    src/shaders/UiFrag.frag)
 
 set(ASSETS
     assets/test_image.jpg
