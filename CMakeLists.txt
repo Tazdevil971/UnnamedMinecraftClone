@@ -29,6 +29,7 @@ set(SOURCES
     src/logic/AIController.cpp
     src/logic/PlayerController.cpp
     src/logic/VoxelRaytracer.cpp
+    src/logic/DayNightCycle.cpp
     )
 
 set(SHADERS

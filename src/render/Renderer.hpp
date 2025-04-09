@@ -27,13 +27,21 @@ class Renderer {
 
     ~Renderer();
 
-    void render(const Camera& camera, std::list<GeometryModel> models, std::list<UiModel> uiModels,
+    struct LightInfo {
+        glm::vec4 ambientColor;
+        glm::vec4 sunDir;
+        glm::vec4 sunColor;
+    };
+
+    void render(const Camera& camera, const LightInfo &lights, std::list<GeometryModel> models, std::list<UiModel> uiModels,
                 bool windowResized);
 
    private:
     Renderer();
 
     void cleanup();
+
+    Ubo geometryLightInfo;
 
     VkRenderPass renderPass{VK_NULL_HANDLE};
     VkPipelineLayout geometryPipelineLayout{VK_NULL_HANDLE};
@@ -56,7 +64,10 @@ class Renderer {
     void createCommandPool();
     void createCommandBuffer();
     void createSyncObjects();
+
+    void doGeometryRender(const Camera& camera, const LightInfo &lights, std::list<GeometryModel> models);
     void recordGeometryModelRender(const GeometryModel& model, glm::mat4 vp);
-    void recordUiModelRender(const UiModel& model, glm::vec2 pos);
+    void doUiRender(std::list<UiModel> uiModels);
+    void recordUiModelRender(const UiModel& model);
 };
 }  // namespace render

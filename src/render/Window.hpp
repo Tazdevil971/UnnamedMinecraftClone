@@ -21,6 +21,7 @@ class Window {
         bool place;
         bool destroy;
         glm::vec2 cursorPos;
+        float time;
         float deltaTime;
     };
 

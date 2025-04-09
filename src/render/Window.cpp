@@ -36,7 +36,8 @@ void Window::mainLoop() {
     double xLast, yLast;
     glfwGetCursorPos(window, &xLast, &yLast);
 
-    float timeLast = getTime();
+    float timeStart = getTime();
+    float timeLast = 0.0f;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -85,9 +86,9 @@ void Window::mainLoop() {
             captureMouse = false;
         }
 
-        float time = getTime();
-        input.deltaTime = time - timeLast;
-        timeLast = time;
+        input.time = getTime() - timeStart;
+        input.deltaTime = input.time - timeLast;
+        timeLast = input.time;
 
         onFrame(input);
     }

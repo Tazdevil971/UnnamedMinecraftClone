@@ -15,8 +15,8 @@ class BufferManager {
     static std::unique_ptr<BufferManager> INSTANCE;
 
    public:
-    static void create(uint32_t texturePoolSize) {
-        INSTANCE.reset(new BufferManager(texturePoolSize));
+    static void create(size_t uboPoolSize, size_t texturePoolSize) {
+        INSTANCE.reset(new BufferManager(uboPoolSize, texturePoolSize));
     }
 
     static BufferManager& get() {
@@ -42,7 +42,12 @@ class BufferManager {
     void deallocateMeshNow(BaseMesh& mesh);
 
     // UBO stuff
-    // TODO:
+    VkDescriptorSetLayout getUboLayout() const { return uboLayout; }
+
+    Ubo allocateUbo(size_t size);
+
+    void deallocateUboDefer(Ubo& ubo);
+    void deallocateUboNow(Ubo& ubo);
 
     // Image stuff
     DepthImage allocateDepthImage(uint32_t width, uint32_t height);
@@ -65,7 +70,7 @@ class BufferManager {
     void deallocateTextureNow(Texture& texture);
 
    private:
-    BufferManager(uint32_t texturePoolSize);
+    BufferManager(size_t uboPoolSize, size_t texturePoolSize);
 
     BaseMesh allocateMeshInner(const void* indicesData, size_t indicesDataSize,
                                size_t indicesCount, const void* vertexData,
@@ -77,6 +82,10 @@ class BufferManager {
     void createCommandPool();
     void createCommandBuffer();
     void createSyncObjects();
+
+    void createUboLayout();
+    void createUboDescriptorPool(uint32_t size);
+    void createUboDescriptorSets(uint32_t size);
 
     void createTextureLayout();
     void createTextureDescriptorPool(uint32_t size);
@@ -106,12 +115,17 @@ class BufferManager {
     VmaAllocator vma{VK_NULL_HANDLE};
 
     std::vector<BaseMesh> meshDeallocateDefer;
+    std::vector<Ubo> uboDeallocateDefer;
     std::vector<Image> imageDeallocateDefer;
     std::vector<Texture> textureDeallocateDefer;
 
     std::vector<VkDescriptorSet> textureDescriptorSets;
     VkDescriptorSetLayout textureLayout{VK_NULL_HANDLE};
     VkDescriptorPool textureDescriptorPool{VK_NULL_HANDLE};
+
+    std::vector<VkDescriptorSet> uboDescriptorSets;
+    VkDescriptorSetLayout uboLayout{VK_NULL_HANDLE};
+    VkDescriptorPool uboDescriptorPool{VK_NULL_HANDLE};
 
     VkCommandPool commandPool{VK_NULL_HANDLE};
     VkCommandBuffer commandBuffer{VK_NULL_HANDLE};

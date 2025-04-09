@@ -2,6 +2,7 @@
 
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #include <array>
 #include <glm/glm.hpp>
@@ -114,6 +115,25 @@ struct UiMesh : BaseMesh {
     }
 };
 
+struct Ubo {
+    VmaAllocation memory{VK_NULL_HANDLE};
+    VkBuffer buffer{VK_NULL_HANDLE};
+    VkDescriptorSet descriptor{VK_NULL_HANDLE};
+
+    bool isNull() const {
+        return memory == VK_NULL_HANDLE && buffer == VK_NULL_HANDLE;
+    }
+
+    void *ptr{nullptr};
+    size_t size;
+
+    template<typename T>
+    void write(const T &value) {
+        assert(sizeof(T) <= size);
+        *reinterpret_cast<T*>(ptr) = value;
+    }
+};
+
 struct Image {
     VmaAllocation memory{VK_NULL_HANDLE};
     VkImage image{VK_NULL_HANDLE};
@@ -134,7 +154,7 @@ struct DepthImage : Image {};
 struct Texture {
     Image image;
     VkSampler sampler;
-    VkDescriptorSet descriptor;
+    VkDescriptorSet descriptor{VK_NULL_HANDLE};
 };
 
 struct GeometryModel {

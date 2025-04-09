@@ -7,7 +7,6 @@
 #include "Context.hpp"
 #include "Swapchain.hpp"
 
-
 using namespace render;
 
 std::unique_ptr<Renderer> Renderer::INSTANCE;
@@ -16,6 +15,8 @@ Renderer::Renderer() {
     try {
         createRenderPass();
         framebuffer = Swapchain::get().createFramebuffer(renderPass);
+
+        geometryLightInfo = BufferManager::get().allocateUbo(sizeof(LightInfo));
 
         createGeometryGraphicsPipeline();
         createUiGraphicsPipeline();
@@ -31,6 +32,8 @@ Renderer::Renderer() {
 Renderer::~Renderer() { cleanup(); }
 
 void Renderer::cleanup() {
+    BufferManager::get().deallocateUboDefer(geometryLightInfo);
+
     if (imageAvailableSemaphore != VK_NULL_HANDLE) {
         vkDestroySemaphore(Context::get().getDevice(), imageAvailableSemaphore,
                            nullptr);
@@ -66,18 +69,19 @@ void Renderer::cleanup() {
     }
 
     if (geometryPipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(Context::get().getDevice(), geometryPipeline, nullptr);
+        vkDestroyPipeline(Context::get().getDevice(), geometryPipeline,
+                          nullptr);
         geometryPipeline = VK_NULL_HANDLE;
     }
 
     if (uiPipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(Context::get().getDevice(), uiPipelineLayout, nullptr);
+        vkDestroyPipelineLayout(Context::get().getDevice(), uiPipelineLayout,
+                                nullptr);
         uiPipelineLayout = VK_NULL_HANDLE;
     }
 
     if (uiPipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(Context::get().getDevice(), uiPipeline,
-                          nullptr);
+        vkDestroyPipeline(Context::get().getDevice(), uiPipeline, nullptr);
         uiPipeline = VK_NULL_HANDLE;
     }
 
@@ -87,8 +91,9 @@ void Renderer::cleanup() {
     }
 }
 
-void Renderer::render(const Camera& camera, std::list<GeometryModel> models, std::list<UiModel> uiModels,
-                      bool windowResized) {
+void Renderer::render(const Camera& camera, const LightInfo& lights,
+                      std::list<GeometryModel> models,
+                      std::list<UiModel> uiModels, bool windowResized) {
     vkWaitForFences(Context::get().getDevice(), 1, &inFlightFence, VK_TRUE,
                     UINT64_MAX);
 
@@ -116,7 +121,8 @@ void Renderer::render(const Camera& camera, std::list<GeometryModel> models, std
     renderPassBeginInfo.renderArea = framebuffer->getRenderArea();
 
     VkClearValue clearValues[2] = {};
-    clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+    clearValues[0].color = {lights.ambientColor.r, lights.ambientColor.g,
+                            lights.ambientColor.b, 1.0f};
     clearValues[1].depthStencil = {1.0f, 0};
 
     renderPassBeginInfo.clearValueCount = 2;
@@ -125,13 +131,8 @@ void Renderer::render(const Camera& camera, std::list<GeometryModel> models, std
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo,
                          VK_SUBPASS_CONTENTS_INLINE);
 
-    float ratio = static_cast<float>(Swapchain::get().getExtent().width) /
-                  static_cast<float>(Swapchain::get().getExtent().height);
-    glm::mat4 vp = camera.computeVPMat(ratio);
-    glm::vec2 pos = {0,0};
-
-    for (const auto& model : models) recordGeometryModelRender(model, vp);
-    for (const auto& uiModel : uiModels) recordUiModelRender(uiModel, pos);
+    doGeometryRender(camera, lights, models);
+    doUiRender(uiModels);
 
     vkCmdEndRenderPass(commandBuffer);
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
@@ -224,8 +225,9 @@ void Renderer::createRenderPass() {
 }
 
 void Renderer::createGeometryGraphicsPipeline() {
-    VkDescriptorSetLayout descriptorSetLayout =
-        BufferManager::get().getTextureLayout();
+    VkDescriptorSetLayout descriptorSetLayouts[2] = {
+        BufferManager::get().getTextureLayout(),
+        BufferManager::get().getUboLayout()};
     VkPushConstantRange pushConstantRange = {};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
@@ -233,8 +235,8 @@ void Renderer::createGeometryGraphicsPipeline() {
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
     pipelineLayoutCreateInfo.sType =
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutCreateInfo.setLayoutCount = 1;
-    pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutCreateInfo.setLayoutCount = 2;
+    pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts;
     pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
     pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
@@ -407,10 +409,8 @@ void Renderer::createUiGraphicsPipeline() {
                                &uiPipelineLayout) != VK_SUCCESS)
         throw std::runtime_error{"failed to create pipeline layout!"};
 
-    auto vertShaderModule =
-        Context::get().loadShaderModule("UiVert.vert.spv");
-    auto fragShaderModule =
-        Context::get().loadShaderModule("UiFrag.frag.spv");
+    auto vertShaderModule = Context::get().loadShaderModule("UiVert.vert.spv");
+    auto fragShaderModule = Context::get().loadShaderModule("UiFrag.frag.spv");
 
     VkPipelineShaderStageCreateInfo vertStageInfo{};
     vertStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -596,15 +596,33 @@ void Renderer::createSyncObjects() {
         throw std::runtime_error{"failed to create sync objects!"};
 }
 
+void Renderer::doGeometryRender(const Camera& camera, const LightInfo& lights,
+                                std::list<GeometryModel> models) {
+    // Compute view projection matrix
+    float ratio = static_cast<float>(Swapchain::get().getExtent().width) /
+                  static_cast<float>(Swapchain::get().getExtent().height);
+    glm::mat4 vp = camera.computeVPMat(ratio);
+    glm::vec2 pos = {0, 0};
+
+    // Update UBO
+    geometryLightInfo.write(lights);
+
+    for (const auto& model : models) recordGeometryModelRender(model, vp);
+}
+
 void Renderer::recordGeometryModelRender(const GeometryModel& model,
                                          glm::mat4 vp) {
     if (model.mesh.isNull()) return;
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       geometryPipeline);
+
+    VkDescriptorSet descriptorSets[2] = {model.texture.descriptor,
+                                         geometryLightInfo.descriptor};
+
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            geometryPipelineLayout, 0, 1,
-                            &model.texture.descriptor, 0, nullptr);
+                            geometryPipelineLayout, 0, 2, descriptorSets, 0,
+                            nullptr);
 
     model.mesh.bind(commandBuffer);
 
@@ -624,19 +642,24 @@ void Renderer::recordGeometryModelRender(const GeometryModel& model,
     vkCmdDrawIndexed(commandBuffer, model.mesh.indexCount, 1, 0, 0, 0);
 }
 
-void Renderer::recordUiModelRender(const UiModel& model, glm::vec2 pos) {
+void Renderer::doUiRender(std::list<UiModel> uiModels) {
+    for (const auto& uiModel : uiModels) recordUiModelRender(uiModel);
+}
+
+void Renderer::recordUiModelRender(const UiModel& model) {
     if (model.mesh.isNull()) return;
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       uiPipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            uiPipelineLayout, 0, 1, &model.texture.descriptor, 0,
-                            nullptr);
+                            uiPipelineLayout, 0, 1, &model.texture.descriptor,
+                            0, nullptr);
 
     model.mesh.bind(commandBuffer);
 
     vkCmdPushConstants(commandBuffer, uiPipelineLayout,
-                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::vec2), &pos);
+                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::vec2),
+                       &model.pos);
 
     VkViewport viewport = framebuffer->getViewport();
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);

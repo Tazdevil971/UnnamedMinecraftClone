@@ -1,6 +1,7 @@
 #include "BufferManager.hpp"
 
 #include <stb_image.h>
+#include <vulkan/vulkan_core.h>
 
 #include <cstring>
 #include <stdexcept>
@@ -11,12 +12,17 @@ using namespace render;
 
 std::unique_ptr<BufferManager> BufferManager::INSTANCE;
 
-BufferManager::BufferManager(uint32_t texturePoolSize) {
+BufferManager::BufferManager(size_t uboPoolSize, size_t texturePoolSize) {
     try {
         createVma();
         createCommandPool();
         createCommandBuffer();
         createSyncObjects();
+
+        // Create ubo stuff
+        createUboLayout();
+        createUboDescriptorPool(uboPoolSize);
+        createUboDescriptorSets(uboPoolSize);
 
         // Create texture stuff
         createTextureLayout();
@@ -33,6 +39,18 @@ BufferManager::~BufferManager() { cleanup(); }
 void BufferManager::cleanup() {
     flushDeferOperations();
 
+    if (uboDescriptorPool != VK_NULL_HANDLE) {
+        vkDestroyDescriptorPool(Context::get().getDevice(), uboDescriptorPool,
+                                nullptr);
+        uboDescriptorPool = VK_NULL_HANDLE;
+    }
+
+    if (uboLayout != VK_NULL_HANDLE) {
+        vkDestroyDescriptorSetLayout(Context::get().getDevice(), uboLayout,
+                                     nullptr);
+        uboLayout = VK_NULL_HANDLE;
+    }
+
     if (textureDescriptorPool != VK_NULL_HANDLE) {
         vkDestroyDescriptorPool(Context::get().getDevice(),
                                 textureDescriptorPool, nullptr);
@@ -40,8 +58,8 @@ void BufferManager::cleanup() {
     }
 
     if (textureLayout != VK_NULL_HANDLE) {
-        vkDestroyDescriptorSetLayout(Context::get().getDevice(),
-                                     textureLayout, nullptr);
+        vkDestroyDescriptorSetLayout(Context::get().getDevice(), textureLayout,
+                                     nullptr);
         textureLayout = VK_NULL_HANDLE;
     }
 
@@ -62,17 +80,17 @@ void BufferManager::cleanup() {
 }
 
 void BufferManager::flushDeferOperations() {
-    for (auto& image : imageDeallocateDefer)
-        deallocateImageNow(image);
+    for (auto& image : imageDeallocateDefer) deallocateImageNow(image);
+    imageDeallocateDefer.clear();
 
-    for (auto& texture : textureDeallocateDefer)
-        deallocateTextureNow(texture);
+    for (auto& texture : textureDeallocateDefer) deallocateTextureNow(texture);
+    textureDeallocateDefer.clear();
 
     for (auto& mesh : meshDeallocateDefer) deallocateMeshNow(mesh);
-
-    textureDeallocateDefer.clear();
-    imageDeallocateDefer.clear();
     meshDeallocateDefer.clear();
+
+    for (auto& ubo : uboDeallocateDefer) deallocateUboNow(ubo);
+    uboDeallocateDefer.clear();
 }
 
 BaseMesh BufferManager::allocateMeshInner(
@@ -139,6 +157,59 @@ void BufferManager::deallocateMeshNow(BaseMesh& mesh) {
     mesh = BaseMesh{};
 }
 
+Ubo BufferManager::allocateUbo(size_t size) {
+    VmaAllocation memory;
+    VkBuffer buffer;
+
+    createBuffer(
+        size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, buffer, memory);
+
+    void* ptr;
+    vmaMapMemory(vma, memory, &ptr);
+
+    VkDescriptorSet descriptor = uboDescriptorSets.back();
+    uboDescriptorSets.pop_back();
+
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = buffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = size;
+
+    VkWriteDescriptorSet descriptorWrite{};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = descriptor;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pBufferInfo = &bufferInfo;
+    descriptorWrite.pImageInfo = nullptr;
+    descriptorWrite.pTexelBufferView = nullptr;
+
+    vkUpdateDescriptorSets(Context::get().getDevice(), 1, &descriptorWrite, 0,
+                           nullptr);
+
+    return {memory, buffer, descriptor, ptr, size};
+}
+
+void BufferManager::deallocateUboDefer(Ubo& ubo) {
+    uboDeallocateDefer.push_back(ubo);
+    ubo = Ubo{};
+}
+
+void BufferManager::deallocateUboNow(Ubo& ubo) {
+    if (ubo.descriptor != VK_NULL_HANDLE)
+        uboDescriptorSets.push_back(ubo.descriptor);
+
+    if (ubo.memory != VK_NULL_HANDLE) {
+        vmaUnmapMemory(vma, ubo.memory);
+        vmaDestroyBuffer(vma, ubo.buffer, ubo.memory);
+    }
+
+    ubo = Ubo{};
+}
+
 DepthImage BufferManager::allocateDepthImage(uint32_t width, uint32_t height) {
     VmaAllocation memory;
     VkImage image;
@@ -163,16 +234,15 @@ DepthImage BufferManager::allocateDepthImage(uint32_t width, uint32_t height) {
     return {memory, image, imageView, width, height, format};
 }
 
-Image BufferManager::importImage(VkImage image, uint32_t width,
-                                             uint32_t height, VkFormat format) {
+Image BufferManager::importImage(VkImage image, uint32_t width, uint32_t height,
+                                 VkFormat format) {
     VkImageView imageView;
     createImageView(image, format, VK_IMAGE_ASPECT_COLOR_BIT, imageView);
 
     return {VK_NULL_HANDLE, image, imageView, width, height, format};
 }
 
-Image BufferManager::allocateImage(const std::string& path,
-                                               VkFormat format) {
+Image BufferManager::allocateImage(const std::string& path, VkFormat format) {
     int width, height, channels;
     stbi_uc* pixels =
         stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
@@ -183,9 +253,8 @@ Image BufferManager::allocateImage(const std::string& path,
     return allocateImage(pixels, width, height, format);
 }
 
-Image BufferManager::allocateImage(const uint8_t* pixels,
-                                               uint32_t height, uint32_t width,
-                                               VkFormat format) {
+Image BufferManager::allocateImage(const uint8_t* pixels, uint32_t height,
+                                   uint32_t width, VkFormat format) {
     VkDeviceSize imageSize = width * height * 4;
     VmaAllocation stagingMemory;
     VkBuffer stagingBuffer;
@@ -241,8 +310,7 @@ void BufferManager::deallocateImageNow(Image& image) {
     image = Image{};
 }
 
-Texture BufferManager::createTexture(const std::string& path,
-                                                 VkFormat format) {
+Texture BufferManager::createTexture(const std::string& path, VkFormat format) {
     Image image = allocateImage(path, format);
 
     auto imageDefer = Defer{[&]() { deallocateImageNow(image); }};
@@ -371,6 +439,60 @@ void BufferManager::createSyncObjects() {
         throw std::runtime_error{"failed to create sync fence!"};
 }
 
+void BufferManager::createUboLayout() {
+    VkDescriptorSetLayoutBinding uniformLayoutBinding{};
+    uniformLayoutBinding.binding = 0;
+    uniformLayoutBinding.descriptorCount = 1;
+    uniformLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uniformLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    uniformLayoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
+    descriptorSetLayoutInfo.sType =
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutInfo.bindingCount = 1;
+    descriptorSetLayoutInfo.pBindings = &uniformLayoutBinding;
+
+    if (vkCreateDescriptorSetLayout(Context::get().getDevice(),
+                                    &descriptorSetLayoutInfo, nullptr,
+                                    &uboLayout) != VK_SUCCESS)
+        throw std::runtime_error{
+            "failed to create descriptor set layout info!"};
+}
+
+void BufferManager::createUboDescriptorPool(uint32_t size) {
+    VkDescriptorPoolSize uniformPoolSize{};
+    uniformPoolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uniformPoolSize.descriptorCount = size;
+
+    VkDescriptorPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    poolInfo.poolSizeCount = 1;
+    poolInfo.pPoolSizes = &uniformPoolSize;
+    poolInfo.maxSets = size;
+
+    if (vkCreateDescriptorPool(Context::get().getDevice(), &poolInfo, nullptr,
+                               &uboDescriptorPool) != VK_SUCCESS)
+        throw std::runtime_error{"failed to create descriptor pool!"};
+}
+
+void BufferManager::createUboDescriptorSets(uint32_t size) {
+    std::vector<VkDescriptorSetLayout> layouts;
+    layouts.resize(size, uboLayout);
+
+    uboDescriptorSets.resize(size);
+
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = uboDescriptorPool;
+    allocInfo.descriptorSetCount = size;
+    allocInfo.pSetLayouts = layouts.data();
+
+    if (vkAllocateDescriptorSets(Context::get().getDevice(), &allocInfo,
+                                 uboDescriptorSets.data()) != VK_SUCCESS)
+        throw std::runtime_error{"failed to create descriptor set!"};
+}
+
 void BufferManager::createTextureLayout() {
     VkDescriptorSetLayoutBinding samplerLayoutBinding{};
     samplerLayoutBinding.binding = 0;
@@ -422,8 +544,7 @@ void BufferManager::createTextureDescriptorSets(uint32_t size) {
     allocInfo.pSetLayouts = layouts.data();
 
     if (vkAllocateDescriptorSets(Context::get().getDevice(), &allocInfo,
-                                 textureDescriptorSets.data()) !=
-        VK_SUCCESS)
+                                 textureDescriptorSets.data()) != VK_SUCCESS)
         throw std::runtime_error{"failed to create descriptor set!"};
 }
 

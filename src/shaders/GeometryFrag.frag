@@ -7,14 +7,18 @@ layout(location = 3) in vec3 fragWorldPos;
 
 layout(location = 0) out vec4 outColor;
 
-layout(binding = 0) uniform sampler2D texSampler;
-
-// vec3 lightPos() {
-//     return vec3(0.0, 14.0, 0.0);
-// }
+layout(set = 0, binding = 0) uniform sampler2D texSampler;
+layout(set = 1, binding = 0) uniform Ubo {
+    vec4 ambientColor;
+    vec4 sunDir;
+    vec4 sunColor;
+} ubo;
 
 void main() {
-    // float blend = dot(lightPos() - fragWorldPos, fragNormal);
+    vec3 sunDir = normalize(ubo.sunDir.xyz);
 
-    outColor = vec4(texture(texSampler, fragTexCoord).rgb, 1.0);
+    // Simple diffuse shader
+    vec3 lightColor = ubo.sunColor.rgb * max(dot(sunDir, fragNormal), 0) + ubo.ambientColor.rgb;
+
+    outColor = vec4(texture(texSampler, fragTexCoord).rgb * lightColor, 1.0);
 }
