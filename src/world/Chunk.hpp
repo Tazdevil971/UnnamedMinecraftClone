@@ -1,26 +1,25 @@
 #pragma once
-#include <array>
-#include <glm/vec3.hpp>
 #include <glm/gtc/noise.hpp>
+#include <glm/vec3.hpp>
 
-#include "../render/BufferManager.hpp"
 #include "../render/Primitives.hpp"
 #include "Block.hpp"
+
 
 namespace world {
 
 class Chunk {
-   public:
+public:
     static constexpr glm::ivec3 DIM = glm::ivec3(16, 16, 16);
 
-   private:
+private:
     Block blocks[DIM.x][DIM.y][DIM.z];
     render::GeometryMesh mesh;
 
     void updateMesh();
     static void genTree(glm::ivec3 pos, Chunk &chunk, Block block);
 
-   public:
+public:
     Chunk();
     void cleanup();
 

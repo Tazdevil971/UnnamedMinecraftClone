@@ -1,7 +1,5 @@
 #include "Collision.hpp"
 
-#include <iostream>
-
 using namespace logic;
 using namespace world;
 
@@ -9,7 +7,6 @@ void SimulatedBoxCollider::update(World &world, glm::vec3 acc) {
     acc += GRAVITY;
 
     glm::vec3 speed = pos - prevPos;
-    // std::cout << speed.x << " " << speed.y << " " << speed.z << std::endl;
 
     acc -= speed * glm::abs(speed) * DRAG;
 

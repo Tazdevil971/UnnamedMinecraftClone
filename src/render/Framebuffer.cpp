@@ -1,5 +1,8 @@
 #include "Framebuffer.hpp"
 
+#include "BufferManager.hpp"
+#include "Context.hpp"
+
 using namespace render;
 
 Framebuffer::Framebuffer(VkSwapchainKHR swapchain, VkExtent2D extent,

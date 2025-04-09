@@ -8,7 +8,7 @@
 namespace logic {
 
 class PlayerController {
-   public:
+public:
     static constexpr glm::vec3 SIZE{0.6f, 1.8f, 0.6f};
     static constexpr float CAMERA_HEIGHT = 1.4f;
 
@@ -39,7 +39,7 @@ class PlayerController {
 
     glm::vec3 getLookingAt() const { return lookingAt; }
 
-   private:
+private:
     SimulatedBoxCollider collider;
     int actionTimer{0};
     float yaw{0.0f};

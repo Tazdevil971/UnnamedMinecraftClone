@@ -1,6 +1,7 @@
 #include "Context.hpp"
 
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <vector>

@@ -1,11 +1,10 @@
 #include "PlayerController.hpp"
 
+#include <algorithm>
 #include <glm/gtx/rotate_vector.hpp>
+#include <iostream>
 
 #include "VoxelRaytracer.hpp"
-
-#include <iostream>
-#include <algorithm>
 
 using namespace logic;
 using namespace world;

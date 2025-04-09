@@ -1,6 +1,5 @@
 #pragma once
 #include <glm/vec3.hpp>
-#include <list>
 #include <unordered_map>
 
 #include "Chunk.hpp"
@@ -22,13 +21,13 @@ struct IVec3Hash {
 };
 
 class World {
-   public:
+public:
     static constexpr int HEIGHT = 4;
 
-   private:
+private:
     std::unordered_map<glm::ivec3, Chunk, IVec3Hash> chunks;
 
-   public:
+public:
     World();
 
     void cleanup();

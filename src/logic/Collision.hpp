@@ -132,7 +132,7 @@ struct BoxCollider {
 };
 
 class SimulatedBoxCollider {
-   public:
+public:
     static constexpr glm::vec3 GRAVITY{0.0f, -0.0005f, 0.0f};
     static constexpr float DRAG{0.002f};
 
@@ -151,7 +151,7 @@ class SimulatedBoxCollider {
     bool isOnGround() const { return onGround; }
     bool isAgainstWall() const { return againstWall; }
 
-   private:
+private:
     static bool checkCollision(const BlockRange &range, world::World &world);
 
     glm::vec3 pos;

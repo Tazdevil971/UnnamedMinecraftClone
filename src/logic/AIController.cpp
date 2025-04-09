@@ -1,7 +1,5 @@
 #include "AIController.hpp"
 
-#include <iostream>
-
 #include "../Random.hpp"
 
 using namespace logic;

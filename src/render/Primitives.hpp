@@ -127,10 +127,10 @@ struct Ubo {
     void *ptr{nullptr};
     size_t size;
 
-    template<typename T>
+    template <typename T>
     void write(const T &value) {
         assert(sizeof(T) <= size);
-        *reinterpret_cast<T*>(ptr) = value;
+        *reinterpret_cast<T *>(ptr) = value;
     }
 };
 
@@ -167,9 +167,7 @@ struct GeometryModel {
         return glm::translate(glm::mat4(1.0f), pos) * glm::toMat4(rot);
     }
 
-    glm::mat4 computeNormalMat() const {
-        return glm::toMat4(rot);
-    }
+    glm::mat4 computeNormalMat() const { return glm::toMat4(rot); }
 };
 
 struct UiModel {

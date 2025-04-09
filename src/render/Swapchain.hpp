@@ -1,9 +1,8 @@
 #pragma once
 
 #include <memory>
+#include <stdexcept>
 
-#include "BufferManager.hpp"
-#include "Context.hpp"
 #include "Framebuffer.hpp"
 
 namespace render {

@@ -2,17 +2,18 @@
 
 #include <glm/glm.hpp>
 #include <memory>
+#include <stdexcept>
 
-#include "../render/BufferManager.hpp"
+#include "../render/Primitives.hpp"
 #include "Block.hpp"
 
 namespace world {
 
 class AtlasManager {
-   private:
+private:
     static std::unique_ptr<AtlasManager> INSTANCE;
 
-   public:
+public:
     static void create() { INSTANCE.reset(new AtlasManager()); }
 
     static AtlasManager& get() {
@@ -41,7 +42,7 @@ class AtlasManager {
 
     AtlasBounds getAtlasBounds(Block block, Side side) const;
 
-   private:
+private:
     AtlasManager();
 
     void cleanup();

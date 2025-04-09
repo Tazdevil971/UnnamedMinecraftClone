@@ -1,7 +1,6 @@
 #include "Window.hpp"
 
 #include <chrono>
-#include <iostream>
 
 using namespace render;
 

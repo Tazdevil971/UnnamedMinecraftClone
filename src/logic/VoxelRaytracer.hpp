@@ -11,7 +11,7 @@ public:
         glm::ivec3 dir;
         float dist;
     };
-    
+
     VoxelRaytracer(glm::vec3 start, glm::vec3 dir);
 
     Hit getNextHit();
@@ -23,4 +23,4 @@ private:
     glm::vec3 sideDist;
 };
 
-}
+}  // namespace logic

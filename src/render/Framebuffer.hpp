@@ -1,7 +1,10 @@
 #pragma once
 
-#include "BufferManager.hpp"
-#include "Context.hpp"
+#include <vulkan/vulkan.h>
+
+#include <cassert>
+
+#include "Primitives.hpp"
 
 namespace render {
 
@@ -10,7 +13,7 @@ class Swapchain;
 class Framebuffer {
     friend class render::Swapchain;
 
-   public:
+public:
     VkFramebuffer getFrame(uint32_t idx) const {
         assert(idx < imageCount);
         return framebuffers[idx];
@@ -39,7 +42,7 @@ class Framebuffer {
         return scissor;
     }
 
-   private:
+private:
     Framebuffer(VkSwapchainKHR swapchain, VkExtent2D extent,
                 VkFormat colorFormat, VkRenderPass renderPass);
 

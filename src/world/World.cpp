@@ -1,7 +1,5 @@
 #include "World.hpp"
 
-#include <iostream>
-
 using namespace world;
 using namespace render;
 
@@ -28,16 +26,14 @@ Chunk& World::getChunk(glm::ivec3 pos) {
 
 Block World::getBlock(glm::ivec3 pos) {
     auto [chunkPos, inChunkPos] = splitWorldCoords(pos);
-    if (chunkPos.y < 0 || chunkPos.y >= HEIGHT)
-        return Block::AIR;
+    if (chunkPos.y < 0 || chunkPos.y >= HEIGHT) return Block::AIR;
 
     return getChunk(chunkPos).getBlock(inChunkPos);
 }
 
 void World::updateBlock(glm::ivec3 pos, Block newBlock) {
     auto [chunkPos, inChunkPos] = splitWorldCoords(pos);
-    if (chunkPos.y < 0 || chunkPos.y >= HEIGHT)
-        return;
+    if (chunkPos.y < 0 || chunkPos.y >= HEIGHT) return;
 
     getChunk(chunkPos).updateBlock(inChunkPos, newBlock);
 }

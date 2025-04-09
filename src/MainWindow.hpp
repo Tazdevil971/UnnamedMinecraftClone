@@ -1,21 +1,23 @@
 #pragma once
 
-#include "render/Window.hpp"
-#include "world/World.hpp"
+#include <list>
+
 #include "logic/AIController.hpp"
 #include "logic/PlayerController.hpp"
+#include "render/Window.hpp"
+#include "world/World.hpp"
 
 class MainWindow : public render::Window {
-   public:
+public:
     MainWindow();
 
     void cleanup();
 
-   protected:
+protected:
     void onFrame(InputState &input) override;
     void onResize(int width, int height) override;
 
-   private:
+private:
     void pushDebugCube(glm::vec3 pos, glm::quat rot);
 
     bool windowResized{false};

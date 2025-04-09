@@ -1,5 +1,4 @@
-#include <iostream>
-#include <stdexcept>
+#include <memory>
 
 #include "MainWindow.hpp"
 #include "backward.hpp"

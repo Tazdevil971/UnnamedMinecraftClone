@@ -1,18 +1,22 @@
 #pragma once
 
-#include <list>
+#include <vulkan/vulkan.h>
 
-#include "Context.hpp"
-#include "Swapchain.hpp"
-#include "BufferManager.hpp"
+#include <list>
+#include <memory>
+#include <stdexcept>
+
+#include "Primitives.hpp"
+#include "Framebuffer.hpp"
+
 
 namespace render {
 
 class Renderer {
-   private:
+private:
     static std::unique_ptr<Renderer> INSTANCE;
 
-   public:
+public:
     static void create() { INSTANCE.reset(new Renderer()); }
 
     static Renderer& get() {
@@ -33,10 +37,11 @@ class Renderer {
         glm::vec4 sunColor;
     };
 
-    void render(const Camera& camera, const LightInfo &lights, std::list<GeometryModel> models, std::list<UiModel> uiModels,
+    void render(const Camera& camera, const LightInfo& lights,
+                std::list<GeometryModel> models, std::list<UiModel> uiModels,
                 bool windowResized);
 
-   private:
+private:
     Renderer();
 
     void cleanup();
@@ -65,7 +70,8 @@ class Renderer {
     void createCommandBuffer();
     void createSyncObjects();
 
-    void doGeometryRender(const Camera& camera, const LightInfo &lights, std::list<GeometryModel> models);
+    void doGeometryRender(const Camera& camera, const LightInfo& lights,
+                          std::list<GeometryModel> models);
     void recordGeometryModelRender(const GeometryModel& model, glm::mat4 vp);
     void doUiRender(std::list<UiModel> uiModels);
     void recordUiModelRender(const UiModel& model);

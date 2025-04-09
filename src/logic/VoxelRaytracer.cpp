@@ -1,7 +1,5 @@
 #include "VoxelRaytracer.hpp"
 
-#include <iostream>
-
 using namespace logic;
 
 VoxelRaytracer::VoxelRaytracer(glm::vec3 start, glm::vec3 dir) {
@@ -32,11 +30,6 @@ VoxelRaytracer::VoxelRaytracer(glm::vec3 start, glm::vec3 dir) {
         dir.y == 0.0f ? INFINITY : sideDist.y,
         dir.z == 0.0f ? INFINITY : sideDist.z,
     };
-
-    // std::cout << "step: " << step.x << " " << step.y << " " << step.z <<
-    // std::endl; std::cout << "sideDist: " << sideDist.x << " " << sideDist.y
-    // << " " << sideDist.z << std::endl; std::cout << "deltaDist: " <<
-    // deltaDist.x << " " << deltaDist.y << " " << deltaDist.z << std::endl;
 }
 
 VoxelRaytracer::Hit VoxelRaytracer::getNextHit() {
@@ -62,10 +55,6 @@ VoxelRaytracer::Hit VoxelRaytracer::getNextHit() {
         sideDist.z += deltaDist.z;
         pos.z += step.z;
     }
-
-    // std::cout << "sideDist: " << sideDist.x << " " << sideDist.y << " " <<
-    // sideDist.z << std::endl; std::cout << "pos: " << pos.x << " " << pos.y <<
-    // " " << pos.z << std::endl; std::cout << "dist: " << dist << std::endl;
 
     return Hit{pos, dir, dist};
 }

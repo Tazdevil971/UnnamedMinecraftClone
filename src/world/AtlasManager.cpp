@@ -1,18 +1,21 @@
 #include "AtlasManager.hpp"
 
+#include "../render/BufferManager.hpp"
+
 using namespace world;
+using namespace render;
 
 std::unique_ptr<AtlasManager> AtlasManager::INSTANCE;
 
 AtlasManager::AtlasManager() {
-    atlas = render::BufferManager::get().createTexture(
-        "assets/block_atlas.png", VK_FORMAT_R8G8B8A8_SRGB);
+    atlas = BufferManager::get().createTexture("assets/block_atlas.png",
+                                                       VK_FORMAT_R8G8B8A8_SRGB);
 }
 
 AtlasManager::~AtlasManager() { cleanup(); }
 
 void AtlasManager::cleanup() {
-    render::BufferManager::get().deallocateTextureDefer(atlas);
+    BufferManager::get().deallocateTextureDefer(atlas);
 }
 
 AtlasManager::AtlasBounds AtlasManager::getAtlasBounds(Block block,

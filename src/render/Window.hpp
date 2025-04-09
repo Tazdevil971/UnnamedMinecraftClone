@@ -10,7 +10,7 @@
 namespace render {
 
 class Window {
-   public:
+public:
     struct InputState {
         bool forward;
         bool backward;
@@ -32,13 +32,13 @@ class Window {
 
     float getTime();
 
-   protected:
+protected:
     virtual void onFrame(InputState &input) {}
     virtual void onResize(int width, int height) {}
 
     GLFWwindow *getWindow() const { return window; }
 
-   private:
+private:
     static void glfwOnResizeCallback(GLFWwindow *window, int width, int height);
 
     GLFWwindow *window{nullptr};

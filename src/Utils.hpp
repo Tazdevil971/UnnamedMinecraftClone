@@ -1,8 +1,10 @@
 #pragma once
 
+#include <utility>
+
 template <typename F>
 class Defer {
-   public:
+public:
     Defer(F&& f) : f{std::move(f)} {}
 
     ~Defer() { now(); }
@@ -16,7 +18,7 @@ class Defer {
         }
     }
 
-   private:
+private:
     bool shouldRun{true};
     F f;
 };

@@ -4,6 +4,10 @@
 #include <glm/gtx/rotate_vector.hpp>
 
 #include "logic/DayNightCycle.hpp"
+#include "render/BufferManager.hpp"
+#include "render/Context.hpp"
+#include "render/Renderer.hpp"
+#include "render/Swapchain.hpp"
 #include "world/AtlasManager.hpp"
 
 using namespace render;
@@ -119,8 +123,7 @@ void MainWindow::onFrame(InputState& input) {
 
     auto lights = logic::getDayNightState(input.time);
 
-    pushDebugCube(playerController.getLookingAt(),
-                  glm::vec3{0.0f, 0.0f, 0.0f});
+    pushDebugCube(playerController.getLookingAt(), glm::vec3{0.0f, 0.0f, 0.0f});
     pushDebugCube(debugCubeController.getPos() + glm::vec3{0.0f, 0.05f, 0.0f},
                   glm::vec3{0.0f, 0.0f, 0.0f});
 

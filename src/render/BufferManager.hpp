@@ -4,17 +4,17 @@
 
 #include <memory>
 #include <string>
+#include <stdexcept>
 
-#include "Context.hpp"
 #include "Primitives.hpp"
 
 namespace render {
 
 class BufferManager {
-   private:
+private:
     static std::unique_ptr<BufferManager> INSTANCE;
 
-   public:
+public:
     static void create(size_t uboPoolSize, size_t texturePoolSize) {
         INSTANCE.reset(new BufferManager(uboPoolSize, texturePoolSize));
     }
@@ -52,10 +52,10 @@ class BufferManager {
     // Image stuff
     DepthImage allocateDepthImage(uint32_t width, uint32_t height);
 
-    Image importImage(VkImage image, uint32_t width,
-                                  uint32_t height, VkFormat format);
-    Image allocateImage(const uint8_t* pixels, uint32_t width,
-                                    uint32_t height, VkFormat format);
+    Image importImage(VkImage image, uint32_t width, uint32_t height,
+                      VkFormat format);
+    Image allocateImage(const uint8_t* pixels, uint32_t width, uint32_t height,
+                        VkFormat format);
     Image allocateImage(const std::string& path, VkFormat format);
 
     void deallocateImageDefer(Image& image);
@@ -69,7 +69,7 @@ class BufferManager {
     void deallocateTextureDefer(Texture& texture);
     void deallocateTextureNow(Texture& texture);
 
-   private:
+private:
     BufferManager(size_t uboPoolSize, size_t texturePoolSize);
 
     BaseMesh allocateMeshInner(const void* indicesData, size_t indicesDataSize,

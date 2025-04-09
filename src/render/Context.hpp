@@ -3,7 +3,6 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <fstream>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -12,10 +11,10 @@
 namespace render {
 
 class Context {
-   private:
+private:
     static std::unique_ptr<Context> INSTANCE;
 
-   public:
+public:
     static void create(GLFWwindow *window) {
         INSTANCE.reset(new Context(window));
     }
@@ -77,7 +76,7 @@ class Context {
     VkQueue getPresentQueue() const { return presentQueue; }
     const DeviceInfo &getDeviceInfo() const { return deviceInfo; }
 
-   private:
+private:
     Context(GLFWwindow *window);
 
     void cleanup();

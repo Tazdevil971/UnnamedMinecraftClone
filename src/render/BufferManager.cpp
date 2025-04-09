@@ -7,6 +7,7 @@
 #include <stdexcept>
 
 #include "../Utils.hpp"
+#include "Context.hpp"
 
 using namespace render;
 
