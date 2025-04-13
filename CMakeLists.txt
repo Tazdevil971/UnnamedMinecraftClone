@@ -21,6 +21,7 @@ set(SOURCES
     src/render/BufferManager.cpp
     src/render/VmaImplementation.cpp
     src/render/Renderer.cpp
+    src/render/Skybox.cpp
     src/render/Window.cpp
     src/world/AtlasManager.cpp
     src/world/World.cpp
@@ -33,6 +34,8 @@ set(SOURCES
     )
 
 set(SHADERS
+    src/shaders/SkyboxVert.vert
+    src/shaders/SkyboxFrag.frag
     src/shaders/GeometryVert.vert
     src/shaders/GeometryFrag.frag
     src/shaders/UiVert.vert
@@ -41,7 +44,9 @@ set(SHADERS
 set(ASSETS
     assets/test_image.jpg
     assets/block_atlas.png
-    assets/debug.png)
+    assets/skybox_day.png
+    assets/debug.png
+    assets/debug_skybox.png)
 
 add_executable(UnnamedMinecraftClone ${SOURCES})
 target_compile_features(UnnamedMinecraftClone PRIVATE cxx_std_17)

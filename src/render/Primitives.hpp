@@ -13,6 +13,11 @@
 
 namespace render {
 
+struct SkyboxVertex {
+    glm::vec3 pos;
+    glm::vec2 uv;
+};
+
 struct GeometryVertex {
     glm::vec3 pos;
     glm::vec3 color;
@@ -44,6 +49,35 @@ struct BaseMesh {
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &buffer, offsets);
         vkCmdBindIndexBuffer(commandBuffer, buffer, indicesOffset,
                              VK_INDEX_TYPE_UINT16);
+    }
+};
+
+struct SkyboxMesh : BaseMesh {
+    using Vertex = SkyboxVertex;
+
+    static VkVertexInputBindingDescription getBindingDescription() {
+        VkVertexInputBindingDescription description{};
+        description.binding = 0;
+        description.stride = sizeof(SkyboxVertex);
+        description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        return description;
+    }
+
+    static std::array<VkVertexInputAttributeDescription, 2>
+    getAttributeDescriptions() {
+        std::array<VkVertexInputAttributeDescription, 2> descriptions{};
+        descriptions[0].binding = 0;
+        descriptions[0].location = 0;
+        descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+        descriptions[0].offset = offsetof(SkyboxVertex, pos);
+
+        descriptions[1].binding = 0;
+        descriptions[1].location = 1;
+        descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+        descriptions[1].offset = offsetof(SkyboxVertex, uv);
+
+        return descriptions;
     }
 };
 
@@ -196,8 +230,17 @@ struct Camera {
         return glm::translate(glm::affineInverse(glm::toMat4(rot)), -pos);
     }
 
+    glm::mat4 computeSkyboxViewMat() const {
+        // TODO: Can we make this faster? Removing the matrix inversion?
+        return glm::affineInverse(glm::toMat4(rot));
+    }
+
     glm::mat4 computeVPMat(float ratio) const {
         return computeProjMat(ratio) * computeViewMat();
+    }
+
+    glm::mat4 computeSkyboxVPMat(float ratio) const {
+        return computeProjMat(ratio) * computeSkyboxViewMat();
     }
 
     glm::vec3 computeViewDir() const { return rot * glm::vec3{0, 0, -1.0f}; }

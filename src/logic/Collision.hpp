@@ -143,6 +143,7 @@ public:
 
     void update(world::World &world, glm::vec3 acc);
     void teleport(glm::vec3 newPos);
+    void unstuck(world::World &world);
 
     glm::vec3 computeAccForSpeed(glm::vec3 speed);
 

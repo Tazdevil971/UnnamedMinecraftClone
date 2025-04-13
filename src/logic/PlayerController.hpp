@@ -27,6 +27,8 @@ public:
         : collider{pos, SIZE}, yaw{0.0f}, pitch{0.0f} {}
 
     void update(world::World &world, const render::Window::InputState &input);
+    void teleport(glm::vec3 newPos) { collider.teleport(newPos); }
+    void unstuck(world::World &world) { collider.unstuck(world); }
 
     glm::vec3 getPos() const { return collider.getPos(); }
 

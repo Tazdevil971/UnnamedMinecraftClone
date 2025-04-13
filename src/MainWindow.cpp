@@ -7,6 +7,7 @@
 #include "render/BufferManager.hpp"
 #include "render/Context.hpp"
 #include "render/Renderer.hpp"
+#include "render/Skybox.hpp"
 #include "render/Swapchain.hpp"
 #include "world/AtlasManager.hpp"
 
@@ -73,6 +74,8 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
 
         AtlasManager::create();
 
+        skybox = Skybox::make("assets/skybox_day.png");
+
         debugTexture = BufferManager::get().createTexture(
             "assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
         debugCubeMesh = BufferManager::get().allocateMesh<GeometryMesh>(
@@ -85,6 +88,7 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
 
                                                            });
 
+        playerController.unstuck(world);
     } catch (...) {
         cleanup();
         throw;
@@ -93,6 +97,7 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
 
 void MainWindow::cleanup() {
     world.cleanup();
+    skybox.cleanup();
 
     AtlasManager::destroy();
 
@@ -121,7 +126,7 @@ void MainWindow::onFrame(InputState& input) {
         simulatedTime += 0.005f;
     }
 
-    auto lights = logic::getDayNightState(input.time);
+    auto dayNightState = logic::getDayNightState(input.time);
 
     pushDebugCube(playerController.getLookingAt(), glm::vec3{0.0f, 0.0f, 0.0f});
     pushDebugCube(debugCubeController.getPos() + glm::vec3{0.0f, 0.05f, 0.0f},
@@ -136,7 +141,13 @@ void MainWindow::onFrame(InputState& input) {
 
     // uiModels.push_back(UiModel{uiMesh, debugTexture, pos});
 
-    Renderer::get().render(playerController.getCamera(), lights, models,
+    Renderer::LightInfo lights{{dayNightState.ambientColor, 1.0f},
+                               {dayNightState.sunDir, 1.0f},
+                               {dayNightState.sunColor, 1.0f}};
+
+    skybox.rot = dayNightState.skyboxRot;
+
+    Renderer::get().render(playerController.getCamera(), skybox, lights, models,
                            uiModels, windowResized);
     windowResized = false;
 }

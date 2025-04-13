@@ -4,6 +4,7 @@
 
 #include "logic/AIController.hpp"
 #include "logic/PlayerController.hpp"
+#include "render/Skybox.hpp"
 #include "render/Window.hpp"
 #include "world/World.hpp"
 
@@ -28,6 +29,8 @@ private:
     logic::PlayerController playerController{glm::vec3{0.0f, 14.0f, 0.0f}};
     logic::AIController debugCubeController{glm::vec3{0.0f, 14.0f, 0.0f},
                                             glm::vec3{0.4f, 0.4f, 0.4f}};
+
+    render::Skybox skybox;
 
     render::GeometryMesh debugCubeMesh;
     render::UiMesh uiMesh;

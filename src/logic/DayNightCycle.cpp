@@ -1,10 +1,10 @@
 #include "DayNightCycle.hpp"
 
 #include <cmath>
+#include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
 using namespace logic;
-using namespace render;
 
 // 1 day lasts a minute
 constexpr float DAY_DURATION{60.0f};
@@ -28,37 +28,26 @@ glm::vec3 logic::computeSunDir(float angle) {
     return glm::rotate(sunDir, angle, sunRotateVec);
 }
 
-Renderer::LightInfo logic::getDayNightState(float time) {
+DayNightState logic::getDayNightState(float time) {
     float cycle = std::fmod(time, DAY_DURATION * 2) / DAY_DURATION;
 
     float sunAngle = cycle * M_PI;
     glm::vec3 sunDir = computeSunDir(sunAngle);
 
-    glm::vec3 ambientColor;
-    glm::vec3 sunColor;
-    if (cycle < 0.3f) {
-        // 0% - 100% day
-        float mix = cycle / 0.3f;
-        ambientColor = glm::mix(NIGHT_AMBIENT, DAY_AMBIENT, mix);
-        sunColor = glm::mix(NIGHT_SUN, DAY_SUN, mix);
-    } else if (cycle < 0.7f) {
-        // Full day1
-        ambientColor = DAY_AMBIENT;
-        sunColor = DAY_SUN;
+    float fade;
+    if (cycle < 0.2f) {
+        fade = cycle / 0.2f;
+    } else if (cycle < 0.8f) {
+        fade = 1.0f;
     } else if (cycle < 1.0f) {
-        // 100% - 0% day
-        float mix = (cycle - 0.7f) / 0.3f;
-        ambientColor = glm::mix(DAY_AMBIENT, NIGHT_AMBIENT, mix);
-        sunColor = glm::mix(DAY_SUN, NIGHT_SUN, mix);
+        fade = 1.0f - ((cycle - 0.8f) / 0.2f);
     } else {
-        // Full night
-        ambientColor = NIGHT_AMBIENT;
-        sunColor = NIGHT_SUN;
+        fade = 0.0f;
     }
 
-    return {
-        {ambientColor, 1.0f},
-        {sunDir, 1.0f},
-        {sunColor, 1.0f},
-    };
+    glm::vec3 ambientColor = glm::mix(NIGHT_AMBIENT, DAY_AMBIENT, fade);
+    glm::vec3 sunColor = glm::mix(NIGHT_SUN, DAY_SUN, fade);
+    glm::quat skyboxRot = glm::rotation(glm::vec3(0.0f, 1.0f, 0.0f), sunDir);
+
+    return {ambientColor, sunDir, sunColor, skyboxRot, fade};
 }
