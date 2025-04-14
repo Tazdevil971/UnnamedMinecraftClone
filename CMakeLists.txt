@@ -21,6 +21,8 @@ set(SOURCES
     src/render/BufferManager.cpp
     src/render/VmaImplementation.cpp
     src/render/Renderer.cpp
+    src/render/SkyboxRenderer.cpp
+    src/render/GeometryRenderer.cpp
     src/render/Skybox.cpp
     src/render/Window.cpp
     src/world/AtlasManager.cpp

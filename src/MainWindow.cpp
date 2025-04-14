@@ -6,6 +6,7 @@
 #include "logic/DayNightCycle.hpp"
 #include "render/BufferManager.hpp"
 #include "render/Context.hpp"
+#include "render/GeometryRenderer.hpp"
 #include "render/Renderer.hpp"
 #include "render/Skybox.hpp"
 #include "render/Swapchain.hpp"
@@ -142,9 +143,9 @@ void MainWindow::onFrame(InputState& input) {
 
     // uiModels.push_back(UiModel{uiMesh, debugTexture, pos});
 
-    Renderer::LightInfo lights{{dayNightState.ambientColor, 1.0f},
-                               {dayNightState.sunDir, 1.0f},
-                               {dayNightState.sunColor, 1.0f}};
+    GeometryRenderer::LightInfo lights{dayNightState.ambientColor,
+                                       dayNightState.sunDir,
+                                       dayNightState.sunColor};
 
     skybox.rot = dayNightState.skyboxRot;
     skybox.blend = dayNightState.skyboxFade;

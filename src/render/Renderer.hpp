@@ -7,8 +7,10 @@
 #include <stdexcept>
 
 #include "Framebuffer.hpp"
+#include "GeometryRenderer.hpp"
 #include "Primitives.hpp"
 #include "Skybox.hpp"
+#include "SkyboxRenderer.hpp"
 
 namespace render {
 
@@ -31,43 +33,24 @@ public:
 
     ~Renderer();
 
-    struct LightInfo {
-        glm::vec4 ambientColor;
-        glm::vec4 sunDir;
-        glm::vec4 sunColor;
-    };
-
     void render(const Camera& camera, const Skybox& skybox,
-                const LightInfo& lights, std::list<GeometryModel> models,
-                std::list<UiModel> uiModels, bool windowResized);
+                const GeometryRenderer::LightInfo& lights,
+                std::list<GeometryModel> models, std::list<UiModel> uiModels,
+                bool windowResized);
 
 private:
     Renderer();
 
     void cleanup();
 
-    struct SkyboxPushBuffer {
-        glm::mat4 mvp;
-    };
-
-    struct GeometryPushBuffer {
-        glm::mat4 m;
-        glm::mat4 vp;
-    };
-
-    Ubo skyboxInfo;
-    Ubo geometryLightInfo;
-
     VkRenderPass renderPass{VK_NULL_HANDLE};
-    VkPipelineLayout skyboxPipelineLayout{VK_NULL_HANDLE};
-    VkPipeline skyboxPipeline{VK_NULL_HANDLE};
-    VkPipelineLayout geometryPipelineLayout{VK_NULL_HANDLE};
-    VkPipeline geometryPipeline{VK_NULL_HANDLE};
     VkPipelineLayout uiPipelineLayout{VK_NULL_HANDLE};
     VkPipeline uiPipeline{VK_NULL_HANDLE};
 
     VkCommandPool commandPool{VK_NULL_HANDLE};
 
+    std::unique_ptr<GeometryRenderer> geometryRenderer;
+    std::unique_ptr<SkyboxRenderer> skyboxRenderer;
     std::shared_ptr<Framebuffer> framebuffer;
 
     VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
@@ -76,17 +59,11 @@ private:
     VkFence inFlightFence{VK_NULL_HANDLE};
 
     void createRenderPass();
-    void createSkyboxGraphicsPipeline();
-    void createGeometryGraphicsPipeline();
     void createUiGraphicsPipeline();
     void createCommandPool();
     void createCommandBuffer();
     void createSyncObjects();
 
-    void doSkyboxRender(glm::mat4 vp, const Skybox& skybox);
-    void doGeometryRender(glm::mat4 vp, const LightInfo& lights,
-                          std::list<GeometryModel> models);
-    void recordGeometryModelRender(const GeometryModel& model, glm::mat4 vp);
     void doUiRender(std::list<UiModel> uiModels);
     void recordUiModelRender(const UiModel& model);
 };
