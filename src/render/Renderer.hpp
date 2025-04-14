@@ -43,6 +43,11 @@ private:
 
     void cleanup();
 
+    struct UiPushBuffer {
+        glm::vec2 pos;
+        glm::vec2 dimension;
+    };
+
     VkRenderPass renderPass{VK_NULL_HANDLE};
     VkPipelineLayout uiPipelineLayout{VK_NULL_HANDLE};
     VkPipeline uiPipeline{VK_NULL_HANDLE};

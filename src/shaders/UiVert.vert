@@ -5,11 +5,13 @@ layout(location = 1) in vec2 inTexCoord;
 
 layout(location = 0) out vec2 fragTexCoord;
 
-layout(push_constant) uniform Ubo {
+layout(push_constant) uniform PushConstant {
     vec2 pos;
-} ubo;
+    vec2 dimension;
+} pushConstant;
 
 void main() {
-    gl_Position = vec4(inPosition.xy, 0.0, 1.0);
+    vec2 coord = (inPosition+pushConstant.pos)/pushConstant.dimension;
+    gl_Position = vec4(coord.xy, 0.0, 1.0);
     fragTexCoord = inTexCoord;
 }

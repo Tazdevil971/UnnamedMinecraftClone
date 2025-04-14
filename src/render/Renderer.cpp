@@ -234,7 +234,7 @@ void Renderer::createUiGraphicsPipeline() {
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(glm::vec2);
+    pushConstantRange.size = sizeof(UiPushBuffer);
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
     pipelineLayoutCreateInfo.sType =
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -450,9 +450,14 @@ void Renderer::recordUiModelRender(const UiModel& model) {
 
     model.mesh.bind(commandBuffer);
 
+    float width = static_cast<float>(Swapchain::get().getExtent().width);
+    float height = static_cast<float>(Swapchain::get().getExtent().height);
+    glm::vec2 dimension = {width, height};
+    UiPushBuffer pushBuffer = {model.pos, dimension};
+
     vkCmdPushConstants(commandBuffer, uiPipelineLayout,
-                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::vec2),
-                       &model.pos);
+                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(UiPushBuffer),
+                       &pushBuffer);
 
     vkCmdDrawIndexed(commandBuffer, model.mesh.indexCount, 1, 0, 0, 0);
 }
