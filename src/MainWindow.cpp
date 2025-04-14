@@ -82,12 +82,12 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
             "assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
         debugCubeMesh = BufferManager::get().allocateMesh<GeometryMesh>(
             DEBUG_CUBE_INDICES, DEBUG_CUBE_VERTICES);
-        uiMesh = BufferManager::get().allocateMesh<UiMesh>({0, 1, 2},
+        uiMesh = BufferManager::get().allocateMesh<UiMesh>({0, 1, 2, 3, 2, 1},
                                                            {
-                                                               {{0, 0}, {0, 0}},
-                                                               {{0, 1}, {0, 1}},
-                                                               {{1, 0}, {1, 0}},
-
+                                                               {{-600, 0}, {0, 0}},
+                                                               {{-600, 200}, {0, 1}},
+                                                               {{600, 0}, {1, 0}}, 
+                                                               {{600,200}, {1,1}},
                                                            });
 
         playerController.unstuck(world);
@@ -143,9 +143,9 @@ void MainWindow::onFrame(InputState& input) {
                              models.push_back(chunk.getModel(pos));
                          });
 
-    glm::vec2 pos = {-0.5, 0.5};
+    glm::vec2 pos = {0, 400};
 
-    // uiModels.push_back(UiModel{uiMesh, debugTexture, pos});
+   // uiModels.push_back(UiModel{uiMesh, debugTexture, pos});
 
     GeometryRenderer::LightInfo lights{dayNightState.ambientColor,
                                        dayNightState.sunDir,
