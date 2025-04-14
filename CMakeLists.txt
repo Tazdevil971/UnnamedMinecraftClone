@@ -21,6 +21,7 @@ set(SOURCES
     src/render/BufferManager.cpp
     src/render/VmaImplementation.cpp
     src/render/Renderer.cpp
+    src/render/ShadowPass.cpp
     src/render/ForwardPass.cpp
     src/render/SkyboxRenderer.cpp
     src/render/GeometryRenderer.cpp
@@ -38,6 +39,8 @@ set(SOURCES
     )
 
 set(SHADERS
+    src/shaders/ShadowVert.vert
+    src/shaders/ShadowFrag.frag
     src/shaders/SkyboxVert.vert
     src/shaders/SkyboxFrag.frag
     src/shaders/GeometryVert.vert
@@ -48,6 +51,7 @@ set(SHADERS
 set(ASSETS
     assets/test_image.jpg
     assets/block_atlas.png
+    assets/pointer_texture.png
     assets/skybox_day.png
     assets/skybox_night.png
     assets/debug.png

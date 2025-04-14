@@ -14,11 +14,13 @@ struct Skybox {
     Texture dayTexture;
     Texture nightTexture;
     float blend{0.0f};
-    glm::quat rot;
+    glm::vec3 lightDir;
 
     void cleanup();
 
-    glm::mat4 computeModelMat() const { return glm::toMat4(rot); }
+    glm::mat4 computeModelMat() const {
+        return glm::toMat4(glm::quatLookAt(lightDir, glm::vec3{0.0f, 1.0f, 0.0f}));
+    }
 };
 
 }  // namespace render

@@ -20,7 +20,7 @@ public:
 
     void record(VkCommandBuffer commandBuffer, Swapchain::Frame frame,
                 const Camera& camera, const Skybox& skybox,
-                const GeometryRenderer::LightInfo& lights,
+                const GeometryRenderer::LightInfo& lights, Texture depthTexture,
                 std::list<GeometryModel> models, std::list<UiModel> uiModels);
 
 private:

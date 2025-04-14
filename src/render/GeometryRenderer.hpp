@@ -22,7 +22,7 @@ public:
     };
 
     void record(VkCommandBuffer commandBuffer, const Camera& camera,
-                float ratio, const LightInfo& lights,
+                float ratio, const LightInfo& lights, Texture depthTexture,
                 std::list<GeometryModel> models);
 
 private:
@@ -32,13 +32,14 @@ private:
     };
 
     struct LightInfoUbo {
+        glm::mat4 shadowVP;
         glm::vec4 ambientColor;
         glm::vec4 sunDir;
         glm::vec4 sunColor;
     };
 
     void recordSingle(VkCommandBuffer commandBuffer, glm::mat4 vp,
-                      const GeometryModel& model);
+                      Texture depthTexture, const GeometryModel& model);
 
     void createPipeline(VkRenderPass renderPass);
 

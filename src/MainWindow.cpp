@@ -76,7 +76,7 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
         renderer = std::make_unique<Renderer>();
 
         skybox =
-            Skybox::make("assets/skybox_day.png", "assets/skybox_night.png");
+            Skybox::make("assets/debug_skybox.png", "assets/debug_skybox.png");
 
         debugTexture = BufferManager::get().allocateTexture(
             "assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
@@ -158,12 +158,11 @@ void MainWindow::onFrame(InputState& input) {
     glm::vec2 pos = {0, 0};
 
     uiModels.push_back(UiModel{pointerMesh, pointerTexture, pos});
-
     GeometryRenderer::LightInfo lights{dayNightState.ambientColor,
                                        dayNightState.sunDir,
                                        dayNightState.sunColor};
 
-    skybox.rot = dayNightState.skyboxRot;
+    skybox.lightDir = dayNightState.sunDir;
     skybox.blend = dayNightState.skyboxFade;
 
     renderer->render(playerController.getCamera(), skybox, lights, models,

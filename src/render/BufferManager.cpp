@@ -211,13 +211,14 @@ void BufferManager::deallocateUboNow(Ubo& ubo) {
     ubo = Ubo{};
 }
 
-DepthImage BufferManager::allocateDepthImage(uint32_t width, uint32_t height) {
+Image BufferManager::allocateDepthImage(uint32_t width, uint32_t height) {
     VmaAllocation memory;
     VkImage image;
     VkFormat format = Context::get().getDeviceInfo().depthFormat;
 
     createImage(width, height, format,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+                    VK_IMAGE_USAGE_SAMPLED_BIT,
                 VMA_MEMORY_USAGE_AUTO, 0, image, memory);
 
     auto outputDefer = Defer{[=]() { vmaDestroyImage(vma, image, memory); }};
@@ -314,9 +315,30 @@ void BufferManager::deallocateImageNow(Image& image) {
 Texture BufferManager::allocateTexture(const std::string& path,
                                        VkFormat format) {
     Image image = allocateImage(path, format);
-
     auto imageDefer = Defer{[&]() { deallocateImageNow(image); }};
 
+    Texture texture = allocateTexture(image);
+    imageDefer.defuse();
+
+    return texture;
+}
+
+Texture BufferManager::allocateDepthTexture(uint32_t width, uint32_t height) {
+    Image image = allocateDepthImage(width, height);
+    auto imageDefer = Defer{[&]() { deallocateImageNow(image); }};
+
+    Texture texture =
+        allocateTexture(image, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+    imageDefer.defuse();
+
+    return texture;
+}
+
+Texture BufferManager::allocateTexture(Image image) {
+    return allocateTexture(image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+}
+
+Texture BufferManager::allocateTexture(Image image, VkImageLayout imageLayout) {
     VkSamplerCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     createInfo.magFilter = VK_FILTER_NEAREST;
@@ -353,7 +375,7 @@ Texture BufferManager::allocateTexture(const std::string& path,
     textureDescriptorSets.pop_back();
 
     VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageLayout = imageLayout;
     imageInfo.imageView = image.view;
     imageInfo.sampler = sampler;
 
@@ -371,7 +393,6 @@ Texture BufferManager::allocateTexture(const std::string& path,
     vkUpdateDescriptorSets(Context::get().getDevice(), 1, &descriptorWrite, 0,
                            nullptr);
 
-    imageDefer.defuse();
     samplerDefer.defuse();
     return {image, sampler, descriptor};
 }

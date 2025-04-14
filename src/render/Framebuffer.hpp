@@ -34,7 +34,7 @@ public:
         return viewport;
     }
 
-    VkRect2D getRenderArea() const {
+    VkRect2D getScissor() const {
         VkRect2D scissor{};
         scissor.offset = {0, 0};
         scissor.extent = extent;
@@ -61,7 +61,7 @@ private:
 
     uint32_t imageCount{0};
     std::vector<Image> colorImages;
-    std::vector<DepthImage> depthImages;
+    std::vector<Image> depthImages;
     std::vector<VkFramebuffer> framebuffers;
 };
 

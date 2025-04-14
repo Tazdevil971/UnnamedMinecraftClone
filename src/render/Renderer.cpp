@@ -17,6 +17,7 @@ using namespace render;
 
 Renderer::Renderer() {
     try {
+        shadowPass = std::make_unique<ShadowPass>();
         forwardPass = std::make_unique<ForwardPass>();
 
         createCommandPool();
@@ -51,6 +52,11 @@ void Renderer::cleanup() {
         commandPool = VK_NULL_HANDLE;
     }
 
+    if (shadowPass) {
+        shadowPass->cleanup();
+        shadowPass.reset();
+    }
+
     if (forwardPass) {
         forwardPass->cleanup();
         forwardPass.reset();
@@ -81,8 +87,9 @@ void Renderer::render(const Camera& camera, const Skybox& skybox,
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
         throw std::runtime_error{"failed to begin recording command buffer!"};
 
-    forwardPass->record(commandBuffer, frame, camera, skybox, lights, models,
-                        uiModels);
+    shadowPass->record(commandBuffer, lights.sunDir, models);
+    forwardPass->record(commandBuffer, frame, camera, skybox, lights,
+                        shadowPass->getDepthTexture(), models, uiModels);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
         throw std::runtime_error{"failed to record command buffer!"};

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vk_mem_alloc.h>
+#include <vulkan/vulkan_core.h>
 
 #include <memory>
 #include <stdexcept>
@@ -50,7 +51,7 @@ public:
     void deallocateUboNow(Ubo& ubo);
 
     // Image stuff
-    DepthImage allocateDepthImage(uint32_t width, uint32_t height);
+    Image allocateDepthImage(uint32_t width, uint32_t height);
 
     Image importImage(VkImage image, uint32_t width, uint32_t height,
                       VkFormat format);
@@ -65,6 +66,9 @@ public:
     VkDescriptorSetLayout getTextureLayout() const { return textureLayout; }
 
     Texture allocateTexture(const std::string& path, VkFormat format);
+    Texture allocateDepthTexture(uint32_t width, uint32_t height);
+    Texture allocateTexture(Image image, VkImageLayout imageLayout);
+    Texture allocateTexture(Image image);
 
     void deallocateTextureDefer(Texture& texture);
     void deallocateTextureNow(Texture& texture);

@@ -24,14 +24,11 @@ DayNightState logic::getDayNightState(float time) {
 
     float sunAngle = cycle * M_PI;
     glm::vec3 startingDir = glm::normalize(STARTING_SUN_DIR);
+    glm::vec3 rotateNormal =
+        glm::rotate(glm::vec3{0.0f, 1.0f, 0.0f}, 0.4f, startingDir);
+    glm::vec3 rotateDir = glm::cross(startingDir, rotateNormal);
 
-    // Compute the rotation vector, to rotate around
-    glm::vec3 sunRotateVec = glm::cross(startingDir, glm::vec3{0.0, 1.0, 0.0});
-
-    glm::quat skyboxRot =
-        glm::rotation(glm::vec3(0.0f, 1.0f, 0.0f), startingDir) *
-        glm::angleAxis(sunAngle, sunRotateVec);
-    glm::vec3 sunDir = glm::rotate(skyboxRot, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::vec3 sunDir = glm::rotate(startingDir, sunAngle, rotateDir);
 
     float fade;
     if (cycle < 0.2f) {
@@ -47,5 +44,5 @@ DayNightState logic::getDayNightState(float time) {
     glm::vec3 ambientColor = glm::mix(NIGHT_AMBIENT, DAY_AMBIENT, fade);
     glm::vec3 sunColor = glm::mix(NIGHT_SUN, DAY_SUN, fade);
 
-    return {ambientColor, sunDir, sunColor, skyboxRot, fade};
+    return {ambientColor, sunDir, sunColor, fade};
 }

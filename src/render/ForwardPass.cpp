@@ -48,7 +48,7 @@ void ForwardPass::cleanup() {
 void ForwardPass::record(VkCommandBuffer commandBuffer, Swapchain::Frame frame,
                          const Camera& camera, const Skybox& skybox,
                          const GeometryRenderer::LightInfo& lights,
-                         std::list<GeometryModel> models,
+                         Texture depthTexture, std::list<GeometryModel> models,
                          std::list<UiModel> uiModels) {
     VkExtent2D extent = framebuffer->getExtent();
 
@@ -56,13 +56,13 @@ void ForwardPass::record(VkCommandBuffer commandBuffer, Swapchain::Frame frame,
         static_cast<float>(extent.width) / static_cast<float>(extent.height);
 
     VkViewport viewport = framebuffer->getViewport();
-    VkRect2D renderArea = framebuffer->getRenderArea();
+    VkRect2D scissor = framebuffer->getScissor();
 
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.renderPass = renderPass;
     renderPassBeginInfo.framebuffer = framebuffer->getFrame(frame.index);
-    renderPassBeginInfo.renderArea = renderArea;
+    renderPassBeginInfo.renderArea = scissor;
 
     VkClearValue clearValues[2] = {};
     clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -75,10 +75,11 @@ void ForwardPass::record(VkCommandBuffer commandBuffer, Swapchain::Frame frame,
                          VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-    vkCmdSetScissor(commandBuffer, 0, 1, &renderArea);
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     skyboxRenderer->record(commandBuffer, camera, ratio, skybox);
-    geometryRenderer->record(commandBuffer, camera, ratio, lights, models);
+    geometryRenderer->record(commandBuffer, camera, ratio, lights, depthTexture,
+                             models);
     uiRenderer->record(commandBuffer, extent, uiModels);
 
     vkCmdEndRenderPass(commandBuffer);

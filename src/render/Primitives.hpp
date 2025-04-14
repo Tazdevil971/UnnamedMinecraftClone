@@ -11,6 +11,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+#include "glm/ext/matrix_clip_space.hpp"
+
 namespace render {
 
 struct SkyboxVertex {
@@ -183,8 +185,6 @@ struct Image {
     VkFormat format;
 };
 
-struct DepthImage : Image {};
-
 struct Texture {
     Image image;
     VkSampler sampler;
@@ -225,14 +225,13 @@ struct Camera {
         return proj;
     }
 
-    glm::mat4 computeViewMat() const {
-        // TODO: Can we make this faster? Removing the matrix inversion?
-        return glm::translate(glm::affineInverse(glm::toMat4(rot)), -pos);
-    }
-
-    glm::mat4 computeSkyboxViewMat() const {
+    glm::mat4 computeRotMat() const {
         // TODO: Can we make this faster? Removing the matrix inversion?
         return glm::affineInverse(glm::toMat4(rot));
+    }
+
+    glm::mat4 computeViewMat() const {
+        return glm::translate(computeRotMat(), -pos);
     }
 
     glm::mat4 computeVPMat(float ratio) const {
@@ -240,7 +239,7 @@ struct Camera {
     }
 
     glm::mat4 computeSkyboxVPMat(float ratio) const {
-        return computeProjMat(ratio) * computeSkyboxViewMat();
+        return computeProjMat(ratio) * computeRotMat();
     }
 
     glm::vec3 computeViewDir() const { return rot * glm::vec3{0, 0, -1.0f}; }

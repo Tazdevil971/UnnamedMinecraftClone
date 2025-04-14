@@ -9,7 +9,6 @@ struct DayNightState {
     glm::vec3 ambientColor;
     glm::vec3 sunDir;
     glm::vec3 sunColor;
-    glm::quat skyboxRot;
     float skyboxFade;
 };
 

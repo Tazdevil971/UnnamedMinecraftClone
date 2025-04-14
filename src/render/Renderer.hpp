@@ -7,8 +7,8 @@
 
 #include "ForwardPass.hpp"
 #include "Primitives.hpp"
+#include "ShadowPass.hpp"
 #include "Skybox.hpp"
-
 
 namespace render {
 
@@ -23,9 +23,12 @@ public:
                 std::list<GeometryModel> models, std::list<UiModel> uiModels,
                 bool windowResized);
 
+    Texture getDepthTexture() const { return shadowPass->getDepthTexture(); }
+
 private:
     VkCommandPool commandPool{VK_NULL_HANDLE};
 
+    std::unique_ptr<ShadowPass> shadowPass;
     std::unique_ptr<ForwardPass> forwardPass;
 
     VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
