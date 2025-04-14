@@ -11,6 +11,7 @@
 #include "Primitives.hpp"
 #include "Skybox.hpp"
 #include "SkyboxRenderer.hpp"
+#include "UiRenderer.hpp"
 
 namespace render {
 
@@ -43,19 +44,13 @@ private:
 
     void cleanup();
 
-    struct UiPushBuffer {
-        glm::vec2 pos;
-        glm::vec2 dimension;
-    };
-
     VkRenderPass renderPass{VK_NULL_HANDLE};
-    VkPipelineLayout uiPipelineLayout{VK_NULL_HANDLE};
-    VkPipeline uiPipeline{VK_NULL_HANDLE};
 
     VkCommandPool commandPool{VK_NULL_HANDLE};
 
-    std::unique_ptr<GeometryRenderer> geometryRenderer;
     std::unique_ptr<SkyboxRenderer> skyboxRenderer;
+    std::unique_ptr<GeometryRenderer> geometryRenderer;
+    std::unique_ptr<UiRenderer> uiRenderer;
     std::shared_ptr<Framebuffer> framebuffer;
 
     VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
@@ -64,12 +59,8 @@ private:
     VkFence inFlightFence{VK_NULL_HANDLE};
 
     void createRenderPass();
-    void createUiGraphicsPipeline();
     void createCommandPool();
     void createCommandBuffer();
     void createSyncObjects();
-
-    void doUiRender(std::list<UiModel> uiModels);
-    void recordUiModelRender(const UiModel& model);
 };
 }  // namespace render

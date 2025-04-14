@@ -23,6 +23,7 @@ set(SOURCES
     src/render/Renderer.cpp
     src/render/SkyboxRenderer.cpp
     src/render/GeometryRenderer.cpp
+    src/render/UiRenderer.cpp
     src/render/Skybox.cpp
     src/render/Window.cpp
     src/world/AtlasManager.cpp
