@@ -4,6 +4,8 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
+#include "glm/ext/quaternion_trigonometric.hpp"
+
 using namespace logic;
 
 // 1 day lasts a minute
@@ -17,22 +19,19 @@ constexpr glm::vec3 DAY_SUN{0.6f, 0.5f, 0.5f};
 constexpr glm::vec3 NIGHT_AMBIENT{0.1f, 0.4f, 0.5f};
 constexpr glm::vec3 NIGHT_SUN{0.0f, 0.0f, 0.0f};
 
-glm::vec3 logic::computeSunDir(float angle) {
-    // Start from a random sun direction on the XZ plane
-    glm::vec3 sunDir = glm::normalize(STARTING_SUN_DIR);
-
-    // Compute the rotation vector, to rotate around
-    glm::vec3 sunRotateVec = glm::cross(sunDir, glm::vec3{0.0, 1.0, 0.0});
-
-    // Finally rotate sun
-    return glm::rotate(sunDir, angle, sunRotateVec);
-}
-
 DayNightState logic::getDayNightState(float time) {
     float cycle = std::fmod(time, DAY_DURATION * 2) / DAY_DURATION;
 
     float sunAngle = cycle * M_PI;
-    glm::vec3 sunDir = computeSunDir(sunAngle);
+    glm::vec3 startingDir = glm::normalize(STARTING_SUN_DIR);
+
+    // Compute the rotation vector, to rotate around
+    glm::vec3 sunRotateVec = glm::cross(startingDir, glm::vec3{0.0, 1.0, 0.0});
+
+    glm::quat skyboxRot =
+        glm::rotation(glm::vec3(0.0f, 1.0f, 0.0f), startingDir) *
+        glm::angleAxis(sunAngle, sunRotateVec);
+    glm::vec3 sunDir = glm::rotate(skyboxRot, glm::vec3(0.0f, 1.0f, 0.0f));
 
     float fade;
     if (cycle < 0.2f) {
@@ -47,7 +46,6 @@ DayNightState logic::getDayNightState(float time) {
 
     glm::vec3 ambientColor = glm::mix(NIGHT_AMBIENT, DAY_AMBIENT, fade);
     glm::vec3 sunColor = glm::mix(NIGHT_SUN, DAY_SUN, fade);
-    glm::quat skyboxRot = glm::rotation(glm::vec3(0.0f, 1.0f, 0.0f), sunDir);
 
     return {ambientColor, sunDir, sunColor, skyboxRot, fade};
 }

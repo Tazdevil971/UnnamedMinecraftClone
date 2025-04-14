@@ -5,8 +5,6 @@
 
 namespace logic {
 
-glm::vec3 computeSunDir(float angle);
-
 struct DayNightState {
     glm::vec3 ambientColor;
     glm::vec3 sunDir;

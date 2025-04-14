@@ -18,6 +18,7 @@ Renderer::Renderer() {
         framebuffer = Swapchain::get().createFramebuffer(renderPass);
 
         geometryLightInfo = BufferManager::get().allocateUbo(sizeof(LightInfo));
+        skyboxInfo = BufferManager::get().allocateUbo(sizeof(float));
 
         createSkyboxGraphicsPipeline();
         createGeometryGraphicsPipeline();
@@ -35,6 +36,7 @@ Renderer::~Renderer() { cleanup(); }
 
 void Renderer::cleanup() {
     BufferManager::get().deallocateUboDefer(geometryLightInfo);
+    BufferManager::get().deallocateUboDefer(skyboxInfo);
 
     if (imageAvailableSemaphore != VK_NULL_HANDLE) {
         vkDestroySemaphore(Context::get().getDevice(), imageAvailableSemaphore,
@@ -239,16 +241,18 @@ void Renderer::createRenderPass() {
 }
 
 void Renderer::createSkyboxGraphicsPipeline() {
-    VkDescriptorSetLayout descriptorSetLayouts[1] = {
-        BufferManager::get().getTextureLayout()};
+    VkDescriptorSetLayout descriptorSetLayouts[3] = {
+        BufferManager::get().getTextureLayout(),
+        BufferManager::get().getTextureLayout(),
+        BufferManager::get().getUboLayout()};
     VkPushConstantRange pushConstantRange = {};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(glm::mat4);
+    pushConstantRange.size = sizeof(SkyboxPushBuffer);
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
     pipelineLayoutCreateInfo.sType =
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutCreateInfo.setLayoutCount = 1;
+    pipelineLayoutCreateInfo.setLayoutCount = 3;
     pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts;
     pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
     pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
@@ -775,13 +779,17 @@ void Renderer::createSyncObjects() {
 }
 
 void Renderer::doSkyboxRender(glm::mat4 vp, const Skybox& skybox) {
+    skyboxInfo.write(skybox.blend);
+
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       skyboxPipeline);
 
-    VkDescriptorSet descriptorSets[1] = {skybox.texture.descriptor};
+    VkDescriptorSet descriptorSets[3] = {skybox.dayTexture.descriptor,
+                                         skybox.nightTexture.descriptor,
+                                         skyboxInfo.descriptor};
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            skyboxPipelineLayout, 0, 1, descriptorSets, 0,
+                            skyboxPipelineLayout, 0, 3, descriptorSets, 0,
                             nullptr);
 
     skybox.mesh.bind(commandBuffer);
@@ -789,8 +797,11 @@ void Renderer::doSkyboxRender(glm::mat4 vp, const Skybox& skybox) {
     glm::mat4 m = skybox.computeModelMat();
     glm::mat4 mvp = vp * m;
 
+    SkyboxPushBuffer pushBuffer = {mvp};
+
     vkCmdPushConstants(commandBuffer, skyboxPipelineLayout,
-                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mvp);
+                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(SkyboxPushBuffer),
+                       &pushBuffer);
 
     VkViewport viewport = framebuffer->getViewport();
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);

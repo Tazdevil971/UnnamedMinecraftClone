@@ -56,17 +56,21 @@ std::vector<SkyboxVertex> SKYBOX_VERTICES = {
 };
 // clang-format on
 
-Skybox Skybox::make(const std::string &name) {
+Skybox Skybox::make(const std::string &daySkybox,
+                    const std::string &nightSkybox) {
     Skybox skybox{};
 
     skybox.mesh = BufferManager::get().allocateMesh<SkyboxMesh>(
         SKYBOX_INDICES, SKYBOX_VERTICES);
-    skybox.texture =
-        BufferManager::get().createTexture(name, VK_FORMAT_R8G8B8A8_SRGB);
+    skybox.dayTexture = BufferManager::get().allocateTexture(
+        daySkybox, VK_FORMAT_R8G8B8A8_SRGB);
+    skybox.nightTexture = BufferManager::get().allocateTexture(
+        nightSkybox, VK_FORMAT_R8G8B8A8_SRGB);
     return skybox;
 }
 
 void Skybox::cleanup() {
     BufferManager::get().deallocateMeshDefer(mesh);
-    BufferManager::get().deallocateTextureDefer(texture);
+    BufferManager::get().deallocateTextureDefer(dayTexture);
+    BufferManager::get().deallocateTextureDefer(nightTexture);
 }

@@ -46,11 +46,16 @@ private:
 
     void cleanup();
 
+    struct SkyboxPushBuffer {
+        glm::mat4 mvp;
+    };
+
     struct GeometryPushBuffer {
         glm::mat4 m;
         glm::mat4 vp;
     };
 
+    Ubo skyboxInfo;
     Ubo geometryLightInfo;
 
     VkRenderPass renderPass{VK_NULL_HANDLE};

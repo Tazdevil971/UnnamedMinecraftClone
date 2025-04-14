@@ -74,9 +74,10 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
 
         AtlasManager::create();
 
-        skybox = Skybox::make("assets/skybox_day.png");
+        skybox =
+            Skybox::make("assets/skybox_day.png", "assets/skybox_night.png");
 
-        debugTexture = BufferManager::get().createTexture(
+        debugTexture = BufferManager::get().allocateTexture(
             "assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
         debugCubeMesh = BufferManager::get().allocateMesh<GeometryMesh>(
             DEBUG_CUBE_INDICES, DEBUG_CUBE_VERTICES);
@@ -146,6 +147,7 @@ void MainWindow::onFrame(InputState& input) {
                                {dayNightState.sunColor, 1.0f}};
 
     skybox.rot = dayNightState.skyboxRot;
+    skybox.blend = dayNightState.skyboxFade;
 
     Renderer::get().render(playerController.getCamera(), skybox, lights, models,
                            uiModels, windowResized);

@@ -45,6 +45,7 @@ set(ASSETS
     assets/test_image.jpg
     assets/block_atlas.png
     assets/skybox_day.png
+    assets/skybox_night.png
     assets/debug.png
     assets/debug_skybox.png)
 

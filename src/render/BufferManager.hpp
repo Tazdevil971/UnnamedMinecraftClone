@@ -3,8 +3,8 @@
 #include <vk_mem_alloc.h>
 
 #include <memory>
-#include <string>
 #include <stdexcept>
+#include <string>
 
 #include "Primitives.hpp"
 
@@ -64,7 +64,7 @@ public:
     // Texture stuff
     VkDescriptorSetLayout getTextureLayout() const { return textureLayout; }
 
-    Texture createTexture(const std::string& path, VkFormat format);
+    Texture allocateTexture(const std::string& path, VkFormat format);
 
     void deallocateTextureDefer(Texture& texture);
     void deallocateTextureNow(Texture& texture);

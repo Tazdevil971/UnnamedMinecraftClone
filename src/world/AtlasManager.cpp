@@ -8,8 +8,8 @@ using namespace render;
 std::unique_ptr<AtlasManager> AtlasManager::INSTANCE;
 
 AtlasManager::AtlasManager() {
-    atlas = BufferManager::get().createTexture("assets/block_atlas.png",
-                                                       VK_FORMAT_R8G8B8A8_SRGB);
+    atlas = BufferManager::get().allocateTexture("assets/block_atlas.png",
+                                                 VK_FORMAT_R8G8B8A8_SRGB);
 }
 
 AtlasManager::~AtlasManager() { cleanup(); }

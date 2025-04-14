@@ -311,7 +311,8 @@ void BufferManager::deallocateImageNow(Image& image) {
     image = Image{};
 }
 
-Texture BufferManager::createTexture(const std::string& path, VkFormat format) {
+Texture BufferManager::allocateTexture(const std::string& path,
+                                       VkFormat format) {
     Image image = allocateImage(path, format);
 
     auto imageDefer = Defer{[&]() { deallocateImageNow(image); }};
