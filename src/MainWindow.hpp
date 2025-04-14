@@ -4,6 +4,7 @@
 
 #include "logic/AIController.hpp"
 #include "logic/PlayerController.hpp"
+#include "render/Renderer.hpp"
 #include "render/Skybox.hpp"
 #include "render/Window.hpp"
 #include "world/World.hpp"
@@ -30,6 +31,7 @@ private:
     logic::AIController debugCubeController{glm::vec3{0.0f, 14.0f, 0.0f},
                                             glm::vec3{0.4f, 0.4f, 0.4f}};
 
+    std::unique_ptr<render::Renderer> renderer;
     render::Skybox skybox;
 
     render::GeometryMesh debugCubeMesh;

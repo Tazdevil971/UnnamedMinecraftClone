@@ -70,10 +70,10 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
     try {
         Context::create(getWindow());
         BufferManager::create(10, 10);
-        Swapchain::create();
-        Renderer::create();
-
         AtlasManager::create();
+        Swapchain::create();
+
+        renderer = std::make_unique<Renderer>();
 
         skybox =
             Skybox::make("assets/skybox_day.png", "assets/skybox_night.png");
@@ -110,7 +110,11 @@ void MainWindow::cleanup() {
     // Wait for the device to finish rendering before cleaning up!
     Context::get().waitDeviceIdle();
 
-    Renderer::destroy();
+    if (renderer) {
+        renderer->cleanup();
+        renderer.reset();
+    }
+
     Swapchain::destroy();
     BufferManager::destroy();
     Context::destroy();
@@ -150,8 +154,8 @@ void MainWindow::onFrame(InputState& input) {
     skybox.rot = dayNightState.skyboxRot;
     skybox.blend = dayNightState.skyboxFade;
 
-    Renderer::get().render(playerController.getCamera(), skybox, lights, models,
-                           uiModels, windowResized);
+    renderer->render(playerController.getCamera(), skybox, lights, models,
+                     uiModels, windowResized);
     windowResized = false;
 }
 

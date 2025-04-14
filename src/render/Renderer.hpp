@@ -4,35 +4,19 @@
 
 #include <list>
 #include <memory>
-#include <stdexcept>
 
-#include "Framebuffer.hpp"
-#include "GeometryRenderer.hpp"
+#include "ForwardPass.hpp"
 #include "Primitives.hpp"
 #include "Skybox.hpp"
-#include "SkyboxRenderer.hpp"
-#include "UiRenderer.hpp"
+
 
 namespace render {
 
 class Renderer {
-private:
-    static std::unique_ptr<Renderer> INSTANCE;
-
 public:
-    static void create() { INSTANCE.reset(new Renderer()); }
+    Renderer();
 
-    static Renderer& get() {
-        if (INSTANCE) {
-            return *INSTANCE;
-        } else {
-            throw std::runtime_error{"Renderer not yet created"};
-        }
-    }
-
-    static void destroy() { INSTANCE.reset(); }
-
-    ~Renderer();
+    void cleanup();
 
     void render(const Camera& camera, const Skybox& skybox,
                 const GeometryRenderer::LightInfo& lights,
@@ -40,25 +24,15 @@ public:
                 bool windowResized);
 
 private:
-    Renderer();
-
-    void cleanup();
-
-    VkRenderPass renderPass{VK_NULL_HANDLE};
-
     VkCommandPool commandPool{VK_NULL_HANDLE};
 
-    std::unique_ptr<SkyboxRenderer> skyboxRenderer;
-    std::unique_ptr<GeometryRenderer> geometryRenderer;
-    std::unique_ptr<UiRenderer> uiRenderer;
-    std::shared_ptr<Framebuffer> framebuffer;
+    std::unique_ptr<ForwardPass> forwardPass;
 
     VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
     VkSemaphore imageAvailableSemaphore{VK_NULL_HANDLE};
     VkSemaphore renderFinishedSemaphore{VK_NULL_HANDLE};
     VkFence inFlightFence{VK_NULL_HANDLE};
 
-    void createRenderPass();
     void createCommandPool();
     void createCommandBuffer();
     void createSyncObjects();

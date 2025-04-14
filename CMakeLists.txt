@@ -21,6 +21,7 @@ set(SOURCES
     src/render/BufferManager.cpp
     src/render/VmaImplementation.cpp
     src/render/Renderer.cpp
+    src/render/ForwardPass.cpp
     src/render/SkyboxRenderer.cpp
     src/render/GeometryRenderer.cpp
     src/render/UiRenderer.cpp
