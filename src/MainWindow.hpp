@@ -36,7 +36,9 @@ private:
 
     render::GeometryMesh debugCubeMesh;
     render::UiMesh uiMesh;
+    render::UiMesh pointerMesh;
     render::Texture debugTexture;
+    render::Texture pointerTexture;
 
     // Per frame stuff
     std::list<render::GeometryModel> models;

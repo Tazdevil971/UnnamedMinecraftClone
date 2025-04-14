@@ -89,6 +89,15 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
                                                                {{600, 0}, {1, 0}}, 
                                                                {{600,200}, {1,1}},
                                                            });
+        pointerTexture = BufferManager::get().allocateTexture("assets/pointer_texture.png", VK_FORMAT_R8G8B8A8_SRGB);
+
+        pointerMesh = BufferManager::get().allocateMesh<UiMesh>({0, 1, 2, 3, 2, 1},
+                                                           {
+                                                               {{-75, -75}, {0, 0}},
+                                                               {{-75, 75}, {0, 1}},
+                                                               {{75, -75}, {1, 0}}, 
+                                                               {{75,75}, {1,1}},
+                                                           });
 
         playerController.unstuck(world);
     } catch (...) {
@@ -104,7 +113,9 @@ void MainWindow::cleanup() {
     AtlasManager::destroy();
 
     BufferManager::get().deallocateTextureDefer(debugTexture);
+    BufferManager::get().deallocateTextureDefer(pointerTexture);
     BufferManager::get().deallocateMeshDefer(debugCubeMesh);
+    BufferManager::get().deallocateMeshDefer(pointerMesh);
     BufferManager::get().deallocateMeshDefer(uiMesh);
 
     // Wait for the device to finish rendering before cleaning up!
@@ -124,6 +135,7 @@ void MainWindow::cleanup() {
 
 void MainWindow::onFrame(InputState& input) {
     models.clear();
+    uiModels.clear();
 
     while ((input.time - simulatedTime) > 0.005f) {
         // Run physics at 100Hz
@@ -143,9 +155,9 @@ void MainWindow::onFrame(InputState& input) {
                              models.push_back(chunk.getModel(pos));
                          });
 
-    glm::vec2 pos = {0, 400};
+    glm::vec2 pos = {0, 0};
 
-   // uiModels.push_back(UiModel{uiMesh, debugTexture, pos});
+    uiModels.push_back(UiModel{pointerMesh, pointerTexture, pos});
 
     GeometryRenderer::LightInfo lights{dayNightState.ambientColor,
                                        dayNightState.sunDir,
