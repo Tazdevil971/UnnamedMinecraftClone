@@ -82,22 +82,23 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
             "assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
         debugCubeMesh = BufferManager::get().allocateMesh<GeometryMesh>(
             DEBUG_CUBE_INDICES, DEBUG_CUBE_VERTICES);
-        uiMesh = BufferManager::get().allocateMesh<UiMesh>({0, 1, 2, 3, 2, 1},
-                                                           {
-                                                               {{-600, 0}, {0, 0}},
-                                                               {{-600, 200}, {0, 1}},
-                                                               {{600, 0}, {1, 0}}, 
-                                                               {{600,200}, {1,1}},
-                                                           });
-        pointerTexture = BufferManager::get().allocateTexture("assets/pointer_texture.png", VK_FORMAT_R8G8B8A8_SRGB);
+        uiMesh = BufferManager::get().allocateMesh<UiMesh>(
+            {0, 1, 2, 3, 2, 1}, {
+                                    {{-600, 0}, {0, 0}},
+                                    {{-600, 200}, {0, 1}},
+                                    {{600, 0}, {1, 0}},
+                                    {{600, 200}, {1, 1}},
+                                });
+        pointerTexture = BufferManager::get().allocateTexture(
+            "assets/pointer_texture.png", VK_FORMAT_R8G8B8A8_SRGB);
 
-        pointerMesh = BufferManager::get().allocateMesh<UiMesh>({0, 1, 2, 3, 2, 1},
-                                                           {
-                                                               {{-75, -75}, {0, 0}},
-                                                               {{-75, 75}, {0, 1}},
-                                                               {{75, -75}, {1, 0}}, 
-                                                               {{75,75}, {1,1}},
-                                                           });
+        pointerMesh = BufferManager::get().allocateMesh<UiMesh>(
+            {0, 1, 2, 3, 2, 1}, {
+                                    {{-75, -75}, {0, 0}},
+                                    {{-75, 75}, {0, 1}},
+                                    {{75, -75}, {1, 0}},
+                                    {{75, 75}, {1, 1}},
+                                });
 
         playerController.unstuck(world);
     } catch (...) {
@@ -145,10 +146,6 @@ void MainWindow::onFrame(InputState& input) {
     }
 
     auto dayNightState = logic::getDayNightState(input.time);
-
-    pushDebugCube(playerController.getLookingAt(), glm::vec3{0.0f, 0.0f, 0.0f});
-    pushDebugCube(debugCubeController.getPos() + glm::vec3{0.0f, 0.05f, 0.0f},
-                  glm::vec3{0.0f, 0.0f, 0.0f});
 
     world.getChunkInArea(playerController.getPos(), 3,
                          [this](glm::ivec3 pos, Chunk& chunk) {

@@ -4,8 +4,6 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
-#include "glm/ext/quaternion_trigonometric.hpp"
-
 using namespace logic;
 
 // 1 day lasts a minute

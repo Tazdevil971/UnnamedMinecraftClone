@@ -40,7 +40,7 @@ void GeometryRenderer::record(VkCommandBuffer commandBuffer,
                               std::list<GeometryModel> models) {
     // Update UBO
     lightInfoUbo.write(LightInfoUbo{
-        ShadowPass::computeShadowVP(lights.sunDir),
+        ShadowPass::computeShadowVP(camera.pos, lights.sunDir),
         {lights.ambientColor, 1.0f},
         {lights.sunDir, 1.0f},
         {lights.sunColor, 1.0f},

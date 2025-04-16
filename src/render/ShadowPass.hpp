@@ -4,25 +4,24 @@
 
 #include <list>
 
-#include "GeometryRenderer.hpp"
 #include "Primitives.hpp"
 
 namespace render {
 
 class ShadowPass {
 public:
-    const VkExtent2D SHADOWMAP_EXTENT{1024, 1024};
+    const VkExtent2D SHADOWMAP_EXTENT{2048, 2048};
 
     ShadowPass();
 
     void cleanup();
 
-    void record(VkCommandBuffer commandBuffer, glm::vec3 lightDir,
-                std::list<GeometryModel> models);
+    void record(VkCommandBuffer commandBuffer, const Camera& camera,
+                glm::vec3 lightDir, std::list<GeometryModel> models);
 
     Texture getDepthTexture() const { return depthTexture; }
 
-    static glm::mat4 computeShadowVP(glm::vec3 lightDir);
+    static glm::mat4 computeShadowVP(glm::vec3 center, glm::vec3 lightDir);
 
 private:
     struct PushBuffer {

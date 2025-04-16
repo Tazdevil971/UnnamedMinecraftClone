@@ -25,7 +25,7 @@ void main() {
 
     // Simple diffuse shader
     vec3 lightColor = ubo.ambientColor.rgb;
-    if (shadowPos.z < shadowDepth) 
+    if (shadowPos.z < (shadowDepth + 0.0001)) 
         lightColor += ubo.sunColor.rgb * max(dot(sunDir, fragNormal), 0);
 
     outColor = vec4(texture(texSampler, fragTexCoord).rgb * lightColor, 1.0);

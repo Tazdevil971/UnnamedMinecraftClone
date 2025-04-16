@@ -87,7 +87,7 @@ void Renderer::render(const Camera& camera, const Skybox& skybox,
     if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
         throw std::runtime_error{"failed to begin recording command buffer!"};
 
-    shadowPass->record(commandBuffer, lights.sunDir, models);
+    shadowPass->record(commandBuffer, camera, lights.sunDir, models);
     forwardPass->record(commandBuffer, frame, camera, skybox, lights,
                         shadowPass->getDepthTexture(), models, uiModels);
 

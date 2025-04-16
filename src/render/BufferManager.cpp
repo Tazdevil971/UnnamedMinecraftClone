@@ -317,28 +317,6 @@ Texture BufferManager::allocateTexture(const std::string& path,
     Image image = allocateImage(path, format);
     auto imageDefer = Defer{[&]() { deallocateImageNow(image); }};
 
-    Texture texture = allocateTexture(image);
-    imageDefer.defuse();
-
-    return texture;
-}
-
-Texture BufferManager::allocateDepthTexture(uint32_t width, uint32_t height) {
-    Image image = allocateDepthImage(width, height);
-    auto imageDefer = Defer{[&]() { deallocateImageNow(image); }};
-
-    Texture texture =
-        allocateTexture(image, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
-    imageDefer.defuse();
-
-    return texture;
-}
-
-Texture BufferManager::allocateTexture(Image image) {
-    return allocateTexture(image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-}
-
-Texture BufferManager::allocateTexture(Image image, VkImageLayout imageLayout) {
     VkSamplerCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     createInfo.magFilter = VK_FILTER_NEAREST;
@@ -375,7 +353,7 @@ Texture BufferManager::allocateTexture(Image image, VkImageLayout imageLayout) {
     textureDescriptorSets.pop_back();
 
     VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = imageLayout;
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     imageInfo.imageView = image.view;
     imageInfo.sampler = sampler;
 
@@ -394,6 +372,70 @@ Texture BufferManager::allocateTexture(Image image, VkImageLayout imageLayout) {
                            nullptr);
 
     samplerDefer.defuse();
+    imageDefer.defuse();
+    return {image, sampler, descriptor};
+}
+
+Texture BufferManager::allocateDepthTexture(uint32_t width, uint32_t height) {
+    Image image = allocateDepthImage(width, height);
+    auto imageDefer = Defer{[&]() { deallocateImageNow(image); }};
+
+    VkSamplerCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    createInfo.magFilter = VK_FILTER_LINEAR;
+    createInfo.minFilter = VK_FILTER_LINEAR;
+    createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    createInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    createInfo.anisotropyEnable = VK_TRUE;
+    createInfo.maxAnisotropy =
+        Context::get().getDeviceInfo().maxSamplerAnisotropy;
+    createInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    createInfo.unnormalizedCoordinates = VK_FALSE;
+    createInfo.compareEnable = VK_FALSE;
+    createInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    createInfo.mipLodBias = 0.0f;
+    createInfo.minLod = 0.0f;
+    createInfo.maxLod = 0.0f;
+
+    VkSampler sampler;
+
+    if (vkCreateSampler(Context::get().getDevice(), &createInfo, nullptr,
+                        &sampler) != VK_SUCCESS)
+        throw std::runtime_error{"failed to create texture sampler!"};
+
+    auto samplerDefer = Defer{[&]() {
+        vkDestroySampler(Context::get().getDevice(), sampler, nullptr);
+    }};
+
+    if (textureDescriptorSets.size() == 0)
+        throw std::runtime_error{"not enough descriptor sets!"};
+
+    VkDescriptorSet descriptor = textureDescriptorSets.back();
+    textureDescriptorSets.pop_back();
+
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = image.view;
+    imageInfo.sampler = sampler;
+
+    VkWriteDescriptorSet descriptorWrite{};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = descriptor;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pBufferInfo = nullptr;
+    descriptorWrite.pImageInfo = &imageInfo;
+    descriptorWrite.pTexelBufferView = nullptr;
+
+    vkUpdateDescriptorSets(Context::get().getDevice(), 1, &descriptorWrite, 0,
+                           nullptr);
+
+    samplerDefer.defuse();
+    imageDefer.defuse();
     return {image, sampler, descriptor};
 }
 

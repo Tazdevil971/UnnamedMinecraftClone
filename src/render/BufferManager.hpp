@@ -67,8 +67,6 @@ public:
 
     Texture allocateTexture(const std::string& path, VkFormat format);
     Texture allocateDepthTexture(uint32_t width, uint32_t height);
-    Texture allocateTexture(Image image, VkImageLayout imageLayout);
-    Texture allocateTexture(Image image);
 
     void deallocateTextureDefer(Texture& texture);
     void deallocateTextureNow(Texture& texture);

@@ -50,8 +50,8 @@ void ShadowPass::cleanup() {
     }
 }
 
-void ShadowPass::record(VkCommandBuffer commandBuffer, glm::vec3 lightDir,
-                        std::list<GeometryModel> models) {
+void ShadowPass::record(VkCommandBuffer commandBuffer, const Camera& camera,
+                        glm::vec3 lightDir, std::list<GeometryModel> models) {
     VkViewport viewport = getViewport();
     VkRect2D scissor = getScissor();
 
@@ -75,7 +75,7 @@ void ShadowPass::record(VkCommandBuffer commandBuffer, glm::vec3 lightDir,
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo,
                          VK_SUBPASS_CONTENTS_INLINE);
 
-    glm::mat4 vp = computeShadowVP(lightDir);
+    glm::mat4 vp = computeShadowVP(camera.pos, lightDir);
 
     for (const auto& model : models) recordSingle(commandBuffer, vp, model);
 
@@ -100,14 +100,13 @@ void ShadowPass::recordSingle(VkCommandBuffer commandBuffer, glm::mat4 vp,
     vkCmdDrawIndexed(commandBuffer, model.mesh.indexCount, 1, 0, 0, 0);
 }
 
-glm::mat4 ShadowPass::computeShadowVP(glm::vec3 lightDir) {
+glm::mat4 ShadowPass::computeShadowVP(glm::vec3 center, glm::vec3 lightDir) {
     constexpr float DISTANCE = 80.0f;
     glm::quat rot = glm::vec3{-(float)M_PI_2, 0.0f, 0.0f};
 
-    glm::mat4 proj = glm::ortho(-50.0f, 50.0f, 50.0f, -50.0f, 0.1f, 80.0f);
-    glm::mat4 view =
-        glm::lookAt(lightDir * DISTANCE, glm::vec3{0.0f, 0.0f, 0.0f},
-                    glm::vec3{0.0f, 1.0f, 0.0f});
+    glm::mat4 proj = glm::ortho(-50.0f, 50.0f, 50.0f, -50.0f, 0.1f, 500.0f);
+    glm::mat4 view = glm::lookAt(center + lightDir * DISTANCE, center,
+                                 glm::vec3{0.0f, 1.0f, 0.0f});
 
     return proj * view;
 }
@@ -263,7 +262,7 @@ void ShadowPass::createPipeline() {
     rasterizerStateInfo.rasterizerDiscardEnable = VK_FALSE;
     rasterizerStateInfo.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizerStateInfo.lineWidth = 1.0f;
-    rasterizerStateInfo.cullMode = VK_CULL_MODE_FRONT_BIT;
+    rasterizerStateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
     rasterizerStateInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizerStateInfo.depthBiasEnable = VK_FALSE;
     rasterizerStateInfo.depthBiasConstantFactor = 0.0f;
