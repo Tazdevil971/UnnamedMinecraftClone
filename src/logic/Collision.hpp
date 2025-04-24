@@ -149,6 +149,7 @@ public:
 
     BoxCollider getCollider() const { return BoxCollider{pos, size}; }
     glm::vec3 getPos() const { return pos; }
+    glm::vec3 getSpeed() const { return pos - prevPos; }
     bool isOnGround() const { return onGround; }
     bool isAgainstWall() const { return againstWall; }
 

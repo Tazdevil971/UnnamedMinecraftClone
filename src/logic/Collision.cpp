@@ -115,12 +115,14 @@ void SimulatedBoxCollider::unstuck(World &world) {
     glm::vec3 newPos = pos;
     auto collider = BoxCollider{newPos, size};
 
-    while (checkCollision(collider.getBlockRange(), world)) {
-        newPos += glm::vec3(0.0f, 1.0f, 0.0f);
-        collider = BoxCollider{newPos, size};
+    if (checkCollision(collider.getBlockRange(), world)) {
+        do {
+            newPos += glm::vec3(0.0f, 1.0f, 0.0f);
+            collider = BoxCollider{newPos, size};
+        } while(checkCollision(collider.getBlockRange(), world));
+        
+        teleport(newPos);
     }
-
-    teleport(newPos);
 }
 
 glm::vec3 SimulatedBoxCollider::computeAccForSpeed(glm::vec3 speed) {

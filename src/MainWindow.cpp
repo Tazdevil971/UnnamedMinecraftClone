@@ -2,6 +2,7 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/rotate_vector.hpp>
+#include <memory>
 
 #include "logic/DayNightCycle.hpp"
 #include "render/BufferManager.hpp"
@@ -11,6 +12,7 @@
 #include "render/Skybox.hpp"
 #include "render/Swapchain.hpp"
 #include "world/AtlasManager.hpp"
+#include "world/Mucchina.hpp"
 
 using namespace render;
 using namespace world;
@@ -75,6 +77,8 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
 
         renderer = std::make_unique<Renderer>();
 
+        mucchina = std::make_unique<Mucchina>();
+
         skybox =
             Skybox::make("assets/skybox_day.png", "assets/skybox_night.png");
 
@@ -122,6 +126,7 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
                                 });
 
         playerController.unstuck(world);
+        mucchina->unstuck(world);
     } catch (...) {
         cleanup();
         throw;
@@ -141,6 +146,10 @@ void MainWindow::cleanup() {
     BufferManager::get().deallocateMeshDefer(uiMesh);
     BufferManager::get().deallocateMeshDefer(uiCubeMesh);
 
+    if (mucchina) {
+        mucchina->cleanup();
+        mucchina.reset();
+    }
 
     // Wait for the device to finish rendering before cleaning up!
     Context::get().waitDeviceIdle();
@@ -164,12 +173,13 @@ void MainWindow::onFrame(InputState& input) {
     while ((input.time - simulatedTime) > 0.005f) {
         // Run physics at 100Hz
         playerController.update(world, input);
-        debugCubeController.update(world);
+        mucchina->update(world);
         simulatedTime += 0.005f;
     }
 
     auto dayNightState = logic::getDayNightState(input.time);
 
+    mucchina->addToModelList(models);
     world.getChunkInArea(playerController.getPos(), 3,
                          [this](glm::ivec3 pos, Chunk& chunk) {
                              models.push_back(chunk.getModel(pos));

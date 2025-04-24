@@ -31,8 +31,9 @@ set(SOURCES
     src/world/AtlasManager.cpp
     src/world/World.cpp
     src/world/Chunk.cpp
+    src/world/AnimModel.cpp
+    src/world/Mucchina.cpp
     src/logic/Collision.cpp
-    src/logic/AIController.cpp
     src/logic/PlayerController.cpp
     src/logic/VoxelRaytracer.cpp
     src/logic/DayNightCycle.cpp
