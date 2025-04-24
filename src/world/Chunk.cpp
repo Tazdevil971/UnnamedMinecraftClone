@@ -54,19 +54,15 @@ void Chunk::updateMesh() {
                     indices.push_back(vertices.size() + 2);
                     indices.push_back(vertices.size() + 3);
                     vertices.push_back({{x + 1, y, z},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, 0.0f, -1.0f},
                                         bounds.getBottomLeft()});
                     vertices.push_back({{x, y, z},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, 0.0f, -1.0f},
                                         bounds.getBottomRight()});
                     vertices.push_back({{x, y + 1, z},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, 0.0f, -1.0f},
                                         bounds.getTopRight()});
                     vertices.push_back({{x + 1, y + 1, z},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, 0.0f, -1.0f},
                                         bounds.getTopLeft()});
                 }
@@ -81,19 +77,15 @@ void Chunk::updateMesh() {
                     indices.push_back(vertices.size() + 2);
                     indices.push_back(vertices.size() + 3);
                     vertices.push_back({{x, y, z + 1},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, 0.0f, +1.0f},
                                         bounds.getBottomLeft()});
                     vertices.push_back({{x + 1, y, z + 1},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, 0.0f, +1.0f},
                                         bounds.getBottomRight()});
                     vertices.push_back({{x + 1, y + 1, z + 1},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, 0.0f, +1.0f},
                                         bounds.getTopRight()});
                     vertices.push_back({{x, y + 1, z + 1},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, 0.0f, +1.0f},
                                         bounds.getTopLeft()});
                 }
@@ -109,19 +101,15 @@ void Chunk::updateMesh() {
                     indices.push_back(vertices.size() + 2);
                     indices.push_back(vertices.size() + 3);
                     vertices.push_back({{x, y, z},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, -1.0f, 0.0f},
                                         bounds.getBottomLeft()});
                     vertices.push_back({{x + 1, y, z},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, -1.0f, 0.0f},
                                         bounds.getBottomRight()});
                     vertices.push_back({{x + 1, y, z + 1},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, -1.0f, 0.0f},
                                         bounds.getTopRight()});
                     vertices.push_back({{x, y, z + 1},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, -1.0f, 0.0f},
                                         bounds.getTopLeft()});
                 }
@@ -137,19 +125,15 @@ void Chunk::updateMesh() {
                     indices.push_back(vertices.size() + 2);
                     indices.push_back(vertices.size() + 3);
                     vertices.push_back({{x, y + 1, z + 1},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, +1.0f, 0.0f},
                                         bounds.getBottomLeft()});
                     vertices.push_back({{x + 1, y + 1, z + 1},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, +1.0f, 0.0f},
                                         bounds.getBottomRight()});
                     vertices.push_back({{x + 1, y + 1, z},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, +1.0f, 0.0f},
                                         bounds.getTopRight()});
                     vertices.push_back({{x, y + 1, z},
-                                        {0.0f, 0.0f, 0.0f},
                                         {0.0f, +1.0f, 0.0f},
                                         bounds.getTopLeft()});
                 }
@@ -165,19 +149,15 @@ void Chunk::updateMesh() {
                     indices.push_back(vertices.size() + 2);
                     indices.push_back(vertices.size() + 3);
                     vertices.push_back({{x, y, z},
-                                        {0.0f, 0.0f, 0.0f},
                                         {-1.0f, 0.0f, 0.0f},
                                         bounds.getBottomLeft()});
                     vertices.push_back({{x, y, z + 1},
-                                        {0.0f, 0.0f, 0.0f},
                                         {-1.0f, 0.0f, 0.0f},
                                         bounds.getBottomRight()});
                     vertices.push_back({{x, y + 1, z + 1},
-                                        {0.0f, 0.0f, 0.0f},
                                         {-1.0f, 0.0f, 0.0f},
                                         bounds.getTopRight()});
                     vertices.push_back({{x, y + 1, z},
-                                        {0.0f, 0.0f, 0.0f},
                                         {-1.0f, 0.0f, 0.0f},
                                         bounds.getTopLeft()});
                 }
@@ -193,19 +173,15 @@ void Chunk::updateMesh() {
                     indices.push_back(vertices.size() + 2);
                     indices.push_back(vertices.size() + 3);
                     vertices.push_back({{x + 1, y, z + 1},
-                                        {0.0f, 0.0f, 0.0f},
                                         {+1.0f, 0.0f, 0.0f},
                                         bounds.getBottomLeft()});
                     vertices.push_back({{x + 1, y, z},
-                                        {0.0f, 0.0f, 0.0f},
                                         {+1.0f, 0.0f, 0.0f},
                                         bounds.getBottomRight()});
                     vertices.push_back({{x + 1, y + 1, z},
-                                        {0.0f, 0.0f, 0.0f},
                                         {+1.0f, 0.0f, 0.0f},
                                         bounds.getTopRight()});
                     vertices.push_back({{x + 1, y + 1, z + 1},
-                                        {0.0f, 0.0f, 0.0f},
                                         {+1.0f, 0.0f, 0.0f},
                                         bounds.getTopLeft()});
                 }

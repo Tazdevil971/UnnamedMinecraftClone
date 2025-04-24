@@ -22,7 +22,6 @@ struct SkyboxVertex {
 
 struct GeometryVertex {
     glm::vec3 pos;
-    glm::vec3 color;
     glm::vec3 normal;
     glm::vec2 uv;
 };
@@ -95,9 +94,9 @@ struct GeometryMesh : BaseMesh {
         return description;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 4>
+    static std::array<VkVertexInputAttributeDescription, 3>
     getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 4> descriptions{};
+        std::array<VkVertexInputAttributeDescription, 3> descriptions{};
         descriptions[0].binding = 0;
         descriptions[0].location = 0;
         descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -106,17 +105,12 @@ struct GeometryMesh : BaseMesh {
         descriptions[1].binding = 0;
         descriptions[1].location = 1;
         descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        descriptions[1].offset = offsetof(GeometryVertex, color);
+        descriptions[1].offset = offsetof(GeometryVertex, normal);
 
         descriptions[2].binding = 0;
         descriptions[2].location = 2;
-        descriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
-        descriptions[2].offset = offsetof(GeometryVertex, normal);
-
-        descriptions[3].binding = 0;
-        descriptions[3].location = 3;
-        descriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
-        descriptions[3].offset = offsetof(GeometryVertex, uv);
+        descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+        descriptions[2].offset = offsetof(GeometryVertex, uv);
 
         return descriptions;
     }
@@ -200,8 +194,6 @@ struct GeometryModel {
     glm::mat4 computeModelMat() const {
         return glm::translate(glm::mat4(1.0f), pos) * glm::toMat4(rot);
     }
-
-    glm::mat4 computeNormalMat() const { return glm::toMat4(rot); }
 };
 
 struct UiModel {
