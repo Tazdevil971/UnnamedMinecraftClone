@@ -37,6 +37,7 @@ private:
     render::GeometryMesh debugCubeMesh;
     render::UiMesh uiMesh;
     render::UiMesh pointerMesh;
+    render::UiMesh uiCubeMesh;
     render::Texture debugTexture;
     render::Texture pointerTexture;
 

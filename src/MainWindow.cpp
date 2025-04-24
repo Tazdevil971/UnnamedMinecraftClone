@@ -76,7 +76,7 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
         renderer = std::make_unique<Renderer>();
 
         skybox =
-            Skybox::make("assets/debug_skybox.png", "assets/debug_skybox.png");
+            Skybox::make("assets/skybox_day.png", "assets/skybox_night.png");
 
         debugTexture = BufferManager::get().allocateTexture(
             "assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB);
@@ -100,6 +100,27 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
                                     {{75, 75}, {1, 1}},
                                 });
 
+        uiCubeMesh = BufferManager::get().allocateMesh<UiMesh>(
+            {0, 1, 2, 3, 2, 1, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11}, {
+                                    //front
+                                    {{-75, -75}, {0, 0}},
+                                    {{-75, 75}, {0, 1}},
+                                    {{75, -75}, {1, 0}},
+                                    {{75, 75}, {1, 1}},
+                                    //side
+                                    {{75, -75}, {0, 0}},
+                                    {{75, 75}, {0, 1}},
+                                    {{100, 40}, {1, 1}},
+                                    {{100, -110}, {1, 0}},
+                                    //top
+                                    {{-75, -75}, {0, 1}},
+                                    {{75, -75}, {1, 1}},
+                                    {{100, -110}, {1, 0}},
+                                    {{-50, -110}, {0, 0}},
+
+
+                                });
+
         playerController.unstuck(world);
     } catch (...) {
         cleanup();
@@ -118,6 +139,8 @@ void MainWindow::cleanup() {
     BufferManager::get().deallocateMeshDefer(debugCubeMesh);
     BufferManager::get().deallocateMeshDefer(pointerMesh);
     BufferManager::get().deallocateMeshDefer(uiMesh);
+    BufferManager::get().deallocateMeshDefer(uiCubeMesh);
+
 
     // Wait for the device to finish rendering before cleaning up!
     Context::get().waitDeviceIdle();
@@ -152,9 +175,14 @@ void MainWindow::onFrame(InputState& input) {
                              models.push_back(chunk.getModel(pos));
                          });
 
-    glm::vec2 pos = {0, 0};
+    glm::vec2 center = {0, 0};
+    glm::vec2 pos = {0, 400};
+    glm::vec2 pos1 = {-200, 500};
 
-    uiModels.push_back(UiModel{pointerMesh, pointerTexture, pos});
+    uiModels.push_back(UiModel{pointerMesh, pointerTexture, center});
+    //uiModels.push_back(UiModel{uiMesh, debugTexture, pos});
+    uiModels.push_back(UiModel{uiCubeMesh, debugTexture, pos1});
+
     GeometryRenderer::LightInfo lights{dayNightState.ambientColor,
                                        dayNightState.sunDir,
                                        dayNightState.sunColor};
