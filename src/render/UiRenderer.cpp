@@ -47,7 +47,9 @@ void UiRenderer::recordSingle(VkCommandBuffer commandBuffer, VkExtent2D extent,
     float width = static_cast<float>(extent.width);
     float height = static_cast<float>(extent.height);
     glm::vec2 dimension = {width, height};
-    PushBuffer pushBuffer = {model.pos, dimension};
+
+    glm::vec2 anchorPoint = model.anchorPoint;
+    PushBuffer pushBuffer = {model.pos, dimension, anchorPoint};
 
     vkCmdPushConstants(commandBuffer, pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushBuffer),

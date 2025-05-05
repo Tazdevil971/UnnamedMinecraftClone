@@ -200,6 +200,7 @@ struct UiModel {
     UiMesh mesh;
     Texture texture;
     glm::vec2 pos;
+    glm::vec2 anchorPoint;
 };
 
 struct Camera {
@@ -240,6 +241,13 @@ struct Camera {
 struct Light {
     glm::vec4 pos;
     glm::vec4 color;
+};
+
+static constexpr glm::vec2 CENTER = {0, 0};
+static constexpr glm::vec2 BOTTOM_CENTER = {0, 1};
+
+struct AnchorPoint {
+    
 };
 
 }  // namespace render

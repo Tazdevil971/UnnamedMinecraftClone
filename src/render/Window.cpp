@@ -37,6 +37,7 @@ void Window::mainLoop() {
 
     float timeStart = getTime();
     float timeLast = 0.0f;
+    input.selected_block = 0;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -52,6 +53,28 @@ void Window::mainLoop() {
                           GLFW_PRESS;
             input.destroy = glfwGetMouseButton(
                                 window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+
+            if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+                input.selected_block = 1;
+            } else if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+                input.selected_block = 2;
+            } else if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+                input.selected_block = 3;
+            } else if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
+                input.selected_block = 4;
+            } else if (glfwGetKey(window, GLFW_KEY_5) == GLFW_PRESS) {
+                input.selected_block = 5;
+            } else if (glfwGetKey(window, GLFW_KEY_6) == GLFW_PRESS) {
+                input.selected_block = 6;
+            } else if (glfwGetKey(window, GLFW_KEY_7) == GLFW_PRESS) {
+                input.selected_block = 7;
+            } else if (glfwGetKey(window, GLFW_KEY_8) == GLFW_PRESS) {
+                input.selected_block = 8;
+            } else if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS) {
+                input.selected_block = 9;
+            } else if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
+                input.selected_block = 0;
+            }
 
             double x, y;
             glfwGetCursorPos(window, &x, &y);

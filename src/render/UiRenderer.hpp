@@ -22,6 +22,7 @@ private:
     struct PushBuffer {
         glm::vec2 pos;
         glm::vec2 dimension;
+        glm::vec2 anchorPoint;
     };
 
     void recordSingle(VkCommandBuffer commandBuffer, VkExtent2D extent,

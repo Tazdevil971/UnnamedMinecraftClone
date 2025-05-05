@@ -60,6 +60,9 @@ void PlayerController::update(World &world, const Window::InputState &input) {
 
     Camera camera = getCamera();
 
+    Block block_map[10] = {Block::AIR, Block::GRASS, Block::DIRT, Block::COBBLESTONE, Block::WOOD_LOG,
+                            Block::LEAF, Block::CHERRY_LEAF, Block::DIAMOND, Block::AIR, Block::AIR};
+
     VoxelRaytracer tracer(camera.pos, camera.computeViewDir());
     for (int i = 0; i < MAX_RAY_DISTANCE; i++) {
         auto hit = tracer.getNextHit();
@@ -76,7 +79,7 @@ void PlayerController::update(World &world, const Window::InputState &input) {
                 auto pos = hit.pos + hit.dir;
                 if (!collider.getCollider().getBlockRange().isInside(pos)) {
                     actionTimer = ACTION_TIMER_REFILL;
-                    world.updateBlock(pos, Block::DIAMOND);
+                    world.updateBlock(pos, block_map[input.selected_block]);
                 }
             }
 

@@ -103,7 +103,8 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
                                     {{75, -75}, {1, 0}},
                                     {{75, 75}, {1, 1}},
                                 });
-
+        cursorTexture = BufferManager::get().allocateTexture(
+            "assets/cursor.png", VK_FORMAT_R8G8B8A8_SRGB);
         uiCubeTexture = AtlasManager::get().getAtlas();
 
         render::UiMesh uiCubeMesh;
@@ -151,6 +152,7 @@ void MainWindow::cleanup() {
 
     BufferManager::get().deallocateTextureDefer(debugTexture);
     BufferManager::get().deallocateTextureDefer(pointerTexture);
+    BufferManager::get().deallocateTextureDefer(cursorTexture);
     BufferManager::get().deallocateMeshDefer(debugCubeMesh);
     BufferManager::get().deallocateMeshDefer(pointerMesh);
     BufferManager::get().deallocateMeshDefer(uiMesh);
@@ -198,12 +200,13 @@ void MainWindow::onFrame(InputState& input) {
                          });
 
     glm::vec2 center = {0, 0};
+    uiModels.push_back(UiModel{pointerMesh, pointerTexture, center, CENTER});
 
-    uiModels.push_back(UiModel{pointerMesh, pointerTexture, center});
-
-    glm::vec2 pos = {-700, 500};
+    glm::vec2 pos = {-585, -100};
+    uiModels.push_back(UiModel{pointerMesh, cursorTexture, pos, BOTTOM_CENTER});
+    pos = {-585, -200};
     for (auto const& mesh : uiCubeMeshes) {
-        uiModels.push_back(UiModel{mesh, uiCubeTexture, pos});
+        uiModels.push_back(UiModel{mesh, uiCubeTexture, pos, BOTTOM_CENTER});
         pos.x = pos.x + 200;
     }
 

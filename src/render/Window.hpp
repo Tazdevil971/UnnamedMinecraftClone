@@ -23,6 +23,7 @@ public:
         glm::vec2 cursorPos;
         float time;
         float deltaTime;
+        int selected_block;
     };
 
     Window(std::string name);

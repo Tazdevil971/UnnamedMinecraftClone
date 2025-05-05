@@ -57,7 +57,8 @@ set(ASSETS
     assets/skybox_night.png
     assets/debug.png
     assets/debug_skybox.png
-    assets/pointer_texture.png)
+    assets/pointer_texture.png
+    assets/cursor.png)
 
 add_executable(UnnamedMinecraftClone ${SOURCES})
 target_compile_features(UnnamedMinecraftClone PRIVATE cxx_std_17)

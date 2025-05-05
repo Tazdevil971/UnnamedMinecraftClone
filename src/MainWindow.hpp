@@ -40,6 +40,7 @@ private:
     std::list<render::UiMesh> uiCubeMeshes;
     render::Texture debugTexture;
     render::Texture pointerTexture;
+    render::Texture cursorTexture;
     render::Texture uiCubeTexture;
 
     // Per frame stuff
