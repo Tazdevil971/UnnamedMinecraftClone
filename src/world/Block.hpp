@@ -1,7 +1,7 @@
 #pragma once
 
 enum class Block {
-    AIR,
+    AIR = 0,
     GRASS,
     DIRT,
     COBBLESTONE,

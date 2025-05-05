@@ -104,26 +104,36 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
                                     {{75, 75}, {1, 1}},
                                 });
 
-        uiCubeMesh = BufferManager::get().allocateMesh<UiMesh>(
-            {0, 1, 2, 3, 2, 1, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11}, {
-                                    //front
-                                    {{-75, -75}, {0, 0}},
-                                    {{-75, 75}, {0, 1}},
-                                    {{75, -75}, {1, 0}},
-                                    {{75, 75}, {1, 1}},
-                                    //side
-                                    {{75, -75}, {0, 0}},
-                                    {{75, 75}, {0, 1}},
-                                    {{100, 40}, {1, 1}},
-                                    {{100, -110}, {1, 0}},
-                                    //top
-                                    {{-75, -75}, {0, 1}},
-                                    {{75, -75}, {1, 1}},
-                                    {{100, -110}, {1, 0}},
-                                    {{-50, -110}, {0, 0}},
+        uiCubeTexture = AtlasManager::get().getAtlas();
+
+        render::UiMesh uiCubeMesh;
+        for (int i = 1; i < 8; i++) {
+            std::vector<uint16_t> indices = {0, 1, 2, 3, 2, 1, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11}; 
+            std::vector<UiVertex> vertices; 
+            // front
+            auto bounds = AtlasManager::get().getAtlasBounds(static_cast<Block>(i), Side::SIDE_X_POS);
+            vertices.push_back({{-75, -75}, bounds.getTopLeft()});
+            vertices.push_back({{-75, 75}, bounds.getBottomLeft()});
+            vertices.push_back({{75, -75}, bounds.getTopRight()});
+            vertices.push_back({{75, 75}, bounds.getBottomRight()});
+            // side
+            bounds = AtlasManager::get().getAtlasBounds(static_cast<Block>(i), Side::SIDE_Z_POS);
+            vertices.push_back({{75, -75}, bounds.getTopLeft()}),
+            vertices.push_back({{75, 75}, bounds.getBottomLeft()});
+            vertices.push_back({{100, 40}, bounds.getBottomRight()});
+            vertices.push_back({{100, -110}, bounds.getTopRight()});
+            // top
+            bounds = AtlasManager::get().getAtlasBounds(static_cast<Block>(i), Side::TOP);
+            vertices.push_back({{-75, -75}, bounds.getTopRight()});
+            vertices.push_back({{75, -75}, bounds.getBottomRight()});
+            vertices.push_back({{100, -110}, bounds.getBottomLeft()});
+            vertices.push_back({{-50, -110}, bounds.getTopLeft()});
+
+            uiCubeMesh = BufferManager::get().allocateMesh<UiMesh>(indices, vertices);
+            uiCubeMeshes.push_back(uiCubeMesh);
+        }
 
 
-                                });
 
         playerController.unstuck(world);
         mucchina->unstuck(world);
@@ -144,7 +154,9 @@ void MainWindow::cleanup() {
     BufferManager::get().deallocateMeshDefer(debugCubeMesh);
     BufferManager::get().deallocateMeshDefer(pointerMesh);
     BufferManager::get().deallocateMeshDefer(uiMesh);
-    BufferManager::get().deallocateMeshDefer(uiCubeMesh);
+    for (auto& mesh : uiCubeMeshes) {
+        BufferManager::get().deallocateMeshDefer(mesh);
+    }
 
     if (mucchina) {
         mucchina->cleanup();
@@ -186,12 +198,14 @@ void MainWindow::onFrame(InputState& input) {
                          });
 
     glm::vec2 center = {0, 0};
-    glm::vec2 pos = {0, 400};
-    glm::vec2 pos1 = {-200, 500};
 
     uiModels.push_back(UiModel{pointerMesh, pointerTexture, center});
-    //uiModels.push_back(UiModel{uiMesh, debugTexture, pos});
-    uiModels.push_back(UiModel{uiCubeMesh, debugTexture, pos1});
+
+    glm::vec2 pos = {-700, 500};
+    for (auto const& mesh : uiCubeMeshes) {
+        uiModels.push_back(UiModel{mesh, uiCubeTexture, pos});
+        pos.x = pos.x + 200;
+    }
 
     GeometryRenderer::LightInfo lights{dayNightState.ambientColor,
                                        dayNightState.sunDir,
