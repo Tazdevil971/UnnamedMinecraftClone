@@ -11,23 +11,12 @@
 using namespace render;
 
 ShadowPass::ShadowPass() {
-    try {
-        depthTexture = BufferManager::get().allocateDepthTexture(
-            SHADOWMAP_EXTENT.width, SHADOWMAP_EXTENT.height);
+    depthTexture = BufferManager::get().allocateDepthTexture(
+        SHADOWMAP_EXTENT.width, SHADOWMAP_EXTENT.height);
 
-        createRenderPass();
-        createFramebuffer();
-        createPipeline();
-    } catch (...) {
-        cleanup();
-        throw;
-    }
-}
-
-ShadowPass::~ShadowPass() { cleanup(); }
-
-void ShadowPass::cleanup() {
-    BufferManager::get().deallocateTextureNow(depthTexture);
+    createRenderPass();
+    createFramebuffer();
+    createPipeline();
 }
 
 void ShadowPass::record(VkCommandBuffer commandBuffer, const Camera& camera,
@@ -157,7 +146,7 @@ void ShadowPass::createFramebuffer() {
     createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     createInfo.renderPass = *renderPass;
     createInfo.attachmentCount = 1;
-    createInfo.pAttachments = &depthImage.view;
+    createInfo.pAttachments = &*depthImage.view;
     createInfo.width = depthImage.width;
     createInfo.height = depthImage.height;
     createInfo.layers = 1;

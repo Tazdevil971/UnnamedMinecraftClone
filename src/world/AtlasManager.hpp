@@ -2,7 +2,6 @@
 
 #include <glm/glm.hpp>
 #include <memory>
-#include <stdexcept>
 
 #include "../render/Primitives.hpp"
 #include "Block.hpp"
@@ -10,23 +9,12 @@
 namespace world {
 
 class AtlasManager {
-private:
-    static std::unique_ptr<AtlasManager> INSTANCE;
-
 public:
-    static void create() { INSTANCE.reset(new AtlasManager()); }
+    AtlasManager();
 
-    static AtlasManager& get() {
-        if (INSTANCE) {
-            return *INSTANCE;
-        } else {
-            throw std::runtime_error{"AtlasManager not yet created"};
-        }
+    static std::shared_ptr<AtlasManager> create() {
+        return std::make_shared<AtlasManager>();
     }
-
-    static void destroy() { INSTANCE.reset(); }
-
-    ~AtlasManager();
 
     struct AtlasBounds {
         glm::vec2 topLeft;
@@ -43,10 +31,6 @@ public:
     AtlasBounds getAtlasBounds(Block block, Side side) const;
 
 private:
-    AtlasManager();
-
-    void cleanup();
-
     glm::vec2 convertIntCoords(glm::ivec2 coords) const;
     AtlasBounds computeAtlasBound(glm::ivec2 coords) const;
 

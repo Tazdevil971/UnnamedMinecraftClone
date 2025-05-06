@@ -1,8 +1,10 @@
 #pragma once
 #include <glm/gtc/noise.hpp>
 #include <glm/vec3.hpp>
+#include <memory>
 
 #include "../render/Primitives.hpp"
+#include "AtlasManager.hpp"
 #include "Block.hpp"
 
 
@@ -16,19 +18,24 @@ private:
     Block blocks[DIM.x][DIM.y][DIM.z];
     render::GeometryMesh mesh;
 
+    std::shared_ptr<AtlasManager> atlas;
+
     void updateMesh();
     static void genTree(glm::ivec3 pos, Chunk &chunk, Block block);
 
 public:
-    Chunk();
-    void cleanup();
+    Chunk(std::shared_ptr<AtlasManager> atlas);
+    ~Chunk();
 
-    static Chunk genChunk(glm::ivec3 pos);
+    Chunk(Chunk &&) = default;
+    Chunk &operator=(Chunk &&) = default;
+
+    static Chunk genChunk(std::shared_ptr<AtlasManager> atlas, glm::ivec3 pos);
 
     Block getBlock(glm::ivec3 pos);
     void updateBlock(glm::ivec3 pos, Block newBlock);
 
-    render::GeometryMesh getMesh();
+    const render::GeometryMesh &getMesh();
     render::GeometryModel getModel(glm::ivec3 pos);
 };
 

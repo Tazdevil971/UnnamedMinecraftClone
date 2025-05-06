@@ -6,7 +6,7 @@
 using namespace world;
 using namespace render;
 
-Chunk::Chunk() {
+Chunk::Chunk(std::shared_ptr<AtlasManager> atlas) : atlas{atlas} {
     for (int x = 0; x < DIM.x; x++) {
         for (int y = 0; y < DIM.y; y++) {
             for (int z = 0; z < DIM.z; z++) {
@@ -16,9 +16,9 @@ Chunk::Chunk() {
     }
 }
 
-void Chunk::cleanup() {
+Chunk::~Chunk() {
     if (!mesh.isNull()) {
-        BufferManager::get().deallocateMeshDefer(mesh);
+        BufferManager::get().deallocateMeshDefer(std::move(mesh));
     }
 }
 
@@ -29,10 +29,10 @@ Block Chunk::getBlock(glm::ivec3 pos) {
     return blocks[x][y][z];
 }
 
-render::GeometryMesh Chunk::getMesh() { return mesh; }
+const render::GeometryMesh &Chunk::getMesh() { return mesh; }
 
 render::GeometryModel Chunk::getModel(glm::ivec3 pos) {
-    return GeometryModel{mesh, AtlasManager::get().getAtlas(), pos * DIM,
+    return GeometryModel{mesh, atlas->getAtlas(), pos * DIM,
                          glm::vec3(0.0f, 0.0f, 0.0f)};
 }
 
@@ -45,8 +45,8 @@ void Chunk::updateMesh() {
             for (int z = 0; z < DIM.z; z++) {
                 if (blocks[x][y][z] != Block::AIR &&
                     (z == 0 || blocks[x][y][z - 1] == Block::AIR)) {
-                    auto bounds = AtlasManager::get().getAtlasBounds(
-                        blocks[x][y][z], Side::SIDE_Z_NEG);
+                    auto bounds = atlas->getAtlasBounds(blocks[x][y][z],
+                                                        Side::SIDE_Z_NEG);
                     indices.push_back(vertices.size());
                     indices.push_back(vertices.size() + 1);
                     indices.push_back(vertices.size() + 2);
@@ -68,8 +68,8 @@ void Chunk::updateMesh() {
                 }
                 if (blocks[x][y][z] != Block::AIR &&
                     (z == 15 || blocks[x][y][z + 1] == Block::AIR)) {
-                    auto bounds = AtlasManager::get().getAtlasBounds(
-                        blocks[x][y][z], Side::SIDE_Z_POS);
+                    auto bounds = atlas->getAtlasBounds(blocks[x][y][z],
+                                                        Side::SIDE_Z_POS);
                     indices.push_back(vertices.size());
                     indices.push_back(vertices.size() + 1);
                     indices.push_back(vertices.size() + 2);
@@ -92,8 +92,8 @@ void Chunk::updateMesh() {
 
                 if (blocks[x][y][z] != Block::AIR &&
                     (y == 0 || blocks[x][y - 1][z] == Block::AIR)) {
-                    auto bounds = AtlasManager::get().getAtlasBounds(
-                        blocks[x][y][z], Side::BOTTOM);
+                    auto bounds =
+                        atlas->getAtlasBounds(blocks[x][y][z], Side::BOTTOM);
                     indices.push_back(vertices.size());
                     indices.push_back(vertices.size() + 1);
                     indices.push_back(vertices.size() + 2);
@@ -116,8 +116,8 @@ void Chunk::updateMesh() {
 
                 if (blocks[x][y][z] != Block::AIR &&
                     (y == 15 || blocks[x][y + 1][z] == Block::AIR)) {
-                    auto bounds = AtlasManager::get().getAtlasBounds(
-                        blocks[x][y][z], Side::TOP);
+                    auto bounds =
+                        atlas->getAtlasBounds(blocks[x][y][z], Side::TOP);
                     indices.push_back(vertices.size());
                     indices.push_back(vertices.size() + 1);
                     indices.push_back(vertices.size() + 2);
@@ -140,8 +140,8 @@ void Chunk::updateMesh() {
 
                 if (blocks[x][y][z] != Block::AIR &&
                     (x == 0 || blocks[x - 1][y][z] == Block::AIR)) {
-                    auto bounds = AtlasManager::get().getAtlasBounds(
-                        blocks[x][y][z], Side::SIDE_X_NEG);
+                    auto bounds = atlas->getAtlasBounds(blocks[x][y][z],
+                                                        Side::SIDE_X_NEG);
                     indices.push_back(vertices.size());
                     indices.push_back(vertices.size() + 1);
                     indices.push_back(vertices.size() + 2);
@@ -164,8 +164,8 @@ void Chunk::updateMesh() {
 
                 if (blocks[x][y][z] != Block::AIR &&
                     (x == 15 || blocks[x + 1][y][z] == Block::AIR)) {
-                    auto bounds = AtlasManager::get().getAtlasBounds(
-                        blocks[x][y][z], Side::SIDE_X_POS);
+                    auto bounds = atlas->getAtlasBounds(blocks[x][y][z],
+                                                        Side::SIDE_X_POS);
                     indices.push_back(vertices.size());
                     indices.push_back(vertices.size() + 1);
                     indices.push_back(vertices.size() + 2);
@@ -190,7 +190,7 @@ void Chunk::updateMesh() {
     }
 
     if (!mesh.isNull()) {
-        BufferManager::get().deallocateMeshDefer(mesh);
+        BufferManager::get().deallocateMeshDefer(std::move(mesh));
     }
 
     if (indices.size() > 0 || vertices.size() > 0) {
@@ -261,8 +261,8 @@ void Chunk::genTree(glm::ivec3 pos, Chunk &chunk, Block block) {
     chunk.blocks[x][y + 2][z] = Block::LEAF;
 }
 
-Chunk Chunk::genChunk(glm::ivec3 pos) {
-    Chunk chunk;
+Chunk Chunk::genChunk(std::shared_ptr<AtlasManager> atlas, glm::ivec3 pos) {
+    Chunk chunk{atlas};
 
     for (int x = 0; x < DIM.x; x++) {
         for (int z = 0; z < DIM.z; z++) {

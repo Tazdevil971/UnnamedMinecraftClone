@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <list>
-#include <string>
+#include <memory>
 #include <vector>
 
 #include "../render/Primitives.hpp"
@@ -10,20 +10,31 @@
 
 namespace world {
 
-class AnimModel {
+class AnimModelPose;
+
+class AnimModelBlueprint {
+    friend class AnimModelPose;
+
 public:
     struct JointId {
         static constexpr JointId root() { return {0}; }
 
-        int index;
+        size_t index;
     };
 
 private:
     struct Joint {
         JointId parent;
+        render::GeometryMesh mesh;
+
+        Joint() = default;
+        Joint(Joint&&) = default;
+        Joint& operator=(Joint&&) = default;
+    };
+
+    struct Transform {
         glm::vec3 localPos;
         glm::quat localRot;
-        render::GeometryMesh mesh;
         glm::vec3 globalPos;
         glm::quat globalRot;
 
@@ -32,27 +43,22 @@ private:
             globalRot = localRot;
         }
 
-        void updateGlobal(const Joint& parent) {
+        void updateGlobal(const Transform& parent) {
             globalPos = parent.globalPos + parent.globalRot * localPos;
             globalRot = parent.globalRot * localRot;
         }
     };
 
 public:
-    AnimModel(const std::string& path, VkFormat format);
-
-    void cleanup();
+    AnimModelBlueprint(const std::string& path, VkFormat format);
 
     JointId addJoint(JointId parent, glm::ivec3 center, glm::ivec3 pos,
                      glm::quat rot, glm::ivec3 size, glm::ivec2 topLeft);
 
-    void setPos(glm::vec3 pos) { joints[0].localPos = pos; }
-    void setRot(glm::quat rot) { joints[0].localRot = rot; }
-    void setJointRot(JointId id, glm::quat rot) {
-        joints[id.index].localRot = rot;
-    }
+    AnimModelPose newPose() const;
 
-    void addToModelList(std::list<render::GeometryModel>& models);
+    void addToModelList(std::list<render::GeometryModel>& models,
+                        AnimModelPose& pose);
 
 private:
     struct Bounds {
@@ -71,6 +77,25 @@ private:
 
     render::Texture texture;
     std::vector<Joint> joints;
+    std::vector<Transform> transforms;
+};
+
+class AnimModelPose {
+    friend class AnimModelBlueprint;
+
+private:
+    AnimModelPose(const std::vector<AnimModelBlueprint::Transform>& transforms)
+        : transforms{transforms} {}
+
+public:
+    void setPos(glm::vec3 pos) { transforms[0].localPos = pos; }
+    void setRot(glm::quat rot) { transforms[0].localRot = rot; }
+    void setJointRot(AnimModelBlueprint::JointId id, glm::quat rot) {
+        transforms[id.index].localRot = rot;
+    }
+
+private:
+    std::vector<AnimModelBlueprint::Transform> transforms;
 };
 
 }  // namespace world

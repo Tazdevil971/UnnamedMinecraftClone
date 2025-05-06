@@ -9,20 +9,9 @@
 using namespace render;
 
 SkyboxRenderer::SkyboxRenderer(VkRenderPass renderPass) {
-    try {
-        skyboxInfoUbo = BufferManager::get().allocateUbo(sizeof(float));
+    skyboxInfoUbo = BufferManager::get().allocateUbo(sizeof(float));
 
-        createPipeline(renderPass);
-    } catch (...) {
-        cleanup();
-        throw;
-    }
-}
-
-SkyboxRenderer::~SkyboxRenderer() { cleanup(); }
-
-void SkyboxRenderer::cleanup() {
-    BufferManager::get().deallocateUboNow(skyboxInfoUbo);
+    createPipeline(renderPass);
 }
 
 void SkyboxRenderer::record(VkCommandBuffer commandBuffer, const Camera& camera,

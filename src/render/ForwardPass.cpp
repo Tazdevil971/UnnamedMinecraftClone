@@ -21,7 +21,8 @@ ForwardPass::ForwardPass() {
 void ForwardPass::record(VkCommandBuffer commandBuffer, Swapchain::Frame frame,
                          const Camera& camera, const Skybox& skybox,
                          const GeometryRenderer::LightInfo& lights,
-                         Texture depthTexture, std::list<GeometryModel> models,
+                         const Texture& depthTexture,
+                         std::list<GeometryModel> models,
                          std::list<UiModel> uiModels) {
     VkExtent2D extent = framebuffer->getExtent();
 

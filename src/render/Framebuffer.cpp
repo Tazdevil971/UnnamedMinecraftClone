@@ -8,57 +8,28 @@ using namespace render;
 Framebuffer::Framebuffer(VkSwapchainKHR swapchain, VkExtent2D extent,
                          VkFormat colorFormat, VkRenderPass renderPass)
     : renderPass{renderPass}, extent{extent}, colorFormat{colorFormat} {
-    try {
-        getImageCount(swapchain);
-        createColorImages(swapchain);
-        createDepthImages();
-        createFramebuffers();
-    } catch (...) {
-        cleanup();
-        throw;
-    }
+    getImageCount(swapchain);
+    createColorImages(swapchain);
+    createDepthImages();
+    createFramebuffers();
 }
-
-Framebuffer::~Framebuffer() { cleanup(); }
 
 void Framebuffer::recreate(VkSwapchainKHR swapchain, VkExtent2D extent,
                            VkFormat colorFormat) {
-    try {
-        framebuffers.resize(0);
-
-        for (auto colorImage : colorImages)
-            BufferManager::get().deallocateImageNow(colorImage);
-
-        for (auto depthImage : depthImages)
-            BufferManager::get().deallocateImageNow(depthImage);
-
-        colorImages.resize(0);
-        depthImages.resize(0);
-
-        this->extent = extent;
-        this->colorFormat = colorFormat;
-        getImageCount(swapchain);
-
-        createColorImages(swapchain);
-        createDepthImages();
-        createFramebuffers();
-    } catch (...) {
-        cleanup();
-        throw;
-    }
-}
-
-void Framebuffer::cleanup() {
     framebuffers.resize(0);
-
-    for (auto colorImage : colorImages)
-        BufferManager::get().deallocateImageNow(colorImage);
-
-    for (auto depthImage : depthImages)
-        BufferManager::get().deallocateImageNow(depthImage);
+    colorImages.resize(0);
+    depthImages.resize(0);
 
     colorImages.resize(0);
     depthImages.resize(0);
+
+    this->extent = extent;
+    this->colorFormat = colorFormat;
+    getImageCount(swapchain);
+
+    createColorImages(swapchain);
+    createDepthImages();
+    createFramebuffers();
 }
 
 void Framebuffer::getImageCount(VkSwapchainKHR swapchain) {
@@ -90,7 +61,8 @@ void Framebuffer::createDepthImages() {
 void Framebuffer::createFramebuffers() {
     framebuffers.resize(imageCount);
     for (uint32_t i = 0; i < imageCount; i++) {
-        VkImageView attachments[] = {colorImages[i].view, depthImages[i].view};
+        VkImageView attachments[] = {*colorImages[i].view,
+                                     *depthImages[i].view};
 
         VkFramebufferCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

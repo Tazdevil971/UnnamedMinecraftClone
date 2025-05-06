@@ -15,8 +15,6 @@ class Framebuffer {
     friend class render::Swapchain;
 
 public:
-    ~Framebuffer();
-
     VkFramebuffer getFrame(uint32_t idx) const {
         assert(idx < imageCount);
         return *framebuffers[idx];
@@ -51,7 +49,6 @@ private:
 
     void recreate(VkSwapchainKHR swapchain, VkExtent2D extent,
                   VkFormat colorFormat);
-    void cleanup();
 
     void getImageCount(VkSwapchainKHR swapchain);
     void createColorImages(VkSwapchainKHR swapchain);

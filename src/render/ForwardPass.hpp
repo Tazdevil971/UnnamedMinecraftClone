@@ -6,10 +6,10 @@
 
 #include "Framebuffer.hpp"
 #include "GeometryRenderer.hpp"
+#include "Managed.hpp"
 #include "SkyboxRenderer.hpp"
 #include "Swapchain.hpp"
 #include "UiRenderer.hpp"
-#include "Managed.hpp"
 
 namespace render {
 
@@ -19,8 +19,9 @@ public:
 
     void record(VkCommandBuffer commandBuffer, Swapchain::Frame frame,
                 const Camera& camera, const Skybox& skybox,
-                const GeometryRenderer::LightInfo& lights, Texture depthTexture,
-                std::list<GeometryModel> models, std::list<UiModel> uiModels);
+                const GeometryRenderer::LightInfo& lights,
+                const Texture& depthTexture, std::list<GeometryModel> models,
+                std::list<UiModel> uiModels);
 
 private:
     void createRenderPass();

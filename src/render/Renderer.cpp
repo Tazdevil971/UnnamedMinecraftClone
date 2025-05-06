@@ -31,8 +31,7 @@ void Renderer::render(const Camera& camera, const Skybox& skybox,
     vkWaitForFences(Context::get().getDevice(), 1, &*inFlightFence, VK_TRUE,
                     UINT64_MAX);
 
-    // The GPU is idle, flush pending buffers
-    BufferManager::get().flushDeferOperations();
+    BufferManager::get().performDeferOps();
 
     Swapchain::Frame frame =
         Swapchain::get().acquireFrame(*imageAvailableSemaphore);

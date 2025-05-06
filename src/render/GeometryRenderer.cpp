@@ -10,25 +10,15 @@
 using namespace render;
 
 GeometryRenderer::GeometryRenderer(VkRenderPass renderPass) {
-    try {
-        lightInfoUbo = BufferManager::get().allocateUbo(sizeof(LightInfoUbo));
+    lightInfoUbo = BufferManager::get().allocateUbo(sizeof(LightInfoUbo));
 
-        createPipeline(renderPass);
-    } catch (...) {
-        cleanup();
-        throw;
-    }
-}
-
-GeometryRenderer::~GeometryRenderer() { cleanup(); }
-
-void GeometryRenderer::cleanup() {
-    BufferManager::get().deallocateUboNow(lightInfoUbo);
+    createPipeline(renderPass);
 }
 
 void GeometryRenderer::record(VkCommandBuffer commandBuffer,
                               const Camera& camera, float ratio,
-                              const LightInfo& lights, Texture depthTexture,
+                              const LightInfo& lights,
+                              const Texture& depthTexture,
                               std::list<GeometryModel> models) {
     // Update UBO
     lightInfoUbo.write(LightInfoUbo{
@@ -50,7 +40,7 @@ void GeometryRenderer::record(VkCommandBuffer commandBuffer,
 }
 
 void GeometryRenderer::recordSingle(VkCommandBuffer commandBuffer, glm::mat4 vp,
-                                    Texture depthTexture,
+                                    const Texture& depthTexture,
                                     const GeometryModel& model) {
     if (model.mesh.isNull()) return;
 

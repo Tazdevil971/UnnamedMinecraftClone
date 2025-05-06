@@ -6,8 +6,8 @@
 #include <cstring>
 #include <stdexcept>
 
-#include "../Utils.hpp"
 #include "Context.hpp"
+#include "Managed.hpp"
 #include "Primitives.hpp"
 
 using namespace render;
@@ -30,21 +30,7 @@ BufferManager::BufferManager(size_t uboPoolSize, size_t texturePoolSize) {
     createTextureDescriptorSets(texturePoolSize);
 }
 
-BufferManager::~BufferManager() { flushDeferOperations(); }
-
-void BufferManager::flushDeferOperations() {
-    for (auto& image : imageDeallocateDefer) deallocateImageNow(image);
-    imageDeallocateDefer.clear();
-
-    for (auto& texture : textureDeallocateDefer) deallocateTextureNow(texture);
-    textureDeallocateDefer.clear();
-
-    for (auto& mesh : meshDeallocateDefer) deallocateMeshNow(mesh);
-    meshDeallocateDefer.clear();
-
-    for (auto& ubo : uboDeallocateDefer) deallocateUboNow(ubo);
-    uboDeallocateDefer.clear();
-}
+void BufferManager::performDeferOps() { meshDefer.clear(); }
 
 BaseMesh BufferManager::allocateMeshInner(
     const void* indicesData, size_t indicesDataSize, size_t indicesCount,
@@ -54,80 +40,54 @@ BaseMesh BufferManager::allocateMeshInner(
     VkDeviceSize vertexOffset = 0;
     VkDeviceSize indicesOffset = vertexDataSize;
 
-    VmaAllocation stagingMemory;
-    VkBuffer stagingBuffer;
-
-    VmaAllocation memory;
-    VkBuffer buffer;
-
     // First create and fill up staging buffer
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VMA_MEMORY_USAGE_AUTO,
-                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-                 stagingBuffer, stagingMemory);
-
-    auto stagingDefer = Defer{[=]() {
-        vmaDestroyBuffer(Context::get().getVma(), stagingBuffer, stagingMemory);
-    }};
+    ManagedBuffer stagingBuffer = createBuffer(
+        bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_AUTO,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
     void* data;
-    vmaMapMemory(Context::get().getVma(), stagingMemory, &data);
+    vmaMapMemory(Context::get().getVma(), stagingBuffer.getMemory(), &data);
 
     std::memcpy(reinterpret_cast<uint8_t*>(data) + vertexOffset, vertexData,
                 vertexDataSize);
     std::memcpy(reinterpret_cast<uint8_t*>(data) + indicesOffset, indicesData,
                 indicesDataSize);
 
-    vmaUnmapMemory(Context::get().getVma(), stagingMemory);
+    vmaUnmapMemory(Context::get().getVma(), stagingBuffer.getMemory());
 
     // Then create actual buffer
-    createBuffer(bufferSize,
-                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
-                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
-                     VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                 VMA_MEMORY_USAGE_AUTO, 0, buffer, memory);
-
-    auto outputDefer = Defer{
-        [=]() { vmaDestroyBuffer(Context::get().getVma(), buffer, memory); }};
+    ManagedBuffer buffer = createBuffer(bufferSize,
+                                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+                                            VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+                                            VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                        VMA_MEMORY_USAGE_AUTO, 0);
 
     // Finally copy the buffer and transfer to graphics queue
     startRecording();
-    copyBuffer(stagingBuffer, buffer, bufferSize);
+    copyBuffer(*stagingBuffer, *buffer, bufferSize);
     submitAndWait();
 
-    outputDefer.defuse();
-    return {memory,        buffer,      vertexOffset,
-            indicesOffset, vertexCount, indicesCount};
+    return {std::move(buffer), vertexOffset, indicesOffset, vertexCount,
+            indicesCount};
 }
 
-void BufferManager::deallocateMeshDefer(BaseMesh& mesh) {
-    meshDeallocateDefer.push_back(mesh);
-    mesh = BaseMesh{};
-}
-
-void BufferManager::deallocateMeshNow(BaseMesh& mesh) {
-    if (mesh.memory != VK_NULL_HANDLE)
-        vmaDestroyBuffer(Context::get().getVma(), mesh.buffer, mesh.memory);
-
-    mesh = BaseMesh{};
+void BufferManager::deallocateMeshDefer(BaseMesh&& mesh) {
+    meshDefer.push_back(std::move(mesh));
 }
 
 Ubo BufferManager::allocateUbo(size_t size) {
-    VmaAllocation memory;
-    VkBuffer buffer;
-
-    createBuffer(
+    ManagedBuffer buffer = createBuffer(
         size, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_AUTO,
-        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, buffer, memory);
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
     void* ptr;
-    vmaMapMemory(Context::get().getVma(), memory, &ptr);
+    vmaMapMemory(Context::get().getVma(), buffer.getMemory(), &ptr);
 
     VkDescriptorSet descriptor = uboDescriptorSets.back();
     uboDescriptorSets.pop_back();
 
     VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = buffer;
+    bufferInfo.buffer = *buffer;
     bufferInfo.offset = 0;
     bufferInfo.range = size;
 
@@ -145,58 +105,36 @@ Ubo BufferManager::allocateUbo(size_t size) {
     vkUpdateDescriptorSets(Context::get().getDevice(), 1, &descriptorWrite, 0,
                            nullptr);
 
-    return {memory, buffer, descriptor, ptr, size};
-}
-
-void BufferManager::deallocateUboDefer(Ubo& ubo) {
-    uboDeallocateDefer.push_back(ubo);
-    ubo = Ubo{};
-}
-
-void BufferManager::deallocateUboNow(Ubo& ubo) {
-    if (ubo.descriptor != VK_NULL_HANDLE)
-        uboDescriptorSets.push_back(ubo.descriptor);
-
-    if (ubo.memory != VK_NULL_HANDLE) {
-        vmaUnmapMemory(Context::get().getVma(), ubo.memory);
-        vmaDestroyBuffer(Context::get().getVma(), ubo.buffer, ubo.memory);
-    }
-
-    ubo = Ubo{};
+    return {std::move(buffer), descriptor, ptr, size};
 }
 
 Image BufferManager::allocateDepthImage(uint32_t width, uint32_t height) {
-    VmaAllocation memory;
-    VkImage image;
     VkFormat format = Context::get().getDeviceInfo().depthFormat;
 
-    createImage(width, height, format,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
-                    VK_IMAGE_USAGE_SAMPLED_BIT,
-                VMA_MEMORY_USAGE_AUTO, 0, image, memory);
-
-    auto outputDefer = Defer{
-        [=]() { vmaDestroyImage(Context::get().getVma(), image, memory); }};
+    ManagedImage image =
+        createImage(width, height, format,
+                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+                        VK_IMAGE_USAGE_SAMPLED_BIT,
+                    VMA_MEMORY_USAGE_AUTO, 0);
 
     startRecording();
-    transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED,
+    transitionImageLayout(*image, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                           format);
     submitAndWait();
 
-    VkImageView imageView;
-    createImageView(image, format, VK_IMAGE_ASPECT_DEPTH_BIT, imageView);
+    ManagedImageView imageView =
+        createImageView(*image, format, VK_IMAGE_ASPECT_DEPTH_BIT);
 
-    outputDefer.defuse();
-    return {memory, image, imageView, width, height, format};
+    return {std::move(image), std::move(imageView), width, height, format};
 }
 
 Image BufferManager::importImage(VkImage image, uint32_t width, uint32_t height,
                                  VkFormat format) {
-    VkImageView imageView;
-    createImageView(image, format, VK_IMAGE_ASPECT_COLOR_BIT, imageView);
+    ManagedImageView imageView =
+        createImageView(image, format, VK_IMAGE_ASPECT_COLOR_BIT);
 
-    return {VK_NULL_HANDLE, image, imageView, width, height, format};
+    return {image, std::move(imageView), width, height, format};
 }
 
 Image BufferManager::allocateImage(const std::string& path, VkFormat format) {
@@ -206,73 +144,49 @@ Image BufferManager::allocateImage(const std::string& path, VkFormat format) {
 
     if (!pixels) throw std::runtime_error{"failed to laod texture file!"};
 
-    auto pixelsDefer = Defer{[=]() { stbi_image_free(pixels); }};
-    return allocateImage(pixels, width, height, format);
+    try {
+        return allocateImage(pixels, width, height, format);
+    } catch (...) {
+        stbi_image_free(pixels);
+        throw;
+    }
 }
 
 Image BufferManager::allocateImage(const uint8_t* pixels, uint32_t height,
                                    uint32_t width, VkFormat format) {
     VkDeviceSize imageSize = width * height * 4;
-    VmaAllocation stagingMemory;
-    VkBuffer stagingBuffer;
-    VmaAllocation memory;
-    VkImage image;
 
-    createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VMA_MEMORY_USAGE_AUTO,
-                 VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
-                 stagingBuffer, stagingMemory);
-
-    auto stagingDefer = Defer{[=]() {
-        vmaDestroyBuffer(Context::get().getVma(), stagingBuffer, stagingMemory);
-    }};
+    ManagedBuffer stagingBuffer = createBuffer(
+        imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_AUTO,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
 
     void* data;
-    vmaMapMemory(Context::get().getVma(), stagingMemory, &data);
+    vmaMapMemory(Context::get().getVma(), stagingBuffer.getMemory(), &data);
     memcpy(data, pixels, imageSize);
-    vmaUnmapMemory(Context::get().getVma(), stagingMemory);
+    vmaUnmapMemory(Context::get().getVma(), stagingBuffer.getMemory());
 
-    createImage(width, height, format,
-                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                VMA_MEMORY_USAGE_AUTO, 0, image, memory);
-
-    auto outputDefer = Defer{
-        [=]() { vmaDestroyImage(Context::get().getVma(), image, memory); }};
+    ManagedImage image = createImage(
+        width, height, format,
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VMA_MEMORY_USAGE_AUTO, 0);
 
     startRecording();
-    transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED,
+    transitionImageLayout(*image, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, format);
-    copyBufferToImage(stagingBuffer, image, width, height);
-    transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+    copyBufferToImage(*stagingBuffer, *image, width, height);
+    transitionImageLayout(*image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, format);
     submitAndWait();
 
-    VkImageView imageView;
-    createImageView(image, format, VK_IMAGE_ASPECT_COLOR_BIT, imageView);
+    ManagedImageView imageView =
+        createImageView(*image, format, VK_IMAGE_ASPECT_COLOR_BIT);
 
-    outputDefer.defuse();
-    return {memory, image, imageView, width, height, format};
-}
-
-void BufferManager::deallocateImageDefer(Image& image) {
-    imageDeallocateDefer.push_back(image);
-    image = Image{};
-}
-
-void BufferManager::deallocateImageNow(Image& image) {
-    if (image.view != VK_NULL_HANDLE)
-        vkDestroyImageView(Context::get().getDevice(), image.view, nullptr);
-
-    if (image.memory != VK_NULL_HANDLE)
-        vmaDestroyImage(Context::get().getVma(), image.image, image.memory);
-
-    image = Image{};
+    return {std::move(image), std::move(imageView), width, height, format};
 }
 
 Texture BufferManager::allocateTexture(const std::string& path,
                                        VkFormat format) {
     Image image = allocateImage(path, format);
-    auto imageDefer = Defer{[&]() { deallocateImageNow(image); }};
 
     VkSamplerCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -293,15 +207,11 @@ Texture BufferManager::allocateTexture(const std::string& path,
     createInfo.minLod = 0.0f;
     createInfo.maxLod = 0.0f;
 
-    VkSampler sampler;
+    ManagedSampler sampler;
 
     if (vkCreateSampler(Context::get().getDevice(), &createInfo, nullptr,
-                        &sampler) != VK_SUCCESS)
+                        &*sampler) != VK_SUCCESS)
         throw std::runtime_error{"failed to create texture sampler!"};
-
-    auto samplerDefer = Defer{[&]() {
-        vkDestroySampler(Context::get().getDevice(), sampler, nullptr);
-    }};
 
     if (textureDescriptorSets.size() == 0)
         throw std::runtime_error{"not enough descriptor sets!"};
@@ -311,8 +221,8 @@ Texture BufferManager::allocateTexture(const std::string& path,
 
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = image.view;
-    imageInfo.sampler = sampler;
+    imageInfo.imageView = *image.view;
+    imageInfo.sampler = *sampler;
 
     VkWriteDescriptorSet descriptorWrite{};
     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -328,14 +238,11 @@ Texture BufferManager::allocateTexture(const std::string& path,
     vkUpdateDescriptorSets(Context::get().getDevice(), 1, &descriptorWrite, 0,
                            nullptr);
 
-    samplerDefer.defuse();
-    imageDefer.defuse();
-    return {image, sampler, descriptor};
+    return {std::move(image), std::move(sampler), descriptor};
 }
 
 Texture BufferManager::allocateDepthTexture(uint32_t width, uint32_t height) {
     Image image = allocateDepthImage(width, height);
-    auto imageDefer = Defer{[&]() { deallocateImageNow(image); }};
 
     VkSamplerCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -356,15 +263,11 @@ Texture BufferManager::allocateDepthTexture(uint32_t width, uint32_t height) {
     createInfo.minLod = 0.0f;
     createInfo.maxLod = 0.0f;
 
-    VkSampler sampler;
+    ManagedSampler sampler;
 
     if (vkCreateSampler(Context::get().getDevice(), &createInfo, nullptr,
-                        &sampler) != VK_SUCCESS)
+                        &*sampler) != VK_SUCCESS)
         throw std::runtime_error{"failed to create texture sampler!"};
-
-    auto samplerDefer = Defer{[&]() {
-        vkDestroySampler(Context::get().getDevice(), sampler, nullptr);
-    }};
 
     if (textureDescriptorSets.size() == 0)
         throw std::runtime_error{"not enough descriptor sets!"};
@@ -374,8 +277,8 @@ Texture BufferManager::allocateDepthTexture(uint32_t width, uint32_t height) {
 
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = image.view;
-    imageInfo.sampler = sampler;
+    imageInfo.imageView = *image.view;
+    imageInfo.sampler = *sampler;
 
     VkWriteDescriptorSet descriptorWrite{};
     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -391,25 +294,7 @@ Texture BufferManager::allocateDepthTexture(uint32_t width, uint32_t height) {
     vkUpdateDescriptorSets(Context::get().getDevice(), 1, &descriptorWrite, 0,
                            nullptr);
 
-    samplerDefer.defuse();
-    imageDefer.defuse();
-    return {image, sampler, descriptor};
-}
-
-void BufferManager::deallocateTextureDefer(Texture& texture) {
-    textureDeallocateDefer.push_back(texture);
-    texture = Texture{};
-}
-
-void BufferManager::deallocateTextureNow(Texture& texture) {
-    if (texture.descriptor != VK_NULL_HANDLE)
-        textureDescriptorSets.push_back(texture.descriptor);
-
-    if (texture.sampler != VK_NULL_HANDLE)
-        vkDestroySampler(Context::get().getDevice(), texture.sampler, nullptr);
-
-    deallocateImageNow(texture.image);
-    texture = Texture{};
+    return {std::move(image), std::move(sampler), descriptor};
 }
 
 void BufferManager::createCommandPool() {
@@ -555,11 +440,12 @@ void BufferManager::createTextureDescriptorSets(uint32_t size) {
         throw std::runtime_error{"failed to create descriptor set!"};
 }
 
-void BufferManager::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                                 VmaMemoryUsage vmaUsage,
-                                 VmaAllocationCreateFlags vmaFlags,
-                                 VkBuffer& outBuffer,
-                                 VmaAllocation& outMemory) {
+ManagedBuffer BufferManager::createBuffer(VkDeviceSize size,
+                                          VkBufferUsageFlags usage,
+                                          VmaMemoryUsage vmaUsage,
+                                          VmaAllocationCreateFlags vmaFlags) {
+    ManagedBuffer buffer;
+
     VkBufferCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     createInfo.size = size;
@@ -571,16 +457,20 @@ void BufferManager::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
     allocInfo.usage = vmaUsage;
 
     if (vmaCreateBuffer(Context::get().getVma(), &createInfo, &allocInfo,
-                        &outBuffer, &outMemory, nullptr) != VK_SUCCESS)
+                        &*buffer, &buffer.getMemory(), nullptr) != VK_SUCCESS)
         throw std::runtime_error{
             "failed to create Context::get().getVma() buffer!"};
+
+    return buffer;
 }
 
-void BufferManager::createImage(uint32_t width, uint32_t height,
-                                VkFormat format, VkImageUsageFlags usage,
-                                VmaMemoryUsage vmaUsage,
-                                VmaAllocationCreateFlags vmaFlags,
-                                VkImage& outImage, VmaAllocation& outMemory) {
+ManagedImage BufferManager::createImage(uint32_t width, uint32_t height,
+                                        VkFormat format,
+                                        VkImageUsageFlags usage,
+                                        VmaMemoryUsage vmaUsage,
+                                        VmaAllocationCreateFlags vmaFlags) {
+    ManagedImage image;
+
     VkImageCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     createInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -601,14 +491,17 @@ void BufferManager::createImage(uint32_t width, uint32_t height,
     allocInfo.usage = vmaUsage;
 
     if (vmaCreateImage(Context::get().getVma(), &createInfo, &allocInfo,
-                       &outImage, &outMemory, nullptr) != VK_SUCCESS)
+                       &*image, &image.getMemory(), nullptr) != VK_SUCCESS)
         throw std::runtime_error{
             "failed to create Context::get().getVma() image!"};
+
+    return image;
 }
 
-void BufferManager::createImageView(VkImage image, VkFormat format,
-                                    VkImageAspectFlags aspect,
-                                    VkImageView& imageView) {
+ManagedImageView BufferManager::createImageView(VkImage image, VkFormat format,
+                                                VkImageAspectFlags aspect) {
+    ManagedImageView imageView;
+
     VkImageViewCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     createInfo.image = image;
@@ -621,8 +514,10 @@ void BufferManager::createImageView(VkImage image, VkFormat format,
     createInfo.subresourceRange.layerCount = 1;
 
     if (vkCreateImageView(Context::get().getDevice(), &createInfo, nullptr,
-                          &imageView) != VK_SUCCESS)
+                          &*imageView) != VK_SUCCESS)
         throw std::runtime_error("failed to create texture image view!");
+
+    return imageView;
 }
 
 void BufferManager::startRecording() {

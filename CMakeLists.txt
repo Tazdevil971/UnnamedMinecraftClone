@@ -47,7 +47,8 @@ set(SHADERS
     src/shaders/GeometryVert.vert
     src/shaders/GeometryFrag.frag
     src/shaders/UiVert.vert
-    src/shaders/UiFrag.frag)
+    src/shaders/UiFrag.frag
+    )
 
 set(ASSETS
     assets/test_image.jpg
@@ -58,7 +59,9 @@ set(ASSETS
     assets/debug.png
     assets/debug_skybox.png
     assets/pointer_texture.png
-    assets/cursor.png)
+    assets/cursor.png
+    assets/mucchina.png
+    )
 
 add_executable(UnnamedMinecraftClone ${SOURCES})
 target_compile_features(UnnamedMinecraftClone PRIVATE cxx_std_17)

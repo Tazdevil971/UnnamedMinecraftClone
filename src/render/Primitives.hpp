@@ -12,6 +12,7 @@
 #include <glm/gtx/quaternion.hpp>
 
 // #include "BufferManager.hpp"
+#include "Managed.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 
 namespace render {
@@ -33,8 +34,11 @@ struct UiVertex {
 };
 
 struct BaseMesh {
-    VmaAllocation memory{VK_NULL_HANDLE};
-    VkBuffer buffer{VK_NULL_HANDLE};
+    ManagedBuffer buffer;
+
+    BaseMesh() = default;
+    BaseMesh(BaseMesh &&) = default;
+    BaseMesh &operator=(BaseMesh &&) = default;
 
     VkDeviceSize vertexOffset{0};
     VkDeviceSize indicesOffset{0};
@@ -42,14 +46,12 @@ struct BaseMesh {
     size_t vertexCount{0};
     size_t indexCount{0};
 
-    bool isNull() const {
-        return memory == VK_NULL_HANDLE && buffer == VK_NULL_HANDLE;
-    }
+    bool isNull() const { return buffer.isNull(); }
 
     void bind(VkCommandBuffer commandBuffer) const {
         VkDeviceSize offsets[] = {vertexOffset};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &buffer, offsets);
-        vkCmdBindIndexBuffer(commandBuffer, buffer, indicesOffset,
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &*buffer, offsets);
+        vkCmdBindIndexBuffer(commandBuffer, *buffer, indicesOffset,
                              VK_INDEX_TYPE_UINT16);
     }
 };
@@ -147,12 +149,21 @@ struct UiMesh : BaseMesh {
 };
 
 struct Ubo {
-    VmaAllocation memory{VK_NULL_HANDLE};
-    VkBuffer buffer{VK_NULL_HANDLE};
+    ManagedBuffer buffer;
     VkDescriptorSet descriptor{VK_NULL_HANDLE};
 
     void *ptr{nullptr};
     size_t size{0};
+
+    Ubo() = default;
+    Ubo(Ubo &&) = default;
+    Ubo &operator=(Ubo &&) = default;
+
+    ~Ubo() {
+        if (buffer.getMemory() != VK_NULL_HANDLE)
+            vmaUnmapMemory(Context::get().getVma(), buffer.getMemory());
+        ptr = nullptr;
+    }
 
     template <typename T>
     void write(const T &value) {
@@ -162,19 +173,26 @@ struct Ubo {
 };
 
 struct Image {
-    VmaAllocation memory{VK_NULL_HANDLE};
-    VkImage image{VK_NULL_HANDLE};
-    VkImageView view{VK_NULL_HANDLE};
+    ManagedImage image;
+    ManagedImageView view;
 
     uint32_t width{0};
     uint32_t height{0};
     VkFormat format{VK_FORMAT_UNDEFINED};
+
+    Image() = default;
+    Image(Image &&) = default;
+    Image &operator=(Image &&) = default;
 };
 
 struct Texture {
     Image image;
-    VkSampler sampler{VK_NULL_HANDLE};
+    ManagedSampler sampler{VK_NULL_HANDLE};
     VkDescriptorSet descriptor{VK_NULL_HANDLE};
+
+    Texture() = default;
+    Texture(Texture &&) = default;
+    Texture &operator=(Texture &&) = default;
 };
 
 struct GeometryModel {

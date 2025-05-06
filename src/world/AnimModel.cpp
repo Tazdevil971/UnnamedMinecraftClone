@@ -5,31 +5,27 @@
 using namespace world;
 using namespace render;
 
-AnimModel::AnimModel(const std::string &path, VkFormat format) {
+AnimModelBlueprint::AnimModelBlueprint(const std::string& path,
+                                       VkFormat format) {
     texture = BufferManager::get().allocateTexture(path, format);
-    joints.push_back({
-        JointId::root(),
-        glm::vec3{0, 0, 0},
-        glm::vec3{0, 0, 0},
-        render::GeometryMesh{},
-        glm::vec3{0, 0, 0},
-        glm::vec3{0, 0, 0},
-    });
+
+    Joint joint{JointId::root(), GeometryMesh{}};
+
+    Transform transform{
+        glm::vec3{0.0f, 0.0f, 0.0f},
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3{0.0f, 0.0f, 0.0f},
+        glm::vec3(0.0f, 0.0f, 0.0f),
+    };
+
+    joints.push_back(std::move(joint));
+    transforms.push_back(transform);
 }
 
-void AnimModel::cleanup() {
-    for (int i = 0; i < joints.size(); i++) {
-        BufferManager::get().deallocateMeshDefer(joints[i].mesh);
-    }
-
-    joints.clear();
-    BufferManager::get().deallocateTextureDefer(texture);
-}
-
-AnimModel::JointId AnimModel::addJoint(JointId parent, glm::ivec3 center,
-                                       glm::ivec3 pos, glm::quat rot,
-                                       glm::ivec3 size, glm::ivec2 topLeft) {
-    int index = joints.size();
+AnimModelBlueprint::JointId AnimModelBlueprint::addJoint(
+    JointId parent, glm::ivec3 center, glm::ivec3 pos, glm::quat rot,
+    glm::ivec3 size, glm::ivec2 topLeft) {
+    size_t index = joints.size();
 
     auto topBounds = getBounds(topLeft, Side::TOP, size);
     auto bottomBounds = getBounds(topLeft, Side::BOTTOM, size);
@@ -98,10 +94,10 @@ AnimModel::JointId AnimModel::addJoint(JointId parent, glm::ivec3 center,
             20, 21, 22, 20, 22, 23,
         }, {
             // Z- side
-            {xPosYNegZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getBottomLeft()},
-            {xNegYNegZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getBottomRight()},
-            {xNegYPosZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getTopRight()},
-            {xPosYPosZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getTopLeft()},
+            {xPosYNegZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getBottomRight()},
+            {xNegYNegZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getBottomLeft()},
+            {xNegYPosZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getTopLeft()},
+            {xPosYPosZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getTopRight()},
 
             // Z+ side
             {xNegYNegZPos, {0.0f, 0.0f, +1.0f}, zPosBounds.getBottomLeft()},
@@ -122,10 +118,10 @@ AnimModel::JointId AnimModel::addJoint(JointId parent, glm::ivec3 center,
             {xNegYPosZNeg, {0.0f, +1.0f, 0.0f}, topBounds.getTopLeft()},
 
             // X- side
-            {xNegYNegZNeg, {-1.0f, 0.0f, 0.0f}, xNegBounds.getBottomLeft()},
-            {xNegYNegZPos, {-1.0f, 0.0f, 0.0f}, xNegBounds.getBottomRight()},
-            {xNegYPosZPos, {-1.0f, 0.0f, 0.0f}, xNegBounds.getTopRight()},
-            {xNegYPosZNeg, {-1.0f, 0.0f, 0.0f}, xNegBounds.getTopLeft()},
+            {xNegYNegZNeg, {-1.0f, 0.0f, 0.0f}, xNegBounds.getBottomRight()},
+            {xNegYNegZPos, {-1.0f, 0.0f, 0.0f}, xNegBounds.getBottomLeft()},
+            {xNegYPosZPos, {-1.0f, 0.0f, 0.0f}, xNegBounds.getTopLeft()},
+            {xNegYPosZNeg, {-1.0f, 0.0f, 0.0f}, xNegBounds.getTopRight()},
 
             // X+ side
             {xPosYNegZPos, {+1.0f, 0.0f, 0.0f}, xPosBounds.getBottomLeft()},
@@ -135,38 +131,49 @@ AnimModel::JointId AnimModel::addJoint(JointId parent, glm::ivec3 center,
         });
     // clang-format on
 
-    joints.push_back({
-        parent,
+    Joint joint{parent, std::move(mesh)};
+
+    Transform transform{
         {
             convertWorldIntCoord(pos.x),
             convertWorldIntCoord(pos.y),
             convertWorldIntCoord(pos.z),
         },
         rot,
-        mesh,
+        glm::vec3{0.0f, 0.0f, 0.0f},
         glm::vec3(0.0f, 0.0f, 0.0f),
-        glm::vec3(0.0f, 0.0f, 0.0f),
-    });
+    };
+
+    joints.push_back(std::move(joint));
+    transforms.push_back(transform);
 
     return {index};
 }
 
-void AnimModel::addToModelList(std::list<render::GeometryModel> &models) {
-    joints[0].updateGlobal();
+AnimModelPose AnimModelBlueprint::newPose() const { return {transforms}; }
+
+void AnimModelBlueprint::addToModelList(
+    std::list<render::GeometryModel>& models, AnimModelPose& pose) {
+    pose.transforms[0].updateGlobal();
 
     for (int i = 1; i < joints.size(); i++) {
         int parent_idx = joints[i].parent.index;
-        joints[i].updateGlobal(joints[parent_idx]);
+        pose.transforms[i].updateGlobal(pose.transforms[parent_idx]);
     }
 
     for (int i = 0; i < joints.size(); i++) {
-        models.push_back({joints[i].mesh, texture, joints[i].globalPos,
-                          joints[i].globalRot});
+        // printf("Yeet: %d %p %p\n", i, *joints[i].mesh.buffer,
+        // *texture.image.image);
+        GeometryModel model{joints[i].mesh, texture,
+                            pose.transforms[i].globalPos,
+                            pose.transforms[i].globalRot};
+
+        models.push_back(model);
     }
 }
 
-AnimModel::Bounds AnimModel::getBounds(glm::ivec2 topLeft, Side side,
-                                       glm::ivec3 size) const {
+AnimModelBlueprint::Bounds AnimModelBlueprint::getBounds(
+    glm::ivec2 topLeft, Side side, glm::ivec3 size) const {
     glm::ivec2 sideSize;
     if (side == Side::TOP || side == Side::BOTTOM) {
         sideSize = glm::ivec2{size.x, size.z};
@@ -195,11 +202,11 @@ AnimModel::Bounds AnimModel::getBounds(glm::ivec2 topLeft, Side side,
             convertTextureIntCoords(sideTopLeft + sideSize)};
 }
 
-glm::vec2 AnimModel::convertTextureIntCoords(glm::ivec2 coords) const {
+glm::vec2 AnimModelBlueprint::convertTextureIntCoords(glm::ivec2 coords) const {
     return {(float)coords.x / texture.image.width,
             (float)coords.y / texture.image.height};
 }
 
-float AnimModel::convertWorldIntCoord(int coord) const {
+float AnimModelBlueprint::convertWorldIntCoord(int coord) const {
     return (coord / 16.0f);
 }

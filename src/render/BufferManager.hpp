@@ -12,11 +12,16 @@
 namespace render {
 
 struct Ubo;
+struct UboDescriptorSet;
 struct BaseMesh;
 struct Image;
 struct Texture;
+struct TextureDescriptorSet;
 
 class BufferManager {
+    friend class UboDescriptorSet;
+    friend class TextureDescriptorSet;
+
 private:
     static std::unique_ptr<BufferManager> INSTANCE;
 
@@ -35,25 +40,19 @@ public:
 
     static void destroy() { INSTANCE.reset(); }
 
-    ~BufferManager();
-
-    void flushDeferOperations();
+    void performDeferOps();
 
     // Mesh stuff
     template <typename T>
     T allocateMesh(const std::vector<uint16_t>& indices,
                    const std::vector<typename T::Vertex>& vertices);
 
-    void deallocateMeshDefer(BaseMesh& mesh);
-    void deallocateMeshNow(BaseMesh& mesh);
+    void deallocateMeshDefer(BaseMesh&& mesh);
 
     // UBO stuff
     VkDescriptorSetLayout getUboLayout() const { return *uboLayout; }
 
     Ubo allocateUbo(size_t size);
-
-    void deallocateUboDefer(Ubo& ubo);
-    void deallocateUboNow(Ubo& ubo);
 
     // Image stuff
     Image allocateDepthImage(uint32_t width, uint32_t height);
@@ -64,17 +63,11 @@ public:
                         VkFormat format);
     Image allocateImage(const std::string& path, VkFormat format);
 
-    void deallocateImageDefer(Image& image);
-    void deallocateImageNow(Image& image);
-
     // Texture stuff
     VkDescriptorSetLayout getTextureLayout() const { return *textureLayout; }
 
     Texture allocateTexture(const std::string& path, VkFormat format);
     Texture allocateDepthTexture(uint32_t width, uint32_t height);
-
-    void deallocateTextureDefer(Texture& texture);
-    void deallocateTextureNow(Texture& texture);
 
 private:
     BufferManager(size_t uboPoolSize, size_t texturePoolSize);
@@ -83,7 +76,8 @@ private:
                                size_t indicesCount, const void* vertexData,
                                size_t vertexDataSize, size_t vertexCount);
 
-    void cleanup();
+    void releaseUboDescriptorSet(VkDescriptorSet descriptor);
+    void releaseTextureDescriptorSet(VkDescriptorSet descriptor);
 
     void createCommandPool();
     void createCommandBuffer();
@@ -97,18 +91,16 @@ private:
     void createTextureDescriptorPool(uint32_t size);
     void createTextureDescriptorSets(uint32_t size);
 
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                      VmaMemoryUsage vmaUsage,
-                      VmaAllocationCreateFlags vmaFlags, VkBuffer& outBuffer,
-                      VmaAllocation& outMemory);
+    ManagedBuffer createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                               VmaMemoryUsage vmaUsage,
+                               VmaAllocationCreateFlags vmaFlags);
 
-    void createImage(uint32_t width, uint32_t height, VkFormat format,
-                     VkImageUsageFlags usage, VmaMemoryUsage vmaUsage,
-                     VmaAllocationCreateFlags vmaFlags, VkImage& outImage,
-                     VmaAllocation& outMemory);
+    ManagedImage createImage(uint32_t width, uint32_t height, VkFormat format,
+                             VkImageUsageFlags usage, VmaMemoryUsage vmaUsage,
+                             VmaAllocationCreateFlags vmaFlags);
 
-    void createImageView(VkImage image, VkFormat format,
-                         VkImageAspectFlags aspect, VkImageView& imageView);
+    ManagedImageView createImageView(VkImage image, VkFormat format,
+                                     VkImageAspectFlags aspect);
 
     void startRecording();
     void copyBuffer(VkBuffer src, VkBuffer dst, VkDeviceSize size);
@@ -118,10 +110,7 @@ private:
                                VkImageLayout newLayout, VkFormat format);
     void submitAndWait();
 
-    std::vector<BaseMesh> meshDeallocateDefer;
-    std::vector<Ubo> uboDeallocateDefer;
-    std::vector<Image> imageDeallocateDefer;
-    std::vector<Texture> textureDeallocateDefer;
+    std::vector<BaseMesh> meshDefer;
 
     std::vector<VkDescriptorSet> textureDescriptorSets;
     ManagedDescriptorSetLayout textureLayout;
@@ -144,5 +133,33 @@ T BufferManager::allocateMesh(const std::vector<uint16_t>& indices,
         vertices.data(), vertices.size() * sizeof(typename T::Vertex),
         vertices.size())};
 }
+
+struct UboDescriptorSet {
+    VkDescriptorSet inner{VK_NULL_HANDLE};
+
+    UboDescriptorSet() {}
+    UboDescriptorSet(const UboDescriptorSet&) = delete;
+    UboDescriptorSet(UboDescriptorSet&& other) {
+        inner = other.inner;
+        other.inner = VK_NULL_HANDLE;
+    }
+
+    ~UboDescriptorSet() { BufferManager::get().releaseUboDescriptorSet(inner); }
+};
+
+struct TextureDescriptorSet {
+    VkDescriptorSet inner{VK_NULL_HANDLE};
+
+    TextureDescriptorSet() {}
+    TextureDescriptorSet(const TextureDescriptorSet&) = delete;
+    TextureDescriptorSet(TextureDescriptorSet&& other) {
+        inner = other.inner;
+        other.inner = VK_NULL_HANDLE;
+    }
+
+    ~TextureDescriptorSet() {
+        BufferManager::get().releaseTextureDescriptorSet(inner);
+    }
+};
 
 }  // namespace render

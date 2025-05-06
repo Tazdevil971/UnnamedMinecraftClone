@@ -6,15 +6,13 @@
 #include "render/Renderer.hpp"
 #include "render/Skybox.hpp"
 #include "render/Window.hpp"
+#include "world/AtlasManager.hpp"
 #include "world/Mucchina.hpp"
 #include "world/World.hpp"
 
 class MainWindow : public render::Window {
 public:
     MainWindow();
-    ~MainWindow();
-
-    void cleanup();
 
 protected:
     void onFrame(InputState &input) override;
@@ -25,12 +23,11 @@ private:
 
     bool windowResized{false};
 
-    world::World world{};
+    std::shared_ptr<world::AtlasManager> atlas;
+    std::unique_ptr<world::World> world;
 
     float simulatedTime = 0.0f;
     logic::PlayerController playerController{glm::vec3{0.0f, 14.0f, 0.0f}};
-
-    std::unique_ptr<world::Mucchina> mucchina;
 
     std::unique_ptr<render::Renderer> renderer;
     render::Skybox skybox;
@@ -42,7 +39,10 @@ private:
     render::Texture debugTexture;
     render::Texture pointerTexture;
     render::Texture cursorTexture;
-    render::Texture uiCubeTexture;
+
+    // NPCs
+    std::shared_ptr<world::MucchinaBlueprint> mucchinaBlueprint;
+    std::list<world::Mucchina> mucchine;
 
     // Per frame stuff
     std::list<render::GeometryModel> models;

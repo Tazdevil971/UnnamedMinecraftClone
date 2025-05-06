@@ -1,7 +1,9 @@
 #pragma once
 #include <glm/vec3.hpp>
+#include <memory>
 #include <unordered_map>
 
+#include "AtlasManager.hpp"
 #include "Chunk.hpp"
 
 namespace world {
@@ -26,11 +28,14 @@ public:
 
 private:
     std::unordered_map<glm::ivec3, Chunk, IVec3Hash> chunks;
+    std::shared_ptr<AtlasManager> atlas;
 
 public:
-    World();
+    World(std::shared_ptr<AtlasManager> atlas);
 
-    void cleanup();
+    static std::unique_ptr<World> create(std::shared_ptr<AtlasManager> atlas) {
+        return std::make_unique<World>(atlas);
+    }
 
     template <typename F>
     void getChunkInArea(glm::ivec3 pos, int radius, const F& f);

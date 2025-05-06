@@ -3,16 +3,15 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+#include "Managed.hpp"
 #include "Primitives.hpp"
 #include "Skybox.hpp"
-#include "Managed.hpp"
 
 namespace render {
 
 class SkyboxRenderer {
 public:
     SkyboxRenderer(VkRenderPass renderPass);
-    ~SkyboxRenderer();
 
     void record(VkCommandBuffer commandBuffer, const Camera& camera,
                 float ratio, const Skybox& skybox);
@@ -22,7 +21,6 @@ private:
         glm::mat4 mvp;
     };
 
-    void cleanup();
     void createPipeline(VkRenderPass renderPass);
 
     Ubo skyboxInfoUbo;

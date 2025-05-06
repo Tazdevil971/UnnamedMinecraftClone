@@ -5,8 +5,8 @@
 
 #include <list>
 
-#include "Primitives.hpp"
 #include "Managed.hpp"
+#include "Primitives.hpp"
 
 namespace render {
 

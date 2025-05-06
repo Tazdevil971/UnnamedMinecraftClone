@@ -11,19 +11,24 @@
 #include "ShadowPass.hpp"
 #include "Skybox.hpp"
 
-
 namespace render {
 
 class Renderer {
 public:
     Renderer();
 
+    static std::unique_ptr<Renderer> create() {
+        return std::make_unique<Renderer>();
+    }
+
     void render(const Camera& camera, const Skybox& skybox,
                 const GeometryRenderer::LightInfo& lights,
                 std::list<GeometryModel> models, std::list<UiModel> uiModels,
                 bool windowResized);
 
-    Texture getDepthTexture() const { return shadowPass->getDepthTexture(); }
+    const Texture& getDepthTexture() const {
+        return shadowPass->getDepthTexture();
+    }
 
 private:
     void createCommandPool();

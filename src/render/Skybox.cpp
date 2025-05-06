@@ -68,9 +68,3 @@ Skybox Skybox::make(const std::string &daySkybox,
         nightSkybox, VK_FORMAT_R8G8B8A8_SRGB);
     return skybox;
 }
-
-void Skybox::cleanup() {
-    BufferManager::get().deallocateMeshDefer(mesh);
-    BufferManager::get().deallocateTextureDefer(dayTexture);
-    BufferManager::get().deallocateTextureDefer(nightTexture);
-}

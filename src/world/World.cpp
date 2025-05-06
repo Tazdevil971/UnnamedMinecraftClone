@@ -1,23 +1,17 @@
 #include "World.hpp"
 
+#include "AtlasManager.hpp"
+
 using namespace world;
 using namespace render;
 
-World::World() {}
-
-void World::cleanup() {
-    for (auto& it : chunks) {
-        it.second.cleanup();
-    }
-
-    chunks.clear();
-}
+World::World(std::shared_ptr<AtlasManager> atlas) : atlas{atlas} {}
 
 Chunk& World::getChunk(glm::ivec3 pos) {
     // Get an existing chunk or create a new one
     auto it = chunks.find(pos);
     if (it == chunks.end()) {
-        it = chunks.insert({pos, Chunk::genChunk(pos)}).first;
+        it = chunks.insert({pos, Chunk::genChunk(atlas, pos)}).first;
         return it->second;
     } else {
         return it->second;

@@ -5,17 +5,9 @@
 using namespace world;
 using namespace render;
 
-std::unique_ptr<AtlasManager> AtlasManager::INSTANCE;
-
 AtlasManager::AtlasManager() {
     atlas = BufferManager::get().allocateTexture("assets/block_atlas.png",
                                                  VK_FORMAT_R8G8B8A8_SRGB);
-}
-
-AtlasManager::~AtlasManager() { cleanup(); }
-
-void AtlasManager::cleanup() {
-    BufferManager::get().deallocateTextureDefer(atlas);
 }
 
 AtlasManager::AtlasBounds AtlasManager::getAtlasBounds(Block block,

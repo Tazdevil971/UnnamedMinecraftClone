@@ -5,15 +5,14 @@
 
 #include <list>
 
-#include "Primitives.hpp"
 #include "Managed.hpp"
+#include "Primitives.hpp"
 
 namespace render {
 
 class GeometryRenderer {
 public:
     GeometryRenderer(VkRenderPass renderPass);
-    ~GeometryRenderer();
 
     struct LightInfo {
         glm::vec3 ambientColor;
@@ -22,8 +21,8 @@ public:
     };
 
     void record(VkCommandBuffer commandBuffer, const Camera& camera,
-                float ratio, const LightInfo& lights, Texture depthTexture,
-                std::list<GeometryModel> models);
+                float ratio, const LightInfo& lights,
+                const Texture& depthTexture, std::list<GeometryModel> models);
 
 private:
     struct PushBuffer {
@@ -38,10 +37,8 @@ private:
         glm::vec4 sunColor;
     };
 
-    void cleanup();
-
     void recordSingle(VkCommandBuffer commandBuffer, glm::mat4 vp,
-                      Texture depthTexture, const GeometryModel& model);
+                      const Texture& depthTexture, const GeometryModel& model);
 
     void createPipeline(VkRenderPass renderPass);
 

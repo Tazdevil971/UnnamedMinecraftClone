@@ -14,12 +14,11 @@ public:
     const VkExtent2D SHADOWMAP_EXTENT{2048, 2048};
 
     ShadowPass();
-    ~ShadowPass();
 
     void record(VkCommandBuffer commandBuffer, const Camera& camera,
                 glm::vec3 lightDir, std::list<GeometryModel> models);
 
-    Texture getDepthTexture() const { return depthTexture; }
+    const Texture& getDepthTexture() const { return depthTexture; }
 
     static glm::mat4 computeShadowVP(glm::vec3 center, glm::vec3 lightDir);
 
@@ -27,8 +26,6 @@ private:
     struct PushBuffer {
         glm::mat4 mvp;
     };
-
-    void cleanup();
 
     VkViewport getViewport() const {
         VkViewport viewport{};
