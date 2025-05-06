@@ -16,67 +16,28 @@
 using namespace render;
 
 Renderer::Renderer() {
-    try {
-        shadowPass = std::make_unique<ShadowPass>();
-        forwardPass = std::make_unique<ForwardPass>();
+    shadowPass = std::make_unique<ShadowPass>();
+    forwardPass = std::make_unique<ForwardPass>();
 
-        createCommandPool();
-        createCommandBuffer();
-        createSyncObjects();
-    } catch (...) {
-        cleanup();
-        throw;
-    }
-}
-
-void Renderer::cleanup() {
-    if (imageAvailableSemaphore != VK_NULL_HANDLE) {
-        vkDestroySemaphore(Context::get().getDevice(), imageAvailableSemaphore,
-                           nullptr);
-        imageAvailableSemaphore = VK_NULL_HANDLE;
-    }
-
-    if (renderFinishedSemaphore != VK_NULL_HANDLE) {
-        vkDestroySemaphore(Context::get().getDevice(), renderFinishedSemaphore,
-                           nullptr);
-        renderFinishedSemaphore = VK_NULL_HANDLE;
-    }
-
-    if (inFlightFence != VK_NULL_HANDLE) {
-        vkDestroyFence(Context::get().getDevice(), inFlightFence, nullptr);
-        inFlightFence = VK_NULL_HANDLE;
-    }
-
-    if (commandPool != VK_NULL_HANDLE) {
-        vkDestroyCommandPool(Context::get().getDevice(), commandPool, nullptr);
-        commandPool = VK_NULL_HANDLE;
-    }
-
-    if (shadowPass) {
-        shadowPass->cleanup();
-        shadowPass.reset();
-    }
-
-    if (forwardPass) {
-        forwardPass->cleanup();
-        forwardPass.reset();
-    }
+    createCommandPool();
+    createCommandBuffer();
+    createSyncObjects();
 }
 
 void Renderer::render(const Camera& camera, const Skybox& skybox,
                       const GeometryRenderer::LightInfo& lights,
                       std::list<GeometryModel> models,
                       std::list<UiModel> uiModels, bool windowResized) {
-    vkWaitForFences(Context::get().getDevice(), 1, &inFlightFence, VK_TRUE,
+    vkWaitForFences(Context::get().getDevice(), 1, &*inFlightFence, VK_TRUE,
                     UINT64_MAX);
 
     // The GPU is idle, flush pending buffers
     BufferManager::get().flushDeferOperations();
 
     Swapchain::Frame frame =
-        Swapchain::get().acquireFrame(imageAvailableSemaphore);
+        Swapchain::get().acquireFrame(*imageAvailableSemaphore);
 
-    vkResetFences(Context::get().getDevice(), 1, &inFlightFence);
+    vkResetFences(Context::get().getDevice(), 1, &*inFlightFence);
 
     vkResetCommandBuffer(commandBuffer, 0);
     VkCommandBufferBeginInfo beginInfo{};
@@ -100,20 +61,20 @@ void Renderer::render(const Camera& camera, const Skybox& skybox,
     VkPipelineStageFlags WAIT_STAGES[] = {
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = &imageAvailableSemaphore;
+    submitInfo.pWaitSemaphores = &*imageAvailableSemaphore;
     submitInfo.pWaitDstStageMask = WAIT_STAGES;
 
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
     submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
+    submitInfo.pSignalSemaphores = &*renderFinishedSemaphore;
 
     if (vkQueueSubmit(Context::get().getGraphicsQueue(), 1, &submitInfo,
-                      inFlightFence) != VK_SUCCESS)
+                      *inFlightFence) != VK_SUCCESS)
         throw std::runtime_error{"failed to submit draw command buffer!"};
 
-    Swapchain::get().present(frame, renderFinishedSemaphore, windowResized);
+    Swapchain::get().present(frame, *renderFinishedSemaphore, windowResized);
 }
 
 void Renderer::createCommandPool() {
@@ -124,14 +85,14 @@ void Renderer::createCommandPool() {
         Context::get().getDeviceInfo().queues.graphics.value();
 
     if (vkCreateCommandPool(Context::get().getDevice(), &createInfo, nullptr,
-                            &commandPool) != VK_SUCCESS)
+                            &*commandPool) != VK_SUCCESS)
         throw std::runtime_error{"failed to create command pool!"};
 }
 
 void Renderer::createCommandBuffer() {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = commandPool;
+    allocInfo.commandPool = *commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = 1;
 
@@ -149,14 +110,14 @@ void Renderer::createSyncObjects() {
     fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     if (vkCreateSemaphore(Context::get().getDevice(), &semaphoreCreateInfo,
-                          nullptr, &imageAvailableSemaphore) != VK_SUCCESS)
+                          nullptr, &*imageAvailableSemaphore) != VK_SUCCESS)
         throw std::runtime_error{"failed to create sync objects!"};
 
     if (vkCreateSemaphore(Context::get().getDevice(), &semaphoreCreateInfo,
-                          nullptr, &renderFinishedSemaphore) != VK_SUCCESS)
+                          nullptr, &*renderFinishedSemaphore) != VK_SUCCESS)
         throw std::runtime_error{"failed to create sync objects!"};
 
     if (vkCreateFence(Context::get().getDevice(), &fenceCreateInfo, nullptr,
-                      &inFlightFence) != VK_SUCCESS)
+                      &*inFlightFence) != VK_SUCCESS)
         throw std::runtime_error{"failed to create sync objects!"};
 }

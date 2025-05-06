@@ -4,6 +4,7 @@
 
 #include <cassert>
 
+#include "Managed.hpp"
 #include "Primitives.hpp"
 
 namespace render {
@@ -14,9 +15,11 @@ class Framebuffer {
     friend class render::Swapchain;
 
 public:
+    ~Framebuffer();
+
     VkFramebuffer getFrame(uint32_t idx) const {
         assert(idx < imageCount);
-        return framebuffers[idx];
+        return *framebuffers[idx];
     }
 
     VkExtent2D getExtent() const { return extent; }
@@ -55,14 +58,14 @@ private:
     void createDepthImages();
     void createFramebuffers();
 
-    VkRenderPass renderPass{VK_NULL_HANDLE};
+    VkRenderPass renderPass;
     VkExtent2D extent;
     VkFormat colorFormat;
 
     uint32_t imageCount{0};
     std::vector<Image> colorImages;
     std::vector<Image> depthImages;
-    std::vector<VkFramebuffer> framebuffers;
+    std::vector<ManagedFramebuffer> framebuffers;
 };
 
 }  // namespace render

@@ -4,6 +4,7 @@
 
 #include "BufferManager.hpp"
 #include "Context.hpp"
+#include "Managed.hpp"
 
 using namespace render;
 
@@ -18,19 +19,10 @@ SkyboxRenderer::SkyboxRenderer(VkRenderPass renderPass) {
     }
 }
 
+SkyboxRenderer::~SkyboxRenderer() { cleanup(); }
+
 void SkyboxRenderer::cleanup() {
     BufferManager::get().deallocateUboNow(skyboxInfoUbo);
-
-    if (pipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(Context::get().getDevice(), pipelineLayout,
-                                nullptr);
-        pipelineLayout = VK_NULL_HANDLE;
-    }
-
-    if (pipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(Context::get().getDevice(), pipeline, nullptr);
-        pipeline = VK_NULL_HANDLE;
-    }
 }
 
 void SkyboxRenderer::record(VkCommandBuffer commandBuffer, const Camera& camera,
@@ -39,14 +31,15 @@ void SkyboxRenderer::record(VkCommandBuffer commandBuffer, const Camera& camera,
 
     glm::mat4 vp = camera.computeSkyboxVPMat(ratio);
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      *pipeline);
 
     VkDescriptorSet descriptorSets[3] = {skybox.dayTexture.descriptor,
                                          skybox.nightTexture.descriptor,
                                          skyboxInfoUbo.descriptor};
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            pipelineLayout, 0, 3, descriptorSets, 0, nullptr);
+                            *pipelineLayout, 0, 3, descriptorSets, 0, nullptr);
 
     skybox.mesh.bind(commandBuffer);
 
@@ -55,7 +48,7 @@ void SkyboxRenderer::record(VkCommandBuffer commandBuffer, const Camera& camera,
 
     PushBuffer pushBuffer = {mvp};
 
-    vkCmdPushConstants(commandBuffer, pipelineLayout,
+    vkCmdPushConstants(commandBuffer, *pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushBuffer),
                        &pushBuffer);
 
@@ -81,24 +74,24 @@ void SkyboxRenderer::createPipeline(VkRenderPass renderPass) {
 
     if (vkCreatePipelineLayout(Context::get().getDevice(),
                                &pipelineLayoutCreateInfo, nullptr,
-                               &pipelineLayout) != VK_SUCCESS)
+                               &*pipelineLayout) != VK_SUCCESS)
         throw std::runtime_error{"failed to create pipeline layout!"};
 
-    auto vertShaderModule =
-        Context::get().loadShaderModule("SkyboxVert.vert.spv");
-    auto fragShaderModule =
-        Context::get().loadShaderModule("SkyboxFrag.frag.spv");
+    ManagedShaderModule vertShaderModule{
+        Context::get().loadShaderModule("SkyboxVert.vert.spv")};
+    ManagedShaderModule fragShaderModule{
+        Context::get().loadShaderModule("SkyboxFrag.frag.spv")};
 
     VkPipelineShaderStageCreateInfo vertStageInfo{};
     vertStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vertStageInfo.module = vertShaderModule;
+    vertStageInfo.module = *vertShaderModule;
     vertStageInfo.pName = "main";
 
     VkPipelineShaderStageCreateInfo fragStageInfo{};
     fragStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    fragStageInfo.module = fragShaderModule;
+    fragStageInfo.module = *fragShaderModule;
     fragStageInfo.pName = "main";
 
     VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
@@ -211,7 +204,7 @@ void SkyboxRenderer::createPipeline(VkRenderPass renderPass) {
     pipelineCreateInfo.pDepthStencilState = &depthStencilStateInfo;
     pipelineCreateInfo.pColorBlendState = &colorBlendStateInfo;
     pipelineCreateInfo.pDynamicState = &dynamicStateInfo;
-    pipelineCreateInfo.layout = pipelineLayout;
+    pipelineCreateInfo.layout = *pipelineLayout;
     pipelineCreateInfo.renderPass = renderPass;
     pipelineCreateInfo.subpass = 0;
     pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -219,11 +212,6 @@ void SkyboxRenderer::createPipeline(VkRenderPass renderPass) {
 
     if (vkCreateGraphicsPipelines(Context::get().getDevice(), VK_NULL_HANDLE, 1,
                                   &pipelineCreateInfo, nullptr,
-                                  &pipeline) != VK_SUCCESS)
+                                  &*pipeline) != VK_SUCCESS)
         throw std::runtime_error{"failed to create graphics pipeline"};
-
-    vkDestroyShaderModule(Context::get().getDevice(), vertShaderModule,
-                          nullptr);
-    vkDestroyShaderModule(Context::get().getDevice(), fragShaderModule,
-                          nullptr);
 }

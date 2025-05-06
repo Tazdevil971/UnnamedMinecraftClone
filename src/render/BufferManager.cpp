@@ -8,77 +8,29 @@
 
 #include "../Utils.hpp"
 #include "Context.hpp"
+#include "Primitives.hpp"
 
 using namespace render;
 
 std::unique_ptr<BufferManager> BufferManager::INSTANCE;
 
 BufferManager::BufferManager(size_t uboPoolSize, size_t texturePoolSize) {
-    try {
-        createVma();
-        createCommandPool();
-        createCommandBuffer();
-        createSyncObjects();
+    createCommandPool();
+    createCommandBuffer();
+    createSyncObjects();
 
-        // Create ubo stuff
-        createUboLayout();
-        createUboDescriptorPool(uboPoolSize);
-        createUboDescriptorSets(uboPoolSize);
+    // Create ubo stuff
+    createUboLayout();
+    createUboDescriptorPool(uboPoolSize);
+    createUboDescriptorSets(uboPoolSize);
 
-        // Create texture stuff
-        createTextureLayout();
-        createTextureDescriptorPool(texturePoolSize);
-        createTextureDescriptorSets(texturePoolSize);
-    } catch (...) {
-        cleanup();
-        throw;
-    }
+    // Create texture stuff
+    createTextureLayout();
+    createTextureDescriptorPool(texturePoolSize);
+    createTextureDescriptorSets(texturePoolSize);
 }
 
-BufferManager::~BufferManager() { cleanup(); }
-
-void BufferManager::cleanup() {
-    flushDeferOperations();
-
-    if (uboDescriptorPool != VK_NULL_HANDLE) {
-        vkDestroyDescriptorPool(Context::get().getDevice(), uboDescriptorPool,
-                                nullptr);
-        uboDescriptorPool = VK_NULL_HANDLE;
-    }
-
-    if (uboLayout != VK_NULL_HANDLE) {
-        vkDestroyDescriptorSetLayout(Context::get().getDevice(), uboLayout,
-                                     nullptr);
-        uboLayout = VK_NULL_HANDLE;
-    }
-
-    if (textureDescriptorPool != VK_NULL_HANDLE) {
-        vkDestroyDescriptorPool(Context::get().getDevice(),
-                                textureDescriptorPool, nullptr);
-        textureDescriptorPool = VK_NULL_HANDLE;
-    }
-
-    if (textureLayout != VK_NULL_HANDLE) {
-        vkDestroyDescriptorSetLayout(Context::get().getDevice(), textureLayout,
-                                     nullptr);
-        textureLayout = VK_NULL_HANDLE;
-    }
-
-    if (syncFence != VK_NULL_HANDLE) {
-        vkDestroyFence(Context::get().getDevice(), syncFence, nullptr);
-        syncFence = VK_NULL_HANDLE;
-    }
-
-    if (commandPool != VK_NULL_HANDLE) {
-        vkDestroyCommandPool(Context::get().getDevice(), commandPool, nullptr);
-        commandPool = VK_NULL_HANDLE;
-    }
-
-    if (vma != VK_NULL_HANDLE) {
-        vmaDestroyAllocator(vma);
-        vma = VK_NULL_HANDLE;
-    }
-}
+BufferManager::~BufferManager() { flushDeferOperations(); }
 
 void BufferManager::flushDeferOperations() {
     for (auto& image : imageDeallocateDefer) deallocateImageNow(image);
@@ -114,18 +66,19 @@ BaseMesh BufferManager::allocateMeshInner(
                  VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
                  stagingBuffer, stagingMemory);
 
-    auto stagingDefer =
-        Defer{[=]() { vmaDestroyBuffer(vma, stagingBuffer, stagingMemory); }};
+    auto stagingDefer = Defer{[=]() {
+        vmaDestroyBuffer(Context::get().getVma(), stagingBuffer, stagingMemory);
+    }};
 
     void* data;
-    vmaMapMemory(vma, stagingMemory, &data);
+    vmaMapMemory(Context::get().getVma(), stagingMemory, &data);
 
     std::memcpy(reinterpret_cast<uint8_t*>(data) + vertexOffset, vertexData,
                 vertexDataSize);
     std::memcpy(reinterpret_cast<uint8_t*>(data) + indicesOffset, indicesData,
                 indicesDataSize);
 
-    vmaUnmapMemory(vma, stagingMemory);
+    vmaUnmapMemory(Context::get().getVma(), stagingMemory);
 
     // Then create actual buffer
     createBuffer(bufferSize,
@@ -134,7 +87,8 @@ BaseMesh BufferManager::allocateMeshInner(
                      VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                  VMA_MEMORY_USAGE_AUTO, 0, buffer, memory);
 
-    auto outputDefer = Defer{[=]() { vmaDestroyBuffer(vma, buffer, memory); }};
+    auto outputDefer = Defer{
+        [=]() { vmaDestroyBuffer(Context::get().getVma(), buffer, memory); }};
 
     // Finally copy the buffer and transfer to graphics queue
     startRecording();
@@ -153,7 +107,7 @@ void BufferManager::deallocateMeshDefer(BaseMesh& mesh) {
 
 void BufferManager::deallocateMeshNow(BaseMesh& mesh) {
     if (mesh.memory != VK_NULL_HANDLE)
-        vmaDestroyBuffer(vma, mesh.buffer, mesh.memory);
+        vmaDestroyBuffer(Context::get().getVma(), mesh.buffer, mesh.memory);
 
     mesh = BaseMesh{};
 }
@@ -167,7 +121,7 @@ Ubo BufferManager::allocateUbo(size_t size) {
         VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT, buffer, memory);
 
     void* ptr;
-    vmaMapMemory(vma, memory, &ptr);
+    vmaMapMemory(Context::get().getVma(), memory, &ptr);
 
     VkDescriptorSet descriptor = uboDescriptorSets.back();
     uboDescriptorSets.pop_back();
@@ -204,8 +158,8 @@ void BufferManager::deallocateUboNow(Ubo& ubo) {
         uboDescriptorSets.push_back(ubo.descriptor);
 
     if (ubo.memory != VK_NULL_HANDLE) {
-        vmaUnmapMemory(vma, ubo.memory);
-        vmaDestroyBuffer(vma, ubo.buffer, ubo.memory);
+        vmaUnmapMemory(Context::get().getVma(), ubo.memory);
+        vmaDestroyBuffer(Context::get().getVma(), ubo.buffer, ubo.memory);
     }
 
     ubo = Ubo{};
@@ -221,7 +175,8 @@ Image BufferManager::allocateDepthImage(uint32_t width, uint32_t height) {
                     VK_IMAGE_USAGE_SAMPLED_BIT,
                 VMA_MEMORY_USAGE_AUTO, 0, image, memory);
 
-    auto outputDefer = Defer{[=]() { vmaDestroyImage(vma, image, memory); }};
+    auto outputDefer = Defer{
+        [=]() { vmaDestroyImage(Context::get().getVma(), image, memory); }};
 
     startRecording();
     transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -268,19 +223,21 @@ Image BufferManager::allocateImage(const uint8_t* pixels, uint32_t height,
                  VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
                  stagingBuffer, stagingMemory);
 
-    auto stagingDefer =
-        Defer{[=]() { vmaDestroyBuffer(vma, stagingBuffer, stagingMemory); }};
+    auto stagingDefer = Defer{[=]() {
+        vmaDestroyBuffer(Context::get().getVma(), stagingBuffer, stagingMemory);
+    }};
 
     void* data;
-    vmaMapMemory(vma, stagingMemory, &data);
+    vmaMapMemory(Context::get().getVma(), stagingMemory, &data);
     memcpy(data, pixels, imageSize);
-    vmaUnmapMemory(vma, stagingMemory);
+    vmaUnmapMemory(Context::get().getVma(), stagingMemory);
 
     createImage(width, height, format,
                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VMA_MEMORY_USAGE_AUTO, 0, image, memory);
 
-    auto outputDefer = Defer{[=]() { vmaDestroyImage(vma, image, memory); }};
+    auto outputDefer = Defer{
+        [=]() { vmaDestroyImage(Context::get().getVma(), image, memory); }};
 
     startRecording();
     transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -307,7 +264,7 @@ void BufferManager::deallocateImageNow(Image& image) {
         vkDestroyImageView(Context::get().getDevice(), image.view, nullptr);
 
     if (image.memory != VK_NULL_HANDLE)
-        vmaDestroyImage(vma, image.image, image.memory);
+        vmaDestroyImage(Context::get().getVma(), image.image, image.memory);
 
     image = Image{};
 }
@@ -455,21 +412,6 @@ void BufferManager::deallocateTextureNow(Texture& texture) {
     texture = Texture{};
 }
 
-void BufferManager::createVma() {
-    VmaAllocatorCreateInfo createInfo{};
-    createInfo.flags = 0;
-    createInfo.vulkanApiVersion = VK_API_VERSION_1_0;
-    createInfo.instance = Context::get().getInstance();
-    createInfo.physicalDevice = Context::get().getDeviceInfo().device;
-    createInfo.device = Context::get().getDevice();
-
-    if (Context::get().getDeviceInfo().hasKHRDedicatedAllocation)
-        createInfo.flags |= VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT;
-
-    if (vmaCreateAllocator(&createInfo, &vma) != VK_SUCCESS)
-        throw std::runtime_error{"failed to create VMA!"};
-}
-
 void BufferManager::createCommandPool() {
     VkCommandPoolCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -479,14 +421,14 @@ void BufferManager::createCommandPool() {
         Context::get().getDeviceInfo().queues.graphics.value();
 
     if (vkCreateCommandPool(Context::get().getDevice(), &createInfo, nullptr,
-                            &commandPool) != VK_SUCCESS)
+                            &*commandPool) != VK_SUCCESS)
         throw std::runtime_error{"failed to create command pool!"};
 }
 
 void BufferManager::createCommandBuffer() {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = commandPool;
+    allocInfo.commandPool = *commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = 1;
 
@@ -500,7 +442,7 @@ void BufferManager::createSyncObjects() {
     createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 
     if (vkCreateFence(Context::get().getDevice(), &createInfo, nullptr,
-                      &syncFence) != VK_SUCCESS)
+                      &*syncFence) != VK_SUCCESS)
         throw std::runtime_error{"failed to create sync fence!"};
 }
 
@@ -520,7 +462,7 @@ void BufferManager::createUboLayout() {
 
     if (vkCreateDescriptorSetLayout(Context::get().getDevice(),
                                     &descriptorSetLayoutInfo, nullptr,
-                                    &uboLayout) != VK_SUCCESS)
+                                    &*uboLayout) != VK_SUCCESS)
         throw std::runtime_error{
             "failed to create descriptor set layout info!"};
 }
@@ -537,19 +479,19 @@ void BufferManager::createUboDescriptorPool(uint32_t size) {
     poolInfo.maxSets = size;
 
     if (vkCreateDescriptorPool(Context::get().getDevice(), &poolInfo, nullptr,
-                               &uboDescriptorPool) != VK_SUCCESS)
+                               &*uboDescriptorPool) != VK_SUCCESS)
         throw std::runtime_error{"failed to create descriptor pool!"};
 }
 
 void BufferManager::createUboDescriptorSets(uint32_t size) {
     std::vector<VkDescriptorSetLayout> layouts;
-    layouts.resize(size, uboLayout);
+    layouts.resize(size, *uboLayout);
 
     uboDescriptorSets.resize(size);
 
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = uboDescriptorPool;
+    allocInfo.descriptorPool = *uboDescriptorPool;
     allocInfo.descriptorSetCount = size;
     allocInfo.pSetLayouts = layouts.data();
 
@@ -575,7 +517,7 @@ void BufferManager::createTextureLayout() {
 
     if (vkCreateDescriptorSetLayout(Context::get().getDevice(),
                                     &descriptorSetLayoutInfo, nullptr,
-                                    &textureLayout) != VK_SUCCESS)
+                                    &*textureLayout) != VK_SUCCESS)
         throw std::runtime_error{
             "failed to create descriptor set layout info!"};
 }
@@ -592,19 +534,19 @@ void BufferManager::createTextureDescriptorPool(uint32_t size) {
     poolInfo.maxSets = size;
 
     if (vkCreateDescriptorPool(Context::get().getDevice(), &poolInfo, nullptr,
-                               &textureDescriptorPool) != VK_SUCCESS)
+                               &*textureDescriptorPool) != VK_SUCCESS)
         throw std::runtime_error{"failed to create descriptor pool!"};
 }
 
 void BufferManager::createTextureDescriptorSets(uint32_t size) {
     std::vector<VkDescriptorSetLayout> layouts;
-    layouts.resize(size, textureLayout);
+    layouts.resize(size, *textureLayout);
 
     textureDescriptorSets.resize(size);
 
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = textureDescriptorPool;
+    allocInfo.descriptorPool = *textureDescriptorPool;
     allocInfo.descriptorSetCount = size;
     allocInfo.pSetLayouts = layouts.data();
 
@@ -628,9 +570,10 @@ void BufferManager::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
     allocInfo.flags = vmaFlags;
     allocInfo.usage = vmaUsage;
 
-    if (vmaCreateBuffer(vma, &createInfo, &allocInfo, &outBuffer, &outMemory,
-                        nullptr) != VK_SUCCESS)
-        throw std::runtime_error{"failed to create vma buffer!"};
+    if (vmaCreateBuffer(Context::get().getVma(), &createInfo, &allocInfo,
+                        &outBuffer, &outMemory, nullptr) != VK_SUCCESS)
+        throw std::runtime_error{
+            "failed to create Context::get().getVma() buffer!"};
 }
 
 void BufferManager::createImage(uint32_t width, uint32_t height,
@@ -657,9 +600,10 @@ void BufferManager::createImage(uint32_t width, uint32_t height,
     allocInfo.flags = vmaFlags;
     allocInfo.usage = vmaUsage;
 
-    if (vmaCreateImage(vma, &createInfo, &allocInfo, &outImage, &outMemory,
-                       nullptr) != VK_SUCCESS)
-        throw std::runtime_error{"failed to create vma image!"};
+    if (vmaCreateImage(Context::get().getVma(), &createInfo, &allocInfo,
+                       &outImage, &outMemory, nullptr) != VK_SUCCESS)
+        throw std::runtime_error{
+            "failed to create Context::get().getVma() image!"};
 }
 
 void BufferManager::createImageView(VkImage image, VkFormat format,
@@ -781,10 +725,11 @@ void BufferManager::submitAndWait() {
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    vkQueueSubmit(Context::get().getGraphicsQueue(), 1, &submitInfo, syncFence);
-    vkWaitForFences(Context::get().getDevice(), 1, &syncFence, VK_TRUE,
+    vkQueueSubmit(Context::get().getGraphicsQueue(), 1, &submitInfo,
+                  *syncFence);
+    vkWaitForFences(Context::get().getDevice(), 1, &*syncFence, VK_TRUE,
                     UINT64_MAX);
 
     vkResetCommandBuffer(commandBuffer, 0);
-    vkResetFences(Context::get().getDevice(), 1, &syncFence);
+    vkResetFences(Context::get().getDevice(), 1, &*syncFence);
 }

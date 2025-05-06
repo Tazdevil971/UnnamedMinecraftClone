@@ -1,15 +1,20 @@
 #pragma once
 
-#include <vk_mem_alloc.h>
 #include <vulkan/vulkan_core.h>
 
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
-#include "Primitives.hpp"
+#include "Managed.hpp"
 
 namespace render {
+
+struct Ubo;
+struct BaseMesh;
+struct Image;
+struct Texture;
 
 class BufferManager {
 private:
@@ -43,7 +48,7 @@ public:
     void deallocateMeshNow(BaseMesh& mesh);
 
     // UBO stuff
-    VkDescriptorSetLayout getUboLayout() const { return uboLayout; }
+    VkDescriptorSetLayout getUboLayout() const { return *uboLayout; }
 
     Ubo allocateUbo(size_t size);
 
@@ -63,7 +68,7 @@ public:
     void deallocateImageNow(Image& image);
 
     // Texture stuff
-    VkDescriptorSetLayout getTextureLayout() const { return textureLayout; }
+    VkDescriptorSetLayout getTextureLayout() const { return *textureLayout; }
 
     Texture allocateTexture(const std::string& path, VkFormat format);
     Texture allocateDepthTexture(uint32_t width, uint32_t height);
@@ -80,7 +85,6 @@ private:
 
     void cleanup();
 
-    void createVma();
     void createCommandPool();
     void createCommandBuffer();
     void createSyncObjects();
@@ -114,24 +118,22 @@ private:
                                VkImageLayout newLayout, VkFormat format);
     void submitAndWait();
 
-    VmaAllocator vma{VK_NULL_HANDLE};
-
     std::vector<BaseMesh> meshDeallocateDefer;
     std::vector<Ubo> uboDeallocateDefer;
     std::vector<Image> imageDeallocateDefer;
     std::vector<Texture> textureDeallocateDefer;
 
     std::vector<VkDescriptorSet> textureDescriptorSets;
-    VkDescriptorSetLayout textureLayout{VK_NULL_HANDLE};
-    VkDescriptorPool textureDescriptorPool{VK_NULL_HANDLE};
+    ManagedDescriptorSetLayout textureLayout;
+    ManagedDescriptorPool textureDescriptorPool;
 
     std::vector<VkDescriptorSet> uboDescriptorSets;
-    VkDescriptorSetLayout uboLayout{VK_NULL_HANDLE};
-    VkDescriptorPool uboDescriptorPool{VK_NULL_HANDLE};
+    ManagedDescriptorSetLayout uboLayout;
+    ManagedDescriptorPool uboDescriptorPool;
 
-    VkCommandPool commandPool{VK_NULL_HANDLE};
-    VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
-    VkFence syncFence{VK_NULL_HANDLE};
+    ManagedCommandPool commandPool;
+    VkCommandBuffer commandBuffer;
+    ManagedFence syncFence;
 };
 
 template <typename T>

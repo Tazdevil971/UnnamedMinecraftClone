@@ -4,14 +4,15 @@
 #include <stdexcept>
 
 #include "Framebuffer.hpp"
+#include "Managed.hpp"
 
 namespace render {
 
 class Swapchain {
-   private:
+private:
     static std::unique_ptr<Swapchain> INSTANCE;
 
-   public:
+public:
     static void create() { INSTANCE.reset(new Swapchain()); }
 
     static Swapchain& get() {
@@ -23,8 +24,6 @@ class Swapchain {
     }
 
     static void destroy() { INSTANCE.reset(); }
-
-    ~Swapchain();
 
     struct Frame {
         uint32_t index;
@@ -41,10 +40,8 @@ class Swapchain {
 
     std::shared_ptr<Framebuffer> createFramebuffer(VkRenderPass renderPass);
 
-   private:
+private:
     Swapchain();
-
-    void cleanup();
 
     struct Shape {
         VkExtent2D extent;
@@ -59,7 +56,7 @@ class Swapchain {
 
     std::shared_ptr<Framebuffer> framebuffer;
 
-    VkSwapchainKHR swapchain{VK_NULL_HANDLE};
+    ManagedSwapchain swapchain;
     VkExtent2D extent;
     VkFormat colorFormat;
 };

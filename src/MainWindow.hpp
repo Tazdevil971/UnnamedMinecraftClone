@@ -12,6 +12,7 @@
 class MainWindow : public render::Window {
 public:
     MainWindow();
+    ~MainWindow();
 
     void cleanup();
 

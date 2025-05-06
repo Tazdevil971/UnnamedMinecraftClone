@@ -26,10 +26,10 @@ public:
         int selected_block;
     };
 
-    Window(std::string name);
+    Window(std::string name, size_t uboPoolSize, size_t texturePoolSize);
+    ~Window();
 
     void mainLoop();
-    void cleanup();
 
     float getTime();
 
@@ -37,9 +37,9 @@ protected:
     virtual void onFrame(InputState &input) {}
     virtual void onResize(int width, int height) {}
 
-    GLFWwindow *getWindow() const { return window; }
-
 private:
+    void cleanup();
+
     static void glfwOnResizeCallback(GLFWwindow *window, int width, int height);
 
     GLFWwindow *window{nullptr};

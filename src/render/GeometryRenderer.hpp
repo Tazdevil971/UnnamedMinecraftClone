@@ -6,14 +6,14 @@
 #include <list>
 
 #include "Primitives.hpp"
+#include "Managed.hpp"
 
 namespace render {
 
 class GeometryRenderer {
 public:
     GeometryRenderer(VkRenderPass renderPass);
-
-    void cleanup();
+    ~GeometryRenderer();
 
     struct LightInfo {
         glm::vec3 ambientColor;
@@ -38,6 +38,8 @@ private:
         glm::vec4 sunColor;
     };
 
+    void cleanup();
+
     void recordSingle(VkCommandBuffer commandBuffer, glm::mat4 vp,
                       Texture depthTexture, const GeometryModel& model);
 
@@ -45,8 +47,8 @@ private:
 
     Ubo lightInfoUbo;
 
-    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
-    VkPipeline pipeline{VK_NULL_HANDLE};
+    ManagedPipelineLayout pipelineLayout;
+    ManagedPipeline pipeline;
 };
 
 }  // namespace render

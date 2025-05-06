@@ -2,10 +2,9 @@
 
 #include <vulkan/vulkan_core.h>
 
-#include <cmath>
-
 #include "BufferManager.hpp"
 #include "Context.hpp"
+#include "Managed.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
 
@@ -25,29 +24,10 @@ ShadowPass::ShadowPass() {
     }
 }
 
+ShadowPass::~ShadowPass() { cleanup(); }
+
 void ShadowPass::cleanup() {
-    if (renderPass != VK_NULL_HANDLE) {
-        vkDestroyRenderPass(Context::get().getDevice(), renderPass, nullptr);
-        renderPass = VK_NULL_HANDLE;
-    }
-
-    if (framebuffer != VK_NULL_HANDLE) {
-        vkDestroyFramebuffer(Context::get().getDevice(), framebuffer, nullptr);
-        framebuffer = VK_NULL_HANDLE;
-    }
-
     BufferManager::get().deallocateTextureNow(depthTexture);
-
-    if (pipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(Context::get().getDevice(), pipelineLayout,
-                                nullptr);
-        pipelineLayout = VK_NULL_HANDLE;
-    }
-
-    if (pipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(Context::get().getDevice(), pipeline, nullptr);
-        pipeline = VK_NULL_HANDLE;
-    }
 }
 
 void ShadowPass::record(VkCommandBuffer commandBuffer, const Camera& camera,
@@ -57,8 +37,8 @@ void ShadowPass::record(VkCommandBuffer commandBuffer, const Camera& camera,
 
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = renderPass;
-    renderPassBeginInfo.framebuffer = framebuffer;
+    renderPassBeginInfo.renderPass = *renderPass;
+    renderPassBeginInfo.framebuffer = *framebuffer;
     renderPassBeginInfo.renderArea = scissor;
 
     VkClearValue clearValue = {};
@@ -70,7 +50,8 @@ void ShadowPass::record(VkCommandBuffer commandBuffer, const Camera& camera,
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      *pipeline);
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo,
                          VK_SUBPASS_CONTENTS_INLINE);
@@ -93,7 +74,7 @@ void ShadowPass::recordSingle(VkCommandBuffer commandBuffer, glm::mat4 vp,
 
     PushBuffer pushBuffer = {mvp};
 
-    vkCmdPushConstants(commandBuffer, pipelineLayout,
+    vkCmdPushConstants(commandBuffer, *pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushBuffer),
                        &pushBuffer);
 
@@ -165,7 +146,7 @@ void ShadowPass::createRenderPass() {
     renderPassCreateInfo.dependencyCount = 2;
     renderPassCreateInfo.pDependencies = dependencies;
     if (vkCreateRenderPass(Context::get().getDevice(), &renderPassCreateInfo,
-                           nullptr, &renderPass) != VK_SUCCESS)
+                           nullptr, &*renderPass) != VK_SUCCESS)
         throw std::runtime_error{"failed to create render pass!"};
 }
 
@@ -174,7 +155,7 @@ void ShadowPass::createFramebuffer() {
 
     VkFramebufferCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    createInfo.renderPass = renderPass;
+    createInfo.renderPass = *renderPass;
     createInfo.attachmentCount = 1;
     createInfo.pAttachments = &depthImage.view;
     createInfo.width = depthImage.width;
@@ -182,7 +163,7 @@ void ShadowPass::createFramebuffer() {
     createInfo.layers = 1;
 
     if (vkCreateFramebuffer(Context::get().getDevice(), &createInfo, nullptr,
-                            &framebuffer) != VK_SUCCESS)
+                            &*framebuffer) != VK_SUCCESS)
         throw std::runtime_error{"failed to create framebuffer!"};
 }
 
@@ -201,24 +182,24 @@ void ShadowPass::createPipeline() {
 
     if (vkCreatePipelineLayout(Context::get().getDevice(),
                                &pipelineLayoutCreateInfo, nullptr,
-                               &pipelineLayout) != VK_SUCCESS)
+                               &*pipelineLayout) != VK_SUCCESS)
         throw std::runtime_error{"failed to create pipeline layout!"};
 
-    auto vertShaderModule =
-        Context::get().loadShaderModule("ShadowVert.vert.spv");
-    auto fragShaderModule =
-        Context::get().loadShaderModule("ShadowFrag.frag.spv");
+    ManagedShaderModule vertShaderModule{
+        Context::get().loadShaderModule("ShadowVert.vert.spv")};
+    ManagedShaderModule fragShaderModule{
+        Context::get().loadShaderModule("ShadowFrag.frag.spv")};
 
     VkPipelineShaderStageCreateInfo vertStageInfo{};
     vertStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vertStageInfo.module = vertShaderModule;
+    vertStageInfo.module = *vertShaderModule;
     vertStageInfo.pName = "main";
 
     VkPipelineShaderStageCreateInfo fragStageInfo{};
     fragStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    fragStageInfo.module = fragShaderModule;
+    fragStageInfo.module = *fragShaderModule;
     fragStageInfo.pName = "main";
 
     VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
@@ -331,19 +312,14 @@ void ShadowPass::createPipeline() {
     pipelineCreateInfo.pDepthStencilState = &depthStencilStateInfo;
     pipelineCreateInfo.pColorBlendState = &colorBlendStateInfo;
     pipelineCreateInfo.pDynamicState = &dynamicStateInfo;
-    pipelineCreateInfo.layout = pipelineLayout;
-    pipelineCreateInfo.renderPass = renderPass;
+    pipelineCreateInfo.layout = *pipelineLayout;
+    pipelineCreateInfo.renderPass = *renderPass;
     pipelineCreateInfo.subpass = 0;
     pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
     pipelineCreateInfo.basePipelineIndex = -1;
 
     if (vkCreateGraphicsPipelines(Context::get().getDevice(), VK_NULL_HANDLE, 1,
                                   &pipelineCreateInfo, nullptr,
-                                  &pipeline) != VK_SUCCESS)
+                                  &*pipeline) != VK_SUCCESS)
         throw std::runtime_error{"failed to create graphics pipeline"};
-
-    vkDestroyShaderModule(Context::get().getDevice(), vertShaderModule,
-                          nullptr);
-    vkDestroyShaderModule(Context::get().getDevice(), fragShaderModule,
-                          nullptr);
 }

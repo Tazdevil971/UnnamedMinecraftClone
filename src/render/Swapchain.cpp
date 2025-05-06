@@ -9,47 +9,26 @@ using namespace render;
 
 std::unique_ptr<Swapchain> Swapchain::INSTANCE;
 
-Swapchain::Swapchain() {
-    try {
-        createSwapchain();
-    } catch (...) {
-        cleanup();
-        throw;
-    }
-}
-
-Swapchain::~Swapchain() { cleanup(); }
+Swapchain::Swapchain() { createSwapchain(); }
 
 void Swapchain::recreate() {
     waitForRecreateReady();
 
     createSwapchain();
 
-    if (framebuffer) framebuffer->recreate(swapchain, extent, colorFormat);
-}
-
-void Swapchain::cleanup() {
-    if (swapchain != VK_NULL_HANDLE) {
-        vkDestroySwapchainKHR(Context::get().getDevice(), swapchain, nullptr);
-        swapchain = VK_NULL_HANDLE;
-    }
-
-    if (framebuffer) {
-        framebuffer->cleanup();
-        framebuffer.reset();
-    }
+    if (framebuffer) framebuffer->recreate(*swapchain, extent, colorFormat);
 }
 
 Swapchain::Frame Swapchain::acquireFrame(VkSemaphore semaphore) {
     uint32_t index;
     VkResult result =
-        vkAcquireNextImageKHR(Context::get().getDevice(), swapchain, UINT64_MAX,
-                              semaphore, VK_NULL_HANDLE, &index);
+        vkAcquireNextImageKHR(Context::get().getDevice(), *swapchain,
+                              UINT64_MAX, semaphore, VK_NULL_HANDLE, &index);
 
     while (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreate();
 
-        result = vkAcquireNextImageKHR(Context::get().getDevice(), swapchain,
+        result = vkAcquireNextImageKHR(Context::get().getDevice(), *swapchain,
                                        UINT64_MAX, semaphore, VK_NULL_HANDLE,
                                        &index);
     }
@@ -65,7 +44,7 @@ std::shared_ptr<Framebuffer> Swapchain::createFramebuffer(
     assert(!framebuffer);
 
     framebuffer = std::shared_ptr<Framebuffer>(
-        new Framebuffer(swapchain, extent, colorFormat, renderPass));
+        new Framebuffer(*swapchain, extent, colorFormat, renderPass));
     return framebuffer;
 }
 
@@ -77,7 +56,7 @@ void Swapchain::present(const Frame &frame, VkSemaphore semaphore,
     presentInfo.pWaitSemaphores = &semaphore;
     presentInfo.pResults = nullptr;
     presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = &swapchain;
+    presentInfo.pSwapchains = &*swapchain;
     presentInfo.pImageIndices = &frame.index;
 
     VkResult result =
@@ -92,7 +71,7 @@ void Swapchain::present(const Frame &frame, VkSemaphore semaphore,
 
 void Swapchain::createSwapchain() {
     Shape shape = getSwapchainShape();
-    VkSwapchainKHR oldSwapchain = swapchain;
+    VkSwapchainKHR oldSwapchain = *swapchain;
 
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -128,7 +107,7 @@ void Swapchain::createSwapchain() {
     }
 
     if (vkCreateSwapchainKHR(Context::get().getDevice(), &createInfo, nullptr,
-                             &swapchain) != VK_SUCCESS)
+                             &*swapchain) != VK_SUCCESS)
         throw std::runtime_error{"failed to create swapchain!"};
 
     if (oldSwapchain != VK_NULL_HANDLE)

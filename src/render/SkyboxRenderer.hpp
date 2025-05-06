@@ -5,14 +5,14 @@
 
 #include "Primitives.hpp"
 #include "Skybox.hpp"
+#include "Managed.hpp"
 
 namespace render {
 
 class SkyboxRenderer {
 public:
     SkyboxRenderer(VkRenderPass renderPass);
-
-    void cleanup();
+    ~SkyboxRenderer();
 
     void record(VkCommandBuffer commandBuffer, const Camera& camera,
                 float ratio, const Skybox& skybox);
@@ -22,12 +22,13 @@ private:
         glm::mat4 mvp;
     };
 
+    void cleanup();
     void createPipeline(VkRenderPass renderPass);
 
     Ubo skyboxInfoUbo;
 
-    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
-    VkPipeline pipeline{VK_NULL_HANDLE};
+    ManagedPipelineLayout pipelineLayout;
+    ManagedPipeline pipeline;
 };
 
 }  // namespace render

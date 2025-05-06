@@ -10,39 +10,12 @@
 using namespace render;
 
 ForwardPass::ForwardPass() {
-    try {
-        createRenderPass();
-        framebuffer = Swapchain::get().createFramebuffer(renderPass);
+    createRenderPass();
+    framebuffer = Swapchain::get().createFramebuffer(*renderPass);
 
-        skyboxRenderer = std::make_unique<SkyboxRenderer>(renderPass);
-        geometryRenderer = std::make_unique<GeometryRenderer>(renderPass);
-        uiRenderer = std::make_unique<UiRenderer>(renderPass);
-    } catch (...) {
-        cleanup();
-        throw;
-    }
-}
-
-void ForwardPass::cleanup() {
-    if (skyboxRenderer) {
-        skyboxRenderer->cleanup();
-        skyboxRenderer.reset();
-    }
-
-    if (geometryRenderer) {
-        geometryRenderer->cleanup();
-        geometryRenderer.reset();
-    }
-
-    if (uiRenderer) {
-        uiRenderer->cleanup();
-        uiRenderer.reset();
-    }
-
-    if (renderPass != VK_NULL_HANDLE) {
-        vkDestroyRenderPass(Context::get().getDevice(), renderPass, nullptr);
-        renderPass = VK_NULL_HANDLE;
-    }
+    skyboxRenderer = std::make_unique<SkyboxRenderer>(*renderPass);
+    geometryRenderer = std::make_unique<GeometryRenderer>(*renderPass);
+    uiRenderer = std::make_unique<UiRenderer>(*renderPass);
 }
 
 void ForwardPass::record(VkCommandBuffer commandBuffer, Swapchain::Frame frame,
@@ -60,7 +33,7 @@ void ForwardPass::record(VkCommandBuffer commandBuffer, Swapchain::Frame frame,
 
     VkRenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.renderPass = renderPass;
+    renderPassBeginInfo.renderPass = *renderPass;
     renderPassBeginInfo.framebuffer = framebuffer->getFrame(frame.index);
     renderPassBeginInfo.renderArea = scissor;
 
@@ -145,6 +118,6 @@ void ForwardPass::createRenderPass() {
     renderPassCreateInfo.dependencyCount = 1;
     renderPassCreateInfo.pDependencies = &dependency;
     if (vkCreateRenderPass(Context::get().getDevice(), &renderPassCreateInfo,
-                           nullptr, &renderPass) != VK_SUCCESS)
+                           nullptr, &*renderPass) != VK_SUCCESS)
         throw std::runtime_error{"failed to create render pass!"};
 }

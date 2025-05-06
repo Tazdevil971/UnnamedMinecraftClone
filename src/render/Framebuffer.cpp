@@ -19,40 +19,37 @@ Framebuffer::Framebuffer(VkSwapchainKHR swapchain, VkExtent2D extent,
     }
 }
 
+Framebuffer::~Framebuffer() { cleanup(); }
+
 void Framebuffer::recreate(VkSwapchainKHR swapchain, VkExtent2D extent,
                            VkFormat colorFormat) {
-    for (auto framebuffer : framebuffers)
-        if (framebuffer != VK_NULL_HANDLE)
-            vkDestroyFramebuffer(Context::get().getDevice(), framebuffer,
-                                 nullptr);
+    try {
+        framebuffers.resize(0);
 
-    for (auto colorImage : colorImages)
-        BufferManager::get().deallocateImageNow(colorImage);
+        for (auto colorImage : colorImages)
+            BufferManager::get().deallocateImageNow(colorImage);
 
-    for (auto depthImage : depthImages)
-        BufferManager::get().deallocateImageNow(depthImage);
+        for (auto depthImage : depthImages)
+            BufferManager::get().deallocateImageNow(depthImage);
 
-    framebuffers.resize(0);
-    colorImages.resize(0);
-    depthImages.resize(0);
+        colorImages.resize(0);
+        depthImages.resize(0);
 
-    this->extent = extent;
-    this->colorFormat = colorFormat;
-    getImageCount(swapchain);
+        this->extent = extent;
+        this->colorFormat = colorFormat;
+        getImageCount(swapchain);
 
-    createColorImages(swapchain);
-    createDepthImages();
-    createFramebuffers();
+        createColorImages(swapchain);
+        createDepthImages();
+        createFramebuffers();
+    } catch (...) {
+        cleanup();
+        throw;
+    }
 }
 
 void Framebuffer::cleanup() {
-    for (auto& framebuffer : framebuffers) {
-        if (framebuffer != VK_NULL_HANDLE) {
-            vkDestroyFramebuffer(Context::get().getDevice(), framebuffer,
-                                 nullptr);
-            framebuffer = VK_NULL_HANDLE;
-        }
-    }
+    framebuffers.resize(0);
 
     for (auto colorImage : colorImages)
         BufferManager::get().deallocateImageNow(colorImage);
@@ -60,7 +57,6 @@ void Framebuffer::cleanup() {
     for (auto depthImage : depthImages)
         BufferManager::get().deallocateImageNow(depthImage);
 
-    framebuffers.resize(0);
     colorImages.resize(0);
     depthImages.resize(0);
 }
@@ -92,7 +88,7 @@ void Framebuffer::createDepthImages() {
 }
 
 void Framebuffer::createFramebuffers() {
-    framebuffers.resize(imageCount, VK_NULL_HANDLE);
+    framebuffers.resize(imageCount);
     for (uint32_t i = 0; i < imageCount; i++) {
         VkImageView attachments[] = {colorImages[i].view, depthImages[i].view};
 
@@ -106,7 +102,7 @@ void Framebuffer::createFramebuffers() {
         createInfo.layers = 1;
 
         if (vkCreateFramebuffer(Context::get().getDevice(), &createInfo,
-                                nullptr, &framebuffers[i]) != VK_SUCCESS)
+                                nullptr, &*framebuffers[i]) != VK_SUCCESS)
             throw std::runtime_error{"failed to create framebuffer!"};
     }
 }

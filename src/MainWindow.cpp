@@ -68,15 +68,11 @@ std::vector<GeometryVertex> DEBUG_CUBE_VERTICES = {
 };
 // clang-format on
 
-MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
+MainWindow::MainWindow() : Window{"UnnamedMinecraftClone", 10, 10} {
     try {
-        Context::create(getWindow());
-        BufferManager::create(10, 10);
         AtlasManager::create();
-        Swapchain::create();
 
         renderer = std::make_unique<Renderer>();
-
         mucchina = std::make_unique<Mucchina>();
 
         skybox =
@@ -109,32 +105,35 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
 
         render::UiMesh uiCubeMesh;
         for (int i = 1; i < 8; i++) {
-            std::vector<uint16_t> indices = {0, 1, 2, 3, 2, 1, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11}; 
-            std::vector<UiVertex> vertices; 
+            std::vector<uint16_t> indices = {0, 1, 2, 3, 2, 1,  4, 5,  6,
+                                             4, 6, 7, 8, 9, 10, 8, 10, 11};
+            std::vector<UiVertex> vertices;
             // front
-            auto bounds = AtlasManager::get().getAtlasBounds(static_cast<Block>(i), Side::SIDE_X_POS);
+            auto bounds = AtlasManager::get().getAtlasBounds(
+                static_cast<Block>(i), Side::SIDE_X_POS);
             vertices.push_back({{-75, -75}, bounds.getTopLeft()});
             vertices.push_back({{-75, 75}, bounds.getBottomLeft()});
             vertices.push_back({{75, -75}, bounds.getTopRight()});
             vertices.push_back({{75, 75}, bounds.getBottomRight()});
             // side
-            bounds = AtlasManager::get().getAtlasBounds(static_cast<Block>(i), Side::SIDE_Z_POS);
+            bounds = AtlasManager::get().getAtlasBounds(static_cast<Block>(i),
+                                                        Side::SIDE_Z_POS);
             vertices.push_back({{75, -75}, bounds.getTopLeft()}),
-            vertices.push_back({{75, 75}, bounds.getBottomLeft()});
+                vertices.push_back({{75, 75}, bounds.getBottomLeft()});
             vertices.push_back({{100, 40}, bounds.getBottomRight()});
             vertices.push_back({{100, -110}, bounds.getTopRight()});
             // top
-            bounds = AtlasManager::get().getAtlasBounds(static_cast<Block>(i), Side::TOP);
+            bounds = AtlasManager::get().getAtlasBounds(static_cast<Block>(i),
+                                                        Side::TOP);
             vertices.push_back({{-75, -75}, bounds.getTopRight()});
             vertices.push_back({{75, -75}, bounds.getBottomRight()});
             vertices.push_back({{100, -110}, bounds.getBottomLeft()});
             vertices.push_back({{-50, -110}, bounds.getTopLeft()});
 
-            uiCubeMesh = BufferManager::get().allocateMesh<UiMesh>(indices, vertices);
+            uiCubeMesh =
+                BufferManager::get().allocateMesh<UiMesh>(indices, vertices);
             uiCubeMeshes.push_back(uiCubeMesh);
         }
-
-
 
         playerController.unstuck(world);
         mucchina->unstuck(world);
@@ -142,6 +141,10 @@ MainWindow::MainWindow() : Window("UnnamedMinecraftClone") {
         cleanup();
         throw;
     }
+}
+
+MainWindow::~MainWindow() {
+    cleanup();
 }
 
 void MainWindow::cleanup() {
@@ -165,19 +168,9 @@ void MainWindow::cleanup() {
         mucchina.reset();
     }
 
-    // Wait for the device to finish rendering before cleaning up!
-    Context::get().waitDeviceIdle();
-
     if (renderer) {
-        renderer->cleanup();
         renderer.reset();
     }
-
-    Swapchain::destroy();
-    BufferManager::destroy();
-    Context::destroy();
-
-    Window::cleanup();
 }
 
 void MainWindow::onFrame(InputState& input) {

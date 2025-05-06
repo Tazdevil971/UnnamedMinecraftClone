@@ -11,6 +11,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+// #include "BufferManager.hpp"
 #include "glm/ext/matrix_clip_space.hpp"
 
 namespace render {
@@ -150,12 +151,8 @@ struct Ubo {
     VkBuffer buffer{VK_NULL_HANDLE};
     VkDescriptorSet descriptor{VK_NULL_HANDLE};
 
-    bool isNull() const {
-        return memory == VK_NULL_HANDLE && buffer == VK_NULL_HANDLE;
-    }
-
     void *ptr{nullptr};
-    size_t size;
+    size_t size{0};
 
     template <typename T>
     void write(const T &value) {
@@ -169,25 +166,20 @@ struct Image {
     VkImage image{VK_NULL_HANDLE};
     VkImageView view{VK_NULL_HANDLE};
 
-    bool isNull() const {
-        return memory == VK_NULL_HANDLE && image == VK_NULL_HANDLE &&
-               view == VK_NULL_HANDLE;
-    }
-
-    uint32_t width;
-    uint32_t height;
-    VkFormat format;
+    uint32_t width{0};
+    uint32_t height{0};
+    VkFormat format{VK_FORMAT_UNDEFINED};
 };
 
 struct Texture {
     Image image;
-    VkSampler sampler;
+    VkSampler sampler{VK_NULL_HANDLE};
     VkDescriptorSet descriptor{VK_NULL_HANDLE};
 };
 
 struct GeometryModel {
-    GeometryMesh mesh;
-    Texture texture;
+    const GeometryMesh &mesh;
+    const Texture &texture;
     glm::vec3 pos;
     glm::quat rot;
 
@@ -197,8 +189,8 @@ struct GeometryModel {
 };
 
 struct UiModel {
-    UiMesh mesh;
-    Texture texture;
+    const UiMesh &mesh;
+    const Texture &texture;
     glm::vec2 pos;
     glm::vec2 anchorPoint;
 };
@@ -245,9 +237,5 @@ struct Light {
 
 static constexpr glm::vec2 CENTER = {0, 0};
 static constexpr glm::vec2 BOTTOM_CENTER = {0, 1};
-
-struct AnchorPoint {
-    
-};
 
 }  // namespace render

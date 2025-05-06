@@ -2,6 +2,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <vk_mem_alloc.h>
 
 #include <memory>
 #include <optional>
@@ -68,6 +69,7 @@ public:
         float maxSamplerAnisotropy;
     };
 
+    VmaAllocator getVma() const { return vma; }
     VkDevice getDevice() const { return device; }
     GLFWwindow *getWindow() const { return window; }
     VkInstance getInstance() const { return instance; }
@@ -98,6 +100,7 @@ private:
     void createSurface();
     DeviceInfo pickPhysicalDevice();
     void createDevice();
+    void createVma();
 
     InstanceExtensions getInstanceExtensionSupport();
     InstanceLayers getInstanceLayerSupport();
@@ -111,6 +114,7 @@ private:
         VkImageTiling tiling, VkFormatFeatureFlags features) const;
 
     GLFWwindow *window{nullptr};
+    VmaAllocator vma{VK_NULL_HANDLE};
     VkInstance instance{VK_NULL_HANDLE};
     VkSurfaceKHR surface{VK_NULL_HANDLE};
     VkDevice device{VK_NULL_HANDLE};

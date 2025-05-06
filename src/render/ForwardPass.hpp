@@ -9,14 +9,13 @@
 #include "SkyboxRenderer.hpp"
 #include "Swapchain.hpp"
 #include "UiRenderer.hpp"
+#include "Managed.hpp"
 
 namespace render {
 
 class ForwardPass {
 public:
     ForwardPass();
-
-    void cleanup();
 
     void record(VkCommandBuffer commandBuffer, Swapchain::Frame frame,
                 const Camera& camera, const Skybox& skybox,
@@ -26,7 +25,7 @@ public:
 private:
     void createRenderPass();
 
-    VkRenderPass renderPass{VK_NULL_HANDLE};
+    ManagedRenderPass renderPass;
 
     std::shared_ptr<Framebuffer> framebuffer;
 

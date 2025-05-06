@@ -6,17 +6,17 @@
 #include <memory>
 
 #include "ForwardPass.hpp"
+#include "Managed.hpp"
 #include "Primitives.hpp"
 #include "ShadowPass.hpp"
 #include "Skybox.hpp"
+
 
 namespace render {
 
 class Renderer {
 public:
     Renderer();
-
-    void cleanup();
 
     void render(const Camera& camera, const Skybox& skybox,
                 const GeometryRenderer::LightInfo& lights,
@@ -26,18 +26,18 @@ public:
     Texture getDepthTexture() const { return shadowPass->getDepthTexture(); }
 
 private:
-    VkCommandPool commandPool{VK_NULL_HANDLE};
+    void createCommandPool();
+    void createCommandBuffer();
+    void createSyncObjects();
+
+    ManagedCommandPool commandPool;
+    VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
 
     std::unique_ptr<ShadowPass> shadowPass;
     std::unique_ptr<ForwardPass> forwardPass;
 
-    VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
-    VkSemaphore imageAvailableSemaphore{VK_NULL_HANDLE};
-    VkSemaphore renderFinishedSemaphore{VK_NULL_HANDLE};
-    VkFence inFlightFence{VK_NULL_HANDLE};
-
-    void createCommandPool();
-    void createCommandBuffer();
-    void createSyncObjects();
+    ManagedSemaphore imageAvailableSemaphore;
+    ManagedSemaphore renderFinishedSemaphore;
+    ManagedFence inFlightFence;
 };
 }  // namespace render

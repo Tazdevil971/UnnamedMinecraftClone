@@ -23,6 +23,7 @@ Context::Context(GLFWwindow *window) : window{window} {
         createSurface();
         deviceInfo = pickPhysicalDevice();
         createDevice();
+        createVma();
     } catch (...) {
         cleanup();
         throw;
@@ -32,6 +33,11 @@ Context::Context(GLFWwindow *window) : window{window} {
 Context::~Context() { cleanup(); }
 
 void Context::cleanup() {
+    if (vma != VK_NULL_HANDLE) {
+        vmaDestroyAllocator(vma);
+        vma = VK_NULL_HANDLE;
+    }
+
     if (device != VK_NULL_HANDLE) {
         vkDestroyDevice(device, nullptr);
         device = VK_NULL_HANDLE;
@@ -193,6 +199,21 @@ void Context::createDevice() {
                      &graphicsQueue);
     vkGetDeviceQueue(device, deviceInfo.queues.present.value(), 0,
                      &presentQueue);
+}
+
+void Context::createVma() {
+    VmaAllocatorCreateInfo createInfo{};
+    createInfo.flags = 0;
+    createInfo.vulkanApiVersion = VK_API_VERSION_1_0;
+    createInfo.instance = instance;
+    createInfo.physicalDevice = deviceInfo.device;
+    createInfo.device = device;
+
+    if (deviceInfo.hasKHRDedicatedAllocation)
+        createInfo.flags |= VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT;
+
+    if (vmaCreateAllocator(&createInfo, &vma) != VK_SUCCESS)
+        throw std::runtime_error{"failed to create VMA!"};
 }
 
 Context::InstanceExtensions Context::getInstanceExtensionSupport() {

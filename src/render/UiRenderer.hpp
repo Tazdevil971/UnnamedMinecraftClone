@@ -6,14 +6,13 @@
 #include <list>
 
 #include "Primitives.hpp"
+#include "Managed.hpp"
 
 namespace render {
 
 class UiRenderer {
 public:
     UiRenderer(VkRenderPass renderPass);
-
-    void cleanup();
 
     void record(VkCommandBuffer commandBuffer, VkExtent2D extent,
                 std::list<UiModel> models);
@@ -25,13 +24,15 @@ private:
         glm::vec2 anchorPoint;
     };
 
+    void cleanup();
+
     void recordSingle(VkCommandBuffer commandBuffer, VkExtent2D extent,
                       const UiModel& model);
 
     void createPipeline(VkRenderPass renderPass);
 
-    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
-    VkPipeline pipeline{VK_NULL_HANDLE};
+    ManagedPipelineLayout pipelineLayout;
+    ManagedPipeline pipeline;
 };
 
 }  // namespace render

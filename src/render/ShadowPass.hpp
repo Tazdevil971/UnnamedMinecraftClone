@@ -4,6 +4,7 @@
 
 #include <list>
 
+#include "Managed.hpp"
 #include "Primitives.hpp"
 
 namespace render {
@@ -13,8 +14,7 @@ public:
     const VkExtent2D SHADOWMAP_EXTENT{2048, 2048};
 
     ShadowPass();
-
-    void cleanup();
+    ~ShadowPass();
 
     void record(VkCommandBuffer commandBuffer, const Camera& camera,
                 glm::vec3 lightDir, std::list<GeometryModel> models);
@@ -27,6 +27,8 @@ private:
     struct PushBuffer {
         glm::mat4 mvp;
     };
+
+    void cleanup();
 
     VkViewport getViewport() const {
         VkViewport viewport{};
@@ -57,10 +59,10 @@ private:
 
     Texture depthTexture;
 
-    VkRenderPass renderPass{VK_NULL_HANDLE};
-    VkFramebuffer framebuffer{VK_NULL_HANDLE};
-    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
-    VkPipeline pipeline{VK_NULL_HANDLE};
+    ManagedRenderPass renderPass;
+    ManagedFramebuffer framebuffer;
+    ManagedPipelineLayout pipelineLayout;
+    ManagedPipeline pipeline;
 };
 
 }  // namespace render

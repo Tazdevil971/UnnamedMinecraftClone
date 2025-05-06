@@ -10,7 +10,7 @@
 using namespace world;
 
 Mucchina::Mucchina()
-    : model{"assets/debug.png", VK_FORMAT_R8G8B8A8_SRGB},
+    : model{"assets/mucchina.png", VK_FORMAT_R8G8B8A8_SRGB},
       collider{{0, 0, 0}, {0.75f, 1.25f, 0.75f}} {
     // Build mucchina!
     body = model.addJoint(AnimModel::JointId::root(), {12, 5, 6}, {0, 14, 0},

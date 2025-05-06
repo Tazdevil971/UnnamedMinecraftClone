@@ -4,6 +4,7 @@
 
 #include "BufferManager.hpp"
 #include "Context.hpp"
+#include "Managed.hpp"
 #include "ShadowPass.hpp"
 
 using namespace render;
@@ -19,19 +20,10 @@ GeometryRenderer::GeometryRenderer(VkRenderPass renderPass) {
     }
 }
 
+GeometryRenderer::~GeometryRenderer() { cleanup(); }
+
 void GeometryRenderer::cleanup() {
     BufferManager::get().deallocateUboNow(lightInfoUbo);
-
-    if (pipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(Context::get().getDevice(), pipelineLayout,
-                                nullptr);
-        pipelineLayout = VK_NULL_HANDLE;
-    }
-
-    if (pipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(Context::get().getDevice(), pipeline, nullptr);
-        pipeline = VK_NULL_HANDLE;
-    }
 }
 
 void GeometryRenderer::record(VkCommandBuffer commandBuffer,
@@ -46,7 +38,8 @@ void GeometryRenderer::record(VkCommandBuffer commandBuffer,
         {lights.sunColor, 1.0f},
     });
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      *pipeline);
 
     glm::mat4 vp = camera.computeVPMat(ratio);
     // glm::mat4 vp = ShadowPass::computeShadowVP(lights.sunDir);
@@ -66,14 +59,14 @@ void GeometryRenderer::recordSingle(VkCommandBuffer commandBuffer, glm::mat4 vp,
                                          lightInfoUbo.descriptor};
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            pipelineLayout, 0, 3, descriptorSets, 0, nullptr);
+                            *pipelineLayout, 0, 3, descriptorSets, 0, nullptr);
 
     model.mesh.bind(commandBuffer);
 
     glm::mat4 m = model.computeModelMat();
     PushBuffer pushBuffer = {m, vp};
 
-    vkCmdPushConstants(commandBuffer, pipelineLayout,
+    vkCmdPushConstants(commandBuffer, *pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushBuffer),
                        &pushBuffer);
 
@@ -99,24 +92,24 @@ void GeometryRenderer::createPipeline(VkRenderPass renderPass) {
 
     if (vkCreatePipelineLayout(Context::get().getDevice(),
                                &pipelineLayoutCreateInfo, nullptr,
-                               &pipelineLayout) != VK_SUCCESS)
+                               &*pipelineLayout) != VK_SUCCESS)
         throw std::runtime_error{"failed to create pipeline layout!"};
 
-    auto vertShaderModule =
-        Context::get().loadShaderModule("GeometryVert.vert.spv");
-    auto fragShaderModule =
-        Context::get().loadShaderModule("GeometryFrag.frag.spv");
+    ManagedShaderModule vertShaderModule{
+        Context::get().loadShaderModule("GeometryVert.vert.spv")};
+    ManagedShaderModule fragShaderModule{
+        Context::get().loadShaderModule("GeometryFrag.frag.spv")};
 
     VkPipelineShaderStageCreateInfo vertStageInfo{};
     vertStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vertStageInfo.module = vertShaderModule;
+    vertStageInfo.module = *vertShaderModule;
     vertStageInfo.pName = "main";
 
     VkPipelineShaderStageCreateInfo fragStageInfo{};
     fragStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    fragStageInfo.module = fragShaderModule;
+    fragStageInfo.module = *fragShaderModule;
     fragStageInfo.pName = "main";
 
     VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
@@ -229,7 +222,7 @@ void GeometryRenderer::createPipeline(VkRenderPass renderPass) {
     pipelineCreateInfo.pDepthStencilState = &depthStencilStateInfo;
     pipelineCreateInfo.pColorBlendState = &colorBlendStateInfo;
     pipelineCreateInfo.pDynamicState = &dynamicStateInfo;
-    pipelineCreateInfo.layout = pipelineLayout;
+    pipelineCreateInfo.layout = *pipelineLayout;
     pipelineCreateInfo.renderPass = renderPass;
     pipelineCreateInfo.subpass = 0;
     pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -237,11 +230,6 @@ void GeometryRenderer::createPipeline(VkRenderPass renderPass) {
 
     if (vkCreateGraphicsPipelines(Context::get().getDevice(), VK_NULL_HANDLE, 1,
                                   &pipelineCreateInfo, nullptr,
-                                  &pipeline) != VK_SUCCESS)
+                                  &*pipeline) != VK_SUCCESS)
         throw std::runtime_error{"failed to create graphics pipeline"};
-
-    vkDestroyShaderModule(Context::get().getDevice(), vertShaderModule,
-                          nullptr);
-    vkDestroyShaderModule(Context::get().getDevice(), fragShaderModule,
-                          nullptr);
 }

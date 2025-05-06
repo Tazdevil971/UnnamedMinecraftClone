@@ -2,6 +2,10 @@
 
 #include <chrono>
 
+#include "BufferManager.hpp"
+#include "Context.hpp"
+#include "Swapchain.hpp"
+
 using namespace render;
 
 void Window::glfwOnResizeCallback(GLFWwindow* window, int width, int height) {
@@ -9,7 +13,8 @@ void Window::glfwOnResizeCallback(GLFWwindow* window, int width, int height) {
     app->onResize(width, height);
 }
 
-Window::Window(std::string name) {
+Window::Window(std::string name, size_t uboPoolSize, size_t texturePoolSize) {
+    // Initialize GLFW
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -25,7 +30,19 @@ Window::Window(std::string name) {
     glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     captureMouse = true;
+
+    // Initialize vulkan
+    try {
+        Context::create(window);
+        BufferManager::create(10, 10);
+        Swapchain::create();
+    } catch (...) {
+        cleanup();
+        throw;
+    }
 }
+
+Window::~Window() { cleanup(); }
 
 void Window::mainLoop() {
     InputState input;
@@ -114,9 +131,16 @@ void Window::mainLoop() {
 
         onFrame(input);
     }
+
+    // Wait for the device to finish rendering before cleaning up!
+    Context::get().waitDeviceIdle();
 }
 
 void Window::cleanup() {
+    Swapchain::destroy();
+    BufferManager::destroy();
+    Context::destroy();
+
     if (window) {
         glfwDestroyWindow(window);
         window = nullptr;

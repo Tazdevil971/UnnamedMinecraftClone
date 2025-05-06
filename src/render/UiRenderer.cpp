@@ -2,34 +2,16 @@
 
 #include "BufferManager.hpp"
 #include "Context.hpp"
+#include "Managed.hpp"
 
 using namespace render;
 
-UiRenderer::UiRenderer(VkRenderPass renderPass) {
-    try {
-        createPipeline(renderPass);
-    } catch (...) {
-        cleanup();
-        throw;
-    }
-}
-
-void UiRenderer::cleanup() {
-    if (pipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(Context::get().getDevice(), pipelineLayout,
-                                nullptr);
-        pipelineLayout = VK_NULL_HANDLE;
-    }
-
-    if (pipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(Context::get().getDevice(), pipeline, nullptr);
-        pipeline = VK_NULL_HANDLE;
-    }
-}
+UiRenderer::UiRenderer(VkRenderPass renderPass) { createPipeline(renderPass); }
 
 void UiRenderer::record(VkCommandBuffer commandBuffer, VkExtent2D extent,
                         std::list<UiModel> models) {
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                      *pipeline);
 
     for (const auto& model : models) recordSingle(commandBuffer, extent, model);
 }
@@ -39,7 +21,7 @@ void UiRenderer::recordSingle(VkCommandBuffer commandBuffer, VkExtent2D extent,
     if (model.mesh.isNull()) return;
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            pipelineLayout, 0, 1, &model.texture.descriptor, 0,
+                            *pipelineLayout, 0, 1, &model.texture.descriptor, 0,
                             nullptr);
 
     model.mesh.bind(commandBuffer);
@@ -51,7 +33,7 @@ void UiRenderer::recordSingle(VkCommandBuffer commandBuffer, VkExtent2D extent,
     glm::vec2 anchorPoint = model.anchorPoint;
     PushBuffer pushBuffer = {model.pos, dimension, anchorPoint};
 
-    vkCmdPushConstants(commandBuffer, pipelineLayout,
+    vkCmdPushConstants(commandBuffer, *pipelineLayout,
                        VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushBuffer),
                        &pushBuffer);
 
@@ -75,22 +57,24 @@ void UiRenderer::createPipeline(VkRenderPass renderPass) {
 
     if (vkCreatePipelineLayout(Context::get().getDevice(),
                                &pipelineLayoutCreateInfo, nullptr,
-                               &pipelineLayout) != VK_SUCCESS)
+                               &*pipelineLayout) != VK_SUCCESS)
         throw std::runtime_error{"failed to create pipeline layout!"};
 
-    auto vertShaderModule = Context::get().loadShaderModule("UiVert.vert.spv");
-    auto fragShaderModule = Context::get().loadShaderModule("UiFrag.frag.spv");
+    ManagedShaderModule vertShaderModule{
+        Context::get().loadShaderModule("UiVert.vert.spv")};
+    ManagedShaderModule fragShaderModule{
+        Context::get().loadShaderModule("UiFrag.frag.spv")};
 
     VkPipelineShaderStageCreateInfo vertStageInfo{};
     vertStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vertStageInfo.module = vertShaderModule;
+    vertStageInfo.module = *vertShaderModule;
     vertStageInfo.pName = "main";
 
     VkPipelineShaderStageCreateInfo fragStageInfo{};
     fragStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    fragStageInfo.module = fragShaderModule;
+    fragStageInfo.module = *fragShaderModule;
     fragStageInfo.pName = "main";
 
     VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
@@ -157,7 +141,8 @@ void UiRenderer::createPipeline(VkRenderPass renderPass) {
         VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachment.blendEnable = VK_TRUE;
     colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    colorBlendAttachment.dstColorBlendFactor =
+        VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
     colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
     colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
     colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -203,7 +188,7 @@ void UiRenderer::createPipeline(VkRenderPass renderPass) {
     pipelineCreateInfo.pDepthStencilState = &depthStencilStateInfo;
     pipelineCreateInfo.pColorBlendState = &colorBlendStateInfo;
     pipelineCreateInfo.pDynamicState = &dynamicStateInfo;
-    pipelineCreateInfo.layout = pipelineLayout;
+    pipelineCreateInfo.layout = *pipelineLayout;
     pipelineCreateInfo.renderPass = renderPass;
     pipelineCreateInfo.subpass = 0;
     pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -211,11 +196,6 @@ void UiRenderer::createPipeline(VkRenderPass renderPass) {
 
     if (vkCreateGraphicsPipelines(Context::get().getDevice(), VK_NULL_HANDLE, 1,
                                   &pipelineCreateInfo, nullptr,
-                                  &pipeline) != VK_SUCCESS)
+                                  &*pipeline) != VK_SUCCESS)
         throw std::runtime_error{"failed to create UI pipeline"};
-
-    vkDestroyShaderModule(Context::get().getDevice(), vertShaderModule,
-                          nullptr);
-    vkDestroyShaderModule(Context::get().getDevice(), fragShaderModule,
-                          nullptr);
 }
