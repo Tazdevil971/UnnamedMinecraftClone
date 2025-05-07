@@ -10,8 +10,8 @@ Requirements and goals of the project.
 - [x] Rendering chunks with diffuse lighting model
 
 ## Optional goals
-- [ ] Skybox rendering
-- [ ] Shadow mapping
+- [x] Skybox rendering
+- [x] Shadow mapping
 - [ ] Saving/loading maps
 
 ## Very optional goals
