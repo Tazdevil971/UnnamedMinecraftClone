@@ -36,15 +36,15 @@ struct UiVertex {
 struct BaseMesh {
     ManagedBuffer buffer;
 
-    BaseMesh() = default;
-    BaseMesh(BaseMesh &&) = default;
-    BaseMesh &operator=(BaseMesh &&) = default;
-
     VkDeviceSize vertexOffset{0};
     VkDeviceSize indicesOffset{0};
 
     size_t vertexCount{0};
     size_t indexCount{0};
+
+    BaseMesh() = default;
+    BaseMesh(BaseMesh &&) = default;
+    BaseMesh &operator=(BaseMesh &&) = default;
 
     bool isNull() const { return buffer.isNull(); }
 

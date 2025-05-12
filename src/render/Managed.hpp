@@ -4,6 +4,8 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
+#include <utility>
+
 #include "Context.hpp"
 
 namespace render {
@@ -18,20 +20,16 @@ struct Managed1 {
     Managed1& operator=(const Managed1&) = delete;
 
     Managed1& operator=(Managed1&& other) {
-        inner = other.inner;
-        other.inner = VK_NULL_HANDLE;
+        inner = other.take();
         return *this;
     }
 
-    Managed1(Managed1&& other) {
-        inner = other.inner;
-        other.inner = VK_NULL_HANDLE;
-    }
+    Managed1(Managed1&& other) { inner = other.take(); }
 
     ~Managed1() {
-        if (inner != VK_NULL_HANDLE)
-            F(Context::get().getDevice(), inner, nullptr);
-        inner = VK_NULL_HANDLE;
+        T inner2 = take();
+        if (inner2 != VK_NULL_HANDLE)
+            F(Context::get().getDevice(), inner2, nullptr);
     }
 
     bool isNull() const { return inner == VK_NULL_HANDLE; }
@@ -57,27 +55,32 @@ struct Managed2 {
     Managed2& operator=(const Managed2&) = delete;
 
     Managed2& operator=(Managed2&& other) {
-        inner = other.inner;
-        memory = other.memory;
-        other.inner = VK_NULL_HANDLE;
-        other.memory = VK_NULL_HANDLE;
+        auto [memory2, inner2] = other.take();
+        inner = inner2;
+        memory = memory2;
         return *this;
     }
 
     Managed2(Managed2&& other) {
-        inner = other.inner;
-        memory = other.memory;
-        other.inner = VK_NULL_HANDLE;
-        other.memory = VK_NULL_HANDLE;
+        auto [memory2, inner2] = other.take();
+        inner = inner2;
+        memory = memory2;
     }
 
     ~Managed2() {
-        if (memory != VK_NULL_HANDLE) F(Context::get().getVma(), inner, memory);
-        memory = VK_NULL_HANDLE;
-        inner = VK_NULL_HANDLE;
+        auto [memory2, inner2] = take();
+        if (memory2 != VK_NULL_HANDLE)
+            F(Context::get().getVma(), inner2, memory2);
     }
 
     bool isNull() const { return inner == VK_NULL_HANDLE; }
+
+    std::pair<VmaAllocation, T> take() {
+        std::pair<VmaAllocation, T> ret{memory, inner};
+        inner = VK_NULL_HANDLE;
+        memory = VK_NULL_HANDLE;
+        return ret;
+    }
 
     T& operator*() { return inner; }
     const T& operator*() const { return inner; }
