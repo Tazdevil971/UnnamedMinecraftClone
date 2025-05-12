@@ -4,10 +4,11 @@ using namespace logic;
 using namespace world;
 
 void SimulatedBoxCollider::update(World &world, glm::vec3 acc) {
-    acc += GRAVITY;
+    const float EPSILON = 0.0001;
 
     glm::vec3 speed = pos - prevPos;
 
+    acc += GRAVITY;
     acc -= speed * glm::abs(speed) * DRAG;
 
     glm::vec3 newVel = speed + acc;
@@ -22,7 +23,7 @@ void SimulatedBoxCollider::update(World &world, glm::vec3 acc) {
     // ASSUMPTION: We ALWAYS move slower than a block/update
     if (newVel.x < 0.0f) {
         auto collider = BoxCollider{newPos, size};
-        float dist = collider.getDistanceToXNeg();
+        float dist = std::max(0.0f, collider.getDistanceToXNeg() - EPSILON);
 
         if (dist < -newVel.x &&
             checkCollision(collider.getXNegBlockRange(), world)) {
@@ -36,7 +37,7 @@ void SimulatedBoxCollider::update(World &world, glm::vec3 acc) {
 
     if (newVel.x > 0.0f) {
         auto collider = BoxCollider{newPos, size};
-        float dist = collider.getDistanceToXPos();
+        float dist = std::max(0.0f, collider.getDistanceToXPos() - EPSILON);
 
         if (dist < newVel.x &&
             checkCollision(collider.getXPosBlockRange(), world)) {
@@ -50,10 +51,10 @@ void SimulatedBoxCollider::update(World &world, glm::vec3 acc) {
 
     if (newVel.y < 0.0f) {
         auto collider = BoxCollider{newPos, size};
-        float dist = collider.getDistanceToBottom();
+        float dist = std::max(0.0f, collider.getDistanceToYNeg() - EPSILON);
 
         if (dist < -newVel.y &&
-            checkCollision(collider.getBottomBlockRange(), world)) {
+            checkCollision(collider.getYNegBlockRange(), world)) {
             // We are going to collide this frame
             newPos.y += -dist;
             onGround = true;
@@ -64,10 +65,10 @@ void SimulatedBoxCollider::update(World &world, glm::vec3 acc) {
 
     if (newVel.y > 0.0f) {
         auto collider = BoxCollider{newPos, size};
-        float dist = collider.getDistanceToTop();
+        float dist = std::max(0.0f, collider.getDistanceToYPos() - EPSILON);
 
         if (dist < newVel.y &&
-            checkCollision(collider.getTopBlockRange(), world)) {
+            checkCollision(collider.getYPosBlockRange(), world)) {
             // We are going to collide this frame
             newPos.y += dist;
         } else {
@@ -77,7 +78,7 @@ void SimulatedBoxCollider::update(World &world, glm::vec3 acc) {
 
     if (newVel.z < 0.0f) {
         auto collider = BoxCollider{newPos, size};
-        float dist = collider.getDistanceToZNeg();
+        float dist = std::max(0.0f, collider.getDistanceToZNeg() - EPSILON);
 
         if (dist < -newVel.z &&
             checkCollision(collider.getZNegBlockRange(), world)) {
@@ -91,7 +92,7 @@ void SimulatedBoxCollider::update(World &world, glm::vec3 acc) {
 
     if (newVel.z > 0.0f) {
         auto collider = BoxCollider{newPos, size};
-        float dist = collider.getDistanceToZPos();
+        float dist = std::max(0.0f, collider.getDistanceToZPos() - EPSILON);
 
         if (dist < newVel.z &&
             checkCollision(collider.getZPosBlockRange(), world)) {
@@ -119,8 +120,8 @@ void SimulatedBoxCollider::unstuck(World &world) {
         do {
             newPos += glm::vec3(0.0f, 1.0f, 0.0f);
             collider = BoxCollider{newPos, size};
-        } while(checkCollision(collider.getBlockRange(), world));
-        
+        } while (checkCollision(collider.getBlockRange(), world));
+
         teleport(newPos);
     }
 }

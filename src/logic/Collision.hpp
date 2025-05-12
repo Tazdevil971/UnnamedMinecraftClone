@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 
+#include "../Debug.hpp"
 #include "../world/World.hpp"
 
 namespace logic {
@@ -43,9 +44,9 @@ struct BoxCollider {
         return BlockRange{corner1, corner2 - corner1};
     }
 
-    BlockRange getBottomBlockRange() const {
+    BlockRange getYNegBlockRange() const {
         glm::ivec3 corner1 =
-            glm::ivec3{glm::floor(pos.x - size.x / 2), glm::floor(pos.y - 1),
+            glm::ivec3{glm::floor(pos.x - size.x / 2), glm::floor(pos.y) - 1,
                        glm::floor(pos.z - size.z / 2)};
         glm::ivec3 corner2 =
             glm::ivec3{glm::ceil(pos.x + size.x / 2), glm::floor(pos.y),
@@ -54,12 +55,12 @@ struct BoxCollider {
         return BlockRange{corner1, corner2 - corner1};
     }
 
-    BlockRange getTopBlockRange() const {
+    BlockRange getYPosBlockRange() const {
         glm::ivec3 corner1 = glm::ivec3{glm::floor(pos.x - size.x / 2),
                                         glm::ceil(pos.y + size.y),
                                         glm::floor(pos.z - size.z / 2)};
         glm::ivec3 corner2 = glm::ivec3{glm::ceil(pos.x + size.x / 2),
-                                        glm::ceil(pos.y + size.y + 1),
+                                        glm::ceil(pos.y + size.y) + 1,
                                         glm::ceil(pos.z + size.z / 2)};
 
         return BlockRange{corner1, corner2 - corner1};
@@ -68,10 +69,10 @@ struct BoxCollider {
     BlockRange getZPosBlockRange() const {
         glm::ivec3 corner1 =
             glm::ivec3{glm::floor(pos.x - size.x / 2), glm::floor(pos.y),
-                       glm::floor(pos.z + size.z / 2)};
+                       glm::ceil(pos.z + size.z / 2)};
         glm::ivec3 corner2 =
             glm::ivec3{glm::ceil(pos.x + size.x / 2), glm::ceil(pos.y + size.y),
-                       glm::ceil(pos.z + size.z / 2 + 1)};
+                       glm::ceil(pos.z + size.z / 2) + 1};
 
         return BlockRange{corner1, corner2 - corner1};
     }
@@ -79,19 +80,19 @@ struct BoxCollider {
     BlockRange getZNegBlockRange() const {
         glm::ivec3 corner1 =
             glm::ivec3{glm::floor(pos.x - size.x / 2), glm::floor(pos.y),
-                       glm::floor(pos.z - size.z / 2 - 1)};
+                       glm::floor(pos.z - size.z / 2) - 1};
         glm::ivec3 corner2 =
             glm::ivec3{glm::ceil(pos.x + size.x / 2), glm::ceil(pos.y + size.y),
-                       glm::ceil(pos.z - size.z / 2)};
+                       glm::floor(pos.z - size.z / 2)};
 
         return BlockRange{corner1, corner2 - corner1};
     }
 
     BlockRange getXPosBlockRange() const {
         glm::ivec3 corner1 =
-            glm::ivec3{glm::floor(pos.x + size.x / 2), glm::floor(pos.y),
+            glm::ivec3{glm::ceil(pos.x + size.x / 2), glm::floor(pos.y),
                        glm::floor(pos.z - size.z / 2)};
-        glm::ivec3 corner2 = glm::ivec3{glm::ceil(pos.x + size.x / 2 + 1),
+        glm::ivec3 corner2 = glm::ivec3{glm::ceil(pos.x + size.x / 2) + 1,
                                         glm::ceil(pos.y + size.y),
                                         glm::ceil(pos.z + size.z / 2)};
 
@@ -100,17 +101,17 @@ struct BoxCollider {
 
     BlockRange getXNegBlockRange() const {
         glm::ivec3 corner1 =
-            glm::ivec3{glm::floor(pos.x - size.x / 2 - 1), glm::floor(pos.y),
+            glm::ivec3{glm::floor(pos.x - size.x / 2) - 1, glm::floor(pos.y),
                        glm::floor(pos.z - size.z / 2)};
-        glm::ivec3 corner2 =
-            glm::ivec3{glm::ceil(pos.x - size.x / 2), glm::ceil(pos.y + size.y),
-                       glm::ceil(pos.z + size.z / 2)};
+        glm::ivec3 corner2 = glm::ivec3{glm::floor(pos.x - size.x / 2),
+                                        glm::ceil(pos.y + size.y),
+                                        glm::ceil(pos.z + size.z / 2)};
 
         return BlockRange{corner1, corner2 - corner1};
     }
 
-    float getDistanceToBottom() const { return pos.y - glm::floor(pos.y); }
-    float getDistanceToTop() const {
+    float getDistanceToYNeg() const { return pos.y - glm::floor(pos.y); }
+    float getDistanceToYPos() const {
         return glm::ceil(pos.y + size.y) - (pos.y + size.y);
     }
 
