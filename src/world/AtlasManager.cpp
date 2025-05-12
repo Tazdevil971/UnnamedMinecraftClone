@@ -8,6 +8,8 @@ using namespace render;
 AtlasManager::AtlasManager() {
     atlas = BufferManager::get().allocateTexture("assets/block_atlas.png",
                                                  VK_FORMAT_R8G8B8A8_SRGB);
+    atlasNormals = BufferManager::get().allocateTexture(
+        "assets/block_atlas_n.png", VK_FORMAT_R8G8B8A8_SRGB);
 }
 
 AtlasManager::AtlasBounds AtlasManager::getAtlasBounds(Block block,

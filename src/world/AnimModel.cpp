@@ -1,6 +1,7 @@
 #include "AnimModel.hpp"
 
 #include "../render/BufferManager.hpp"
+#include "../render/Constants.hpp"
 
 using namespace world;
 using namespace render;
@@ -94,40 +95,40 @@ AnimModelBlueprint::JointId AnimModelBlueprint::addJoint(
             20, 21, 22, 20, 22, 23,
         }, {
             // Z- side
-            {xPosYNegZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getBottomRight()},
-            {xNegYNegZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getBottomLeft()},
-            {xNegYPosZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getTopLeft()},
-            {xPosYPosZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getTopRight()},
+            {xPosYNegZNeg, Z_NEG_NORMAL, Z_NEG_TANGENT, zNegBounds.getBottomRight()},
+            {xNegYNegZNeg, Z_NEG_NORMAL, Z_NEG_TANGENT, zNegBounds.getBottomLeft()},
+            {xNegYPosZNeg, Z_NEG_NORMAL, Z_NEG_TANGENT, zNegBounds.getTopLeft()},
+            {xPosYPosZNeg, Z_NEG_NORMAL, Z_NEG_TANGENT, zNegBounds.getTopRight()},
 
             // Z+ side
-            {xNegYNegZPos, {0.0f, 0.0f, +1.0f}, zPosBounds.getBottomLeft()},
-            {xPosYNegZPos, {0.0f, 0.0f, +1.0f}, zPosBounds.getBottomRight()},
-            {xPosYPosZPos, {0.0f, 0.0f, +1.0f}, zPosBounds.getTopRight()},
-            {xNegYPosZPos, {0.0f, 0.0f, +1.0f}, zPosBounds.getTopLeft()},
+            {xNegYNegZPos, Z_POS_NORMAL, Z_POS_TANGENT, zPosBounds.getBottomLeft()},
+            {xPosYNegZPos, Z_POS_NORMAL, Z_POS_TANGENT, zPosBounds.getBottomRight()},
+            {xPosYPosZPos, Z_POS_NORMAL, Z_POS_TANGENT, zPosBounds.getTopRight()},
+            {xNegYPosZPos, Z_POS_NORMAL, Z_POS_TANGENT, zPosBounds.getTopLeft()},
 
             // Bottom
-            {xNegYNegZNeg, {0.0f, -1.0f, 0.0f}, bottomBounds.getBottomLeft()},
-            {xPosYNegZNeg, {0.0f, -1.0f, 0.0f}, bottomBounds.getBottomRight()},
-            {xPosYNegZPos, {0.0f, -1.0f, 0.0f}, bottomBounds.getTopRight()},
-            {xNegYNegZPos, {0.0f, -1.0f, 0.0f}, bottomBounds.getTopLeft()},
+            {xNegYNegZNeg, Y_NEG_NORMAL, Y_NEG_TANGENT, bottomBounds.getBottomLeft()},
+            {xPosYNegZNeg, Y_NEG_NORMAL, Y_NEG_TANGENT, bottomBounds.getBottomRight()},
+            {xPosYNegZPos, Y_NEG_NORMAL, Y_NEG_TANGENT, bottomBounds.getTopRight()},
+            {xNegYNegZPos, Y_NEG_NORMAL, Y_NEG_TANGENT, bottomBounds.getTopLeft()},
 
             // Top
-            {xNegYPosZPos, {0.0f, +1.0f, 0.0f}, topBounds.getBottomLeft()},
-            {xPosYPosZPos, {0.0f, +1.0f, 0.0f}, topBounds.getBottomRight()},
-            {xPosYPosZNeg, {0.0f, +1.0f, 0.0f}, topBounds.getTopRight()},
-            {xNegYPosZNeg, {0.0f, +1.0f, 0.0f}, topBounds.getTopLeft()},
+            {xNegYPosZPos, Y_POS_NORMAL, Y_POS_TANGENT, topBounds.getBottomLeft()},
+            {xPosYPosZPos, Y_POS_NORMAL, Y_POS_TANGENT, topBounds.getBottomRight()},
+            {xPosYPosZNeg, Y_POS_NORMAL, Y_POS_TANGENT, topBounds.getTopRight()},
+            {xNegYPosZNeg, Y_POS_NORMAL, Y_POS_TANGENT, topBounds.getTopLeft()},
 
             // X- side
-            {xNegYNegZNeg, {-1.0f, 0.0f, 0.0f}, xNegBounds.getBottomRight()},
-            {xNegYNegZPos, {-1.0f, 0.0f, 0.0f}, xNegBounds.getBottomLeft()},
-            {xNegYPosZPos, {-1.0f, 0.0f, 0.0f}, xNegBounds.getTopLeft()},
-            {xNegYPosZNeg, {-1.0f, 0.0f, 0.0f}, xNegBounds.getTopRight()},
+            {xNegYNegZNeg, X_NEG_NORMAL, X_NEG_TANGENT, xNegBounds.getBottomRight()},
+            {xNegYNegZPos, X_NEG_NORMAL, X_NEG_TANGENT, xNegBounds.getBottomLeft()},
+            {xNegYPosZPos, X_NEG_NORMAL, X_NEG_TANGENT, xNegBounds.getTopLeft()},
+            {xNegYPosZNeg, X_NEG_NORMAL, X_NEG_TANGENT, xNegBounds.getTopRight()},
 
             // X+ side
-            {xPosYNegZPos, {+1.0f, 0.0f, 0.0f}, xPosBounds.getBottomLeft()},
-            {xPosYNegZNeg, {+1.0f, 0.0f, 0.0f}, xPosBounds.getBottomRight()},
-            {xPosYPosZNeg, {+1.0f, 0.0f, 0.0f}, xPosBounds.getTopRight()},
-            {xPosYPosZPos, {+1.0f, 0.0f, 0.0f}, xPosBounds.getTopLeft()}
+            {xPosYNegZPos, X_POS_NORMAL, X_POS_TANGENT, xPosBounds.getBottomLeft()},
+            {xPosYNegZNeg, X_POS_NORMAL, X_POS_TANGENT, xPosBounds.getBottomRight()},
+            {xPosYPosZNeg, X_POS_NORMAL, X_POS_TANGENT, xPosBounds.getTopRight()},
+            {xPosYPosZPos, X_POS_NORMAL, X_POS_TANGENT, xPosBounds.getTopLeft()}
         });
     // clang-format on
 

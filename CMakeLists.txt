@@ -55,6 +55,7 @@ set(SHADERS
 set(ASSETS
     assets/test_image.jpg
     assets/block_atlas.png
+    assets/block_atlas_n.png
     assets/pointer_texture.png
     assets/skybox_day.png
     assets/skybox_night.png

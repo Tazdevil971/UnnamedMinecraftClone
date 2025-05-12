@@ -27,6 +27,7 @@ public:
     };
 
     const render::Texture& getAtlas() const { return atlas; }
+    const render::Texture& getAtlasNormals() const { return atlasNormals; }
 
     AtlasBounds getAtlasBounds(Block block, Side side) const;
 
@@ -35,6 +36,7 @@ private:
     AtlasBounds computeAtlasBound(glm::ivec2 coords) const;
 
     render::Texture atlas;
+    render::Texture atlasNormals;
 };
 
 }  // namespace world

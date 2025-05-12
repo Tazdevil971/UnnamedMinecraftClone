@@ -15,6 +15,7 @@
 #include "world/Mucchina.hpp"
 #include "world/Capretta.hpp"
 #include "logic/HudManager.hpp"
+#include "render/Constants.hpp"
 
 using namespace render;
 using namespace world;
@@ -34,40 +35,40 @@ std::vector<uint16_t> DEBUG_CUBE_INDICES = {
 
 std::vector<GeometryVertex> DEBUG_CUBE_VERTICES = {
     // Z- side
-    {{+0.05f, -0.05f, -0.05f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}},
-    {{-0.05f, -0.05f, -0.05f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}},
-    {{-0.05f, +0.05f, -0.05f}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}},
-    {{+0.05f, +0.05f, -0.05f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}},
+    {{+0.05f, -0.05f, -0.05f}, Z_NEG_NORMAL, Z_NEG_TANGENT, {0.0f, 1.0f}},
+    {{-0.05f, -0.05f, -0.05f}, Z_NEG_NORMAL, Z_NEG_TANGENT, {1.0f, 1.0f}},
+    {{-0.05f, +0.05f, -0.05f}, Z_NEG_NORMAL, Z_NEG_TANGENT, {1.0f, 0.0f}},
+    {{+0.05f, +0.05f, -0.05f}, Z_NEG_NORMAL, Z_NEG_TANGENT, {0.0f, 0.0f}},
 
     // Z+ side
-    {{-0.05f, -0.05f, +0.05f}, {0.0f, 0.0f, +1.0f}, {0.0f, 1.0f}},
-    {{+0.05f, -0.05f, +0.05f}, {0.0f, 0.0f, +1.0f}, {1.0f, 1.0f}},
-    {{+0.05f, +0.05f, +0.05f}, {0.0f, 0.0f, +1.0f}, {1.0f, 0.0f}},
-    {{-0.05f, +0.05f, +0.05f}, {0.0f, 0.0f, +1.0f}, {0.0f, 0.0f}},
+    {{-0.05f, -0.05f, +0.05f}, Z_POS_NORMAL, Z_POS_TANGENT, {0.0f, 1.0f}},
+    {{+0.05f, -0.05f, +0.05f}, Z_POS_NORMAL, Z_POS_TANGENT, {1.0f, 1.0f}},
+    {{+0.05f, +0.05f, +0.05f}, Z_POS_NORMAL, Z_POS_TANGENT, {1.0f, 0.0f}},
+    {{-0.05f, +0.05f, +0.05f}, Z_POS_NORMAL, Z_POS_TANGENT, {0.0f, 0.0f}},
 
     // Bottom
-    {{-0.05f, -0.05f, -0.05f}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
-    {{+0.05f, -0.05f, -0.05f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
-    {{+0.05f, -0.05f, +0.05f}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{-0.05f, -0.05f, +0.05f}, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
+    {{-0.05f, -0.05f, -0.05f}, Y_NEG_NORMAL, Y_NEG_TANGENT, {0.0f, 1.0f}},
+    {{+0.05f, -0.05f, -0.05f}, Y_NEG_NORMAL, Y_NEG_TANGENT, {1.0f, 1.0f}},
+    {{+0.05f, -0.05f, +0.05f}, Y_NEG_NORMAL, Y_NEG_TANGENT, {1.0f, 0.0f}},
+    {{-0.05f, -0.05f, +0.05f}, Y_NEG_NORMAL, Y_NEG_TANGENT, {0.0f, 0.0f}},
 
     // Top
-    {{-0.05f, +0.05f, +0.05f}, {0.0f, +1.0f, 0.0f}, {0.0f, 1.0f}},
-    {{+0.05f, +0.05f, +0.05f}, {0.0f, +1.0f, 0.0f}, {1.0f, 1.0f}},
-    {{+0.05f, +0.05f, -0.05f}, {0.0f, +1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{-0.05f, +0.05f, -0.05f}, {0.0f, +1.0f, 0.0f}, {0.0f, 0.0f}},
+    {{-0.05f, +0.05f, +0.05f}, Y_POS_NORMAL, Y_POS_TANGENT, {0.0f, 1.0f}},
+    {{+0.05f, +0.05f, +0.05f}, Y_POS_NORMAL, Y_POS_TANGENT, {1.0f, 1.0f}},
+    {{+0.05f, +0.05f, -0.05f}, Y_POS_NORMAL, Y_POS_TANGENT, {1.0f, 0.0f}},
+    {{-0.05f, +0.05f, -0.05f}, Y_POS_NORMAL, Y_POS_TANGENT, {0.0f, 0.0f}},
 
     // X- side
-    {{-0.05f, -0.05f, -0.05f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-    {{-0.05f, -0.05f, +0.05f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-    {{-0.05f, +0.05f, +0.05f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{-0.05f, +0.05f, -0.05f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    {{-0.05f, -0.05f, -0.05f}, X_NEG_NORMAL, X_NEG_TANGENT, {0.0f, 1.0f}},
+    {{-0.05f, -0.05f, +0.05f}, X_NEG_NORMAL, X_NEG_TANGENT, {1.0f, 1.0f}},
+    {{-0.05f, +0.05f, +0.05f}, X_NEG_NORMAL, X_NEG_TANGENT, {1.0f, 0.0f}},
+    {{-0.05f, +0.05f, -0.05f}, X_NEG_NORMAL, X_NEG_TANGENT, {0.0f, 0.0f}},
 
     // X+ side
-    {{+0.05f, -0.05f, +0.05f}, {+1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-    {{+0.05f, -0.05f, -0.05f}, {+1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-    {{+0.05f, +0.05f, -0.05f}, {+1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{+0.05f, +0.05f, +0.05f}, {+1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}
+    {{+0.05f, -0.05f, +0.05f}, X_POS_NORMAL, X_POS_TANGENT, {0.0f, 1.0f}},
+    {{+0.05f, -0.05f, -0.05f}, X_POS_NORMAL, X_POS_TANGENT, {1.0f, 1.0f}},
+    {{+0.05f, +0.05f, -0.05f}, X_POS_NORMAL, X_POS_TANGENT, {1.0f, 0.0f}},
+    {{+0.05f, +0.05f, +0.05f}, X_POS_NORMAL, X_POS_TANGENT, {0.0f, 0.0f}}
 };
 // clang-format on
 
@@ -179,6 +180,8 @@ void MainWindow::onFrame(InputState& input) {
     renderer->render(playerController.getCamera(), skybox, lights, models,
                      uiModels, windowResized);
     windowResized = false;
+
+    std::cout << "FPS: " << (1.0f / input.deltaTime) << std::endl;
 }
 
 void MainWindow::onResize(int width, int height) { windowResized = true; }
