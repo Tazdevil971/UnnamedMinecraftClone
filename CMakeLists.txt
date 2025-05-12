@@ -33,10 +33,12 @@ set(SOURCES
     src/world/Chunk.cpp
     src/world/AnimModel.cpp
     src/world/Mucchina.cpp
+    src/world/Capretta.cpp
     src/logic/Collision.cpp
     src/logic/PlayerController.cpp
     src/logic/VoxelRaytracer.cpp
     src/logic/DayNightCycle.cpp
+    src/logic/HudManager.cpp
     )
 
 set(SHADERS
@@ -61,6 +63,7 @@ set(ASSETS
     assets/pointer_texture.png
     assets/cursor.png
     assets/mucchina.png
+    assets/capretta.png
     )
 
 add_executable(UnnamedMinecraftClone ${SOURCES})

@@ -8,7 +8,9 @@
 #include "render/Window.hpp"
 #include "world/AtlasManager.hpp"
 #include "world/Mucchina.hpp"
+#include "world/Capretta.hpp"
 #include "world/World.hpp"
+#include "logic/HudManager.hpp"
 
 class MainWindow : public render::Window {
 public:
@@ -25,7 +27,7 @@ private:
 
     std::shared_ptr<world::AtlasManager> atlas;
     std::unique_ptr<world::World> world;
-
+    std::unique_ptr<logic::HudManager> hudManager;
     float simulatedTime = 0.0f;
     logic::PlayerController playerController{glm::vec3{0.0f, 14.0f, 0.0f}};
 
@@ -43,6 +45,9 @@ private:
     // NPCs
     std::shared_ptr<world::MucchinaBlueprint> mucchinaBlueprint;
     std::list<world::Mucchina> mucchine;
+
+    std::shared_ptr<world::CaprettaBlueprint> caprettaBlueprint;
+    std::list<world::Capretta> caprette;
 
     // Per frame stuff
     std::list<render::GeometryModel> models;
