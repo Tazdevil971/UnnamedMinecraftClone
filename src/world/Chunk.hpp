@@ -20,7 +20,7 @@ private:
     std::shared_ptr<AtlasManager> atlas;
 
     void updateMesh();
-    static void genTree(glm::ivec3 pos, Chunk &chunk, Block block);
+    static void genTree(glm::ivec3 pos, Chunk &chunk);
 
 public:
     Chunk(std::shared_ptr<AtlasManager> atlas);
