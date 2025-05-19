@@ -1,7 +1,9 @@
 #include "Chunk.hpp"
 
 #include "../render/BufferManager.hpp"
+#include "../render/Constants.hpp"
 #include "AtlasManager.hpp"
+#include "Block.hpp"
 
 using namespace world;
 using namespace render;
@@ -43,10 +45,14 @@ void Chunk::updateMesh() {
     for (int x = 0; x < DIM.x; x++) {
         for (int y = 0; y < DIM.y; y++) {
             for (int z = 0; z < DIM.z; z++) {
-                if (blocks[x][y][z] != Block::AIR &&
-                    (z == 0 || blocks[x][y][z - 1] == Block::AIR)) {
-                    auto bounds = atlas->getAtlasBounds(blocks[x][y][z],
-                                                        Side::SIDE_Z_NEG);
+                Block block = blocks[x][y][z];
+                if (block == Block::AIR) continue;
+
+                if (z == 0 || blocks[x][y][z - 1] == Block::AIR) {
+                    auto bounds =
+                        atlas->getAtlasBounds(block, Side::SIDE_Z_NEG);
+                    float spec = atlas->getBlockSpecularStrength(
+                        block, Side::SIDE_Z_NEG);
                     indices.push_back(vertices.size());
                     indices.push_back(vertices.size() + 1);
                     indices.push_back(vertices.size() + 2);
@@ -54,22 +60,27 @@ void Chunk::updateMesh() {
                     indices.push_back(vertices.size() + 2);
                     indices.push_back(vertices.size() + 3);
                     vertices.push_back({{x + 1, y, z},
-                                        {0.0f, 0.0f, -1.0f},
-                                        bounds.getBottomLeft()});
+                                        Z_NEG_NORMAL,
+                                        bounds.getBottomLeft(),
+                                        spec});
                     vertices.push_back({{x, y, z},
-                                        {0.0f, 0.0f, -1.0f},
-                                        bounds.getBottomRight()});
+                                        Z_NEG_NORMAL,
+                                        bounds.getBottomRight(),
+                                        spec});
                     vertices.push_back({{x, y + 1, z},
-                                        {0.0f, 0.0f, -1.0f},
-                                        bounds.getTopRight()});
+                                        Z_NEG_NORMAL,
+                                        bounds.getTopRight(),
+                                        spec});
                     vertices.push_back({{x + 1, y + 1, z},
-                                        {0.0f, 0.0f, -1.0f},
-                                        bounds.getTopLeft()});
+                                        Z_NEG_NORMAL,
+                                        bounds.getTopLeft(),
+                                        spec});
                 }
-                if (blocks[x][y][z] != Block::AIR &&
-                    (z == 15 || blocks[x][y][z + 1] == Block::AIR)) {
-                    auto bounds = atlas->getAtlasBounds(blocks[x][y][z],
-                                                        Side::SIDE_Z_POS);
+                if (z == 15 || blocks[x][y][z + 1] == Block::AIR) {
+                    auto bounds =
+                        atlas->getAtlasBounds(block, Side::SIDE_Z_POS);
+                    float spec = atlas->getBlockSpecularStrength(
+                        block, Side::SIDE_Z_POS);
                     indices.push_back(vertices.size());
                     indices.push_back(vertices.size() + 1);
                     indices.push_back(vertices.size() + 2);
@@ -77,23 +88,28 @@ void Chunk::updateMesh() {
                     indices.push_back(vertices.size() + 2);
                     indices.push_back(vertices.size() + 3);
                     vertices.push_back({{x, y, z + 1},
-                                        {0.0f, 0.0f, +1.0f},
-                                        bounds.getBottomLeft()});
+                                        Z_POS_NORMAL,
+                                        bounds.getBottomLeft(),
+                                        spec});
                     vertices.push_back({{x + 1, y, z + 1},
-                                        {0.0f, 0.0f, +1.0f},
-                                        bounds.getBottomRight()});
+                                        Z_POS_NORMAL,
+                                        bounds.getBottomRight(),
+                                        spec});
                     vertices.push_back({{x + 1, y + 1, z + 1},
-                                        {0.0f, 0.0f, +1.0f},
-                                        bounds.getTopRight()});
+                                        Z_POS_NORMAL,
+                                        bounds.getTopRight(),
+                                        spec});
                     vertices.push_back({{x, y + 1, z + 1},
-                                        {0.0f, 0.0f, +1.0f},
-                                        bounds.getTopLeft()});
+                                        Z_POS_NORMAL,
+                                        bounds.getTopLeft(),
+                                        spec});
                 }
 
-                if (blocks[x][y][z] != Block::AIR &&
-                    (y == 0 || blocks[x][y - 1][z] == Block::AIR)) {
+                if (y == 0 || blocks[x][y - 1][z] == Block::AIR) {
                     auto bounds =
-                        atlas->getAtlasBounds(blocks[x][y][z], Side::BOTTOM);
+                        atlas->getAtlasBounds(block, Side::SIDE_Y_NEG);
+                    float spec = atlas->getBlockSpecularStrength(
+                        block, Side::SIDE_Y_NEG);
                     indices.push_back(vertices.size());
                     indices.push_back(vertices.size() + 1);
                     indices.push_back(vertices.size() + 2);
@@ -101,23 +117,28 @@ void Chunk::updateMesh() {
                     indices.push_back(vertices.size() + 2);
                     indices.push_back(vertices.size() + 3);
                     vertices.push_back({{x, y, z},
-                                        {0.0f, -1.0f, 0.0f},
-                                        bounds.getBottomLeft()});
+                                        Y_NEG_NORMAL,
+                                        bounds.getBottomLeft(),
+                                        spec});
                     vertices.push_back({{x + 1, y, z},
-                                        {0.0f, -1.0f, 0.0f},
-                                        bounds.getBottomRight()});
+                                        Y_NEG_NORMAL,
+                                        bounds.getBottomRight(),
+                                        spec});
                     vertices.push_back({{x + 1, y, z + 1},
-                                        {0.0f, -1.0f, 0.0f},
-                                        bounds.getTopRight()});
+                                        Y_NEG_NORMAL,
+                                        bounds.getTopRight(),
+                                        spec});
                     vertices.push_back({{x, y, z + 1},
-                                        {0.0f, -1.0f, 0.0f},
-                                        bounds.getTopLeft()});
+                                        Y_NEG_NORMAL,
+                                        bounds.getTopLeft(),
+                                        spec});
                 }
 
-                if (blocks[x][y][z] != Block::AIR &&
-                    (y == 15 || blocks[x][y + 1][z] == Block::AIR)) {
-                    auto bounds =
-                        atlas->getAtlasBounds(blocks[x][y][z], Side::TOP);
+                if (y == 15 || blocks[x][y + 1][z] == Block::AIR) {
+                    auto bounds = atlas->getAtlasBounds(blocks[x][y][z],
+                                                        Side::SIDE_Y_POS);
+                    float spec = atlas->getBlockSpecularStrength(
+                        block, Side::SIDE_Y_POS);
                     indices.push_back(vertices.size());
                     indices.push_back(vertices.size() + 1);
                     indices.push_back(vertices.size() + 2);
@@ -125,23 +146,28 @@ void Chunk::updateMesh() {
                     indices.push_back(vertices.size() + 2);
                     indices.push_back(vertices.size() + 3);
                     vertices.push_back({{x, y + 1, z + 1},
-                                        {0.0f, +1.0f, 0.0f},
-                                        bounds.getBottomLeft()});
+                                        Y_POS_NORMAL,
+                                        bounds.getBottomLeft(),
+                                        spec});
                     vertices.push_back({{x + 1, y + 1, z + 1},
-                                        {0.0f, +1.0f, 0.0f},
-                                        bounds.getBottomRight()});
+                                        Y_POS_NORMAL,
+                                        bounds.getBottomRight(),
+                                        spec});
                     vertices.push_back({{x + 1, y + 1, z},
-                                        {0.0f, +1.0f, 0.0f},
-                                        bounds.getTopRight()});
+                                        Y_POS_NORMAL,
+                                        bounds.getTopRight(),
+                                        spec});
                     vertices.push_back({{x, y + 1, z},
-                                        {0.0f, +1.0f, 0.0f},
-                                        bounds.getTopLeft()});
+                                        Y_POS_NORMAL,
+                                        bounds.getTopLeft(),
+                                        spec});
                 }
 
-                if (blocks[x][y][z] != Block::AIR &&
-                    (x == 0 || blocks[x - 1][y][z] == Block::AIR)) {
+                if (x == 0 || blocks[x - 1][y][z] == Block::AIR) {
                     auto bounds = atlas->getAtlasBounds(blocks[x][y][z],
                                                         Side::SIDE_X_NEG);
+                    float spec = atlas->getBlockSpecularStrength(
+                        block, Side::SIDE_X_NEG);
                     indices.push_back(vertices.size());
                     indices.push_back(vertices.size() + 1);
                     indices.push_back(vertices.size() + 2);
@@ -149,23 +175,28 @@ void Chunk::updateMesh() {
                     indices.push_back(vertices.size() + 2);
                     indices.push_back(vertices.size() + 3);
                     vertices.push_back({{x, y, z},
-                                        {-1.0f, 0.0f, 0.0f},
-                                        bounds.getBottomLeft()});
+                                        X_NEG_NORMAL,
+                                        bounds.getBottomLeft(),
+                                        spec});
                     vertices.push_back({{x, y, z + 1},
-                                        {-1.0f, 0.0f, 0.0f},
-                                        bounds.getBottomRight()});
+                                        X_NEG_NORMAL,
+                                        bounds.getBottomRight(),
+                                        spec});
                     vertices.push_back({{x, y + 1, z + 1},
-                                        {-1.0f, 0.0f, 0.0f},
-                                        bounds.getTopRight()});
+                                        X_NEG_NORMAL,
+                                        bounds.getTopRight(),
+                                        spec});
                     vertices.push_back({{x, y + 1, z},
-                                        {-1.0f, 0.0f, 0.0f},
-                                        bounds.getTopLeft()});
+                                        X_NEG_NORMAL,
+                                        bounds.getTopLeft(),
+                                        spec});
                 }
 
-                if (blocks[x][y][z] != Block::AIR &&
-                    (x == 15 || blocks[x + 1][y][z] == Block::AIR)) {
+                if (x == 15 || blocks[x + 1][y][z] == Block::AIR) {
                     auto bounds = atlas->getAtlasBounds(blocks[x][y][z],
                                                         Side::SIDE_X_POS);
+                    float spec = atlas->getBlockSpecularStrength(
+                        block, Side::SIDE_X_POS);
                     indices.push_back(vertices.size());
                     indices.push_back(vertices.size() + 1);
                     indices.push_back(vertices.size() + 2);
@@ -173,17 +204,21 @@ void Chunk::updateMesh() {
                     indices.push_back(vertices.size() + 2);
                     indices.push_back(vertices.size() + 3);
                     vertices.push_back({{x + 1, y, z + 1},
-                                        {+1.0f, 0.0f, 0.0f},
-                                        bounds.getBottomLeft()});
+                                        X_POS_NORMAL,
+                                        bounds.getBottomLeft(),
+                                        spec});
                     vertices.push_back({{x + 1, y, z},
-                                        {+1.0f, 0.0f, 0.0f},
-                                        bounds.getBottomRight()});
+                                        X_POS_NORMAL,
+                                        bounds.getBottomRight(),
+                                        spec});
                     vertices.push_back({{x + 1, y + 1, z},
-                                        {+1.0f, 0.0f, 0.0f},
-                                        bounds.getTopRight()});
+                                        X_POS_NORMAL,
+                                        bounds.getTopRight(),
+                                        spec});
                     vertices.push_back({{x + 1, y + 1, z + 1},
-                                        {+1.0f, 0.0f, 0.0f},
-                                        bounds.getTopLeft()});
+                                        X_POS_NORMAL,
+                                        bounds.getTopLeft(),
+                                        spec});
                 }
             }
         }

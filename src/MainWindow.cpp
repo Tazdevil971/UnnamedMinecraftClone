@@ -7,14 +7,15 @@
 #include "Random.hpp"
 #include "glm/fwd.hpp"
 #include "logic/DayNightCycle.hpp"
+#include "logic/HudManager.hpp"
 #include "render/BufferManager.hpp"
+#include "render/Constants.hpp"
 #include "render/GeometryRenderer.hpp"
 #include "render/Renderer.hpp"
 #include "render/Skybox.hpp"
 #include "world/AtlasManager.hpp"
-#include "world/Mucchina.hpp"
 #include "world/Capretta.hpp"
-#include "logic/HudManager.hpp"
+#include "world/Mucchina.hpp"
 
 using namespace render;
 using namespace world;
@@ -34,40 +35,40 @@ std::vector<uint16_t> DEBUG_CUBE_INDICES = {
 
 std::vector<GeometryVertex> DEBUG_CUBE_VERTICES = {
     // Z- side
-    {{+0.05f, -0.05f, -0.05f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}},
-    {{-0.05f, -0.05f, -0.05f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}},
-    {{-0.05f, +0.05f, -0.05f}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}},
-    {{+0.05f, +0.05f, -0.05f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}},
+    {{+0.05f, -0.05f, -0.05f}, Z_NEG_NORMAL, {0.0f, 1.0f}, 0.0f},
+    {{-0.05f, -0.05f, -0.05f}, Z_NEG_NORMAL, {1.0f, 1.0f}, 0.0f},
+    {{-0.05f, +0.05f, -0.05f}, Z_NEG_NORMAL, {1.0f, 0.0f}, 0.0f},
+    {{+0.05f, +0.05f, -0.05f}, Z_NEG_NORMAL, {0.0f, 0.0f}, 0.0f},
 
     // Z+ side
-    {{-0.05f, -0.05f, +0.05f}, {0.0f, 0.0f, +1.0f}, {0.0f, 1.0f}},
-    {{+0.05f, -0.05f, +0.05f}, {0.0f, 0.0f, +1.0f}, {1.0f, 1.0f}},
-    {{+0.05f, +0.05f, +0.05f}, {0.0f, 0.0f, +1.0f}, {1.0f, 0.0f}},
-    {{-0.05f, +0.05f, +0.05f}, {0.0f, 0.0f, +1.0f}, {0.0f, 0.0f}},
+    {{-0.05f, -0.05f, +0.05f}, Z_POS_NORMAL, {0.0f, 1.0f}, 0.0f},
+    {{+0.05f, -0.05f, +0.05f}, Z_POS_NORMAL, {1.0f, 1.0f}, 0.0f},
+    {{+0.05f, +0.05f, +0.05f}, Z_POS_NORMAL, {1.0f, 0.0f}, 0.0f},
+    {{-0.05f, +0.05f, +0.05f}, Z_POS_NORMAL, {0.0f, 0.0f}, 0.0f},
 
     // Bottom
-    {{-0.05f, -0.05f, -0.05f}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
-    {{+0.05f, -0.05f, -0.05f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
-    {{+0.05f, -0.05f, +0.05f}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{-0.05f, -0.05f, +0.05f}, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
+    {{-0.05f, -0.05f, -0.05f}, Y_NEG_NORMAL, {0.0f, 1.0f}, 0.0f},
+    {{+0.05f, -0.05f, -0.05f}, Y_NEG_NORMAL, {1.0f, 1.0f}, 0.0f},
+    {{+0.05f, -0.05f, +0.05f}, Y_NEG_NORMAL, {1.0f, 0.0f}, 0.0f},
+    {{-0.05f, -0.05f, +0.05f}, Y_NEG_NORMAL, {0.0f, 0.0f}, 0.0f},
 
     // Top
-    {{-0.05f, +0.05f, +0.05f}, {0.0f, +1.0f, 0.0f}, {0.0f, 1.0f}},
-    {{+0.05f, +0.05f, +0.05f}, {0.0f, +1.0f, 0.0f}, {1.0f, 1.0f}},
-    {{+0.05f, +0.05f, -0.05f}, {0.0f, +1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{-0.05f, +0.05f, -0.05f}, {0.0f, +1.0f, 0.0f}, {0.0f, 0.0f}},
+    {{-0.05f, +0.05f, +0.05f}, Y_POS_NORMAL, {0.0f, 1.0f}, 0.0f},
+    {{+0.05f, +0.05f, +0.05f}, Y_POS_NORMAL, {1.0f, 1.0f}, 0.0f},
+    {{+0.05f, +0.05f, -0.05f}, Y_POS_NORMAL, {1.0f, 0.0f}, 0.0f},
+    {{-0.05f, +0.05f, -0.05f}, Y_POS_NORMAL, {0.0f, 0.0f}, 0.0f},
 
     // X- side
-    {{-0.05f, -0.05f, -0.05f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-    {{-0.05f, -0.05f, +0.05f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-    {{-0.05f, +0.05f, +0.05f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{-0.05f, +0.05f, -0.05f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    {{-0.05f, -0.05f, -0.05f}, X_NEG_NORMAL, {0.0f, 1.0f}, 0.0f},
+    {{-0.05f, -0.05f, +0.05f}, X_NEG_NORMAL, {1.0f, 1.0f}, 0.0f},
+    {{-0.05f, +0.05f, +0.05f}, X_NEG_NORMAL, {1.0f, 0.0f}, 0.0f},
+    {{-0.05f, +0.05f, -0.05f}, X_NEG_NORMAL, {0.0f, 0.0f}, 0.0f},
 
     // X+ side
-    {{+0.05f, -0.05f, +0.05f}, {+1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-    {{+0.05f, -0.05f, -0.05f}, {+1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-    {{+0.05f, +0.05f, -0.05f}, {+1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{+0.05f, +0.05f, +0.05f}, {+1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}}
+    {{+0.05f, -0.05f, +0.05f}, X_POS_NORMAL, {0.0f, 1.0f}, 0.0f},
+    {{+0.05f, -0.05f, -0.05f}, X_POS_NORMAL, {1.0f, 1.0f}, 0.0f},
+    {{+0.05f, +0.05f, -0.05f}, X_POS_NORMAL, {1.0f, 0.0f}, 0.0f},
+    {{+0.05f, +0.05f, +0.05f}, X_POS_NORMAL, {0.0f, 0.0f}, 0.0f}
 };
 // clang-format on
 
@@ -169,7 +170,6 @@ void MainWindow::onFrame(InputState& input) {
 
     for (auto& mucchina : mucchine) mucchina.addToModelList(models);
     for (auto& capretta : caprette) capretta.addToModelList(models);
-
 
     hudManager->setSelectedBlock(input.selected_block);
 

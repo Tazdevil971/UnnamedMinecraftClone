@@ -29,6 +29,7 @@ public:
     const render::Texture& getAtlas() const { return atlas; }
 
     AtlasBounds getAtlasBounds(Block block, Side side) const;
+    float getBlockSpecularStrength(Block block, Side side) const;
 
 private:
     glm::vec2 convertIntCoords(glm::ivec2 coords) const;

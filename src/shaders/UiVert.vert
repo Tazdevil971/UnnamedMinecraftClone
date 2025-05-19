@@ -9,10 +9,12 @@ layout(push_constant) uniform PushConstant {
     vec2 pos;
     vec2 dimension;
     vec2 anchor;
-} pushConstant;
+}
+pushConstant;
 
 void main() {
-    vec2 coord = (inPosition+pushConstant.pos)/pushConstant.dimension + pushConstant.anchor;
+    vec2 coord = (inPosition + pushConstant.pos) / pushConstant.dimension +
+                 pushConstant.anchor;
     gl_Position = vec4(coord.xy, 0.0, 1.0);
     fragTexCoord = inTexCoord;
 }

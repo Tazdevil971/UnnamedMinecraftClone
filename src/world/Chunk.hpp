@@ -7,7 +7,6 @@
 #include "AtlasManager.hpp"
 #include "Block.hpp"
 
-
 namespace world {
 
 class Chunk {

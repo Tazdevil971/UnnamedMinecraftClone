@@ -26,6 +26,7 @@ struct GeometryVertex {
     glm::vec3 pos;
     glm::vec3 normal;
     glm::vec2 uv;
+    float specStrength;
 };
 
 struct UiVertex {
@@ -97,9 +98,9 @@ struct GeometryMesh : BaseMesh {
         return description;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 3>
+    static std::array<VkVertexInputAttributeDescription, 4>
     getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 3> descriptions{};
+        std::array<VkVertexInputAttributeDescription, 4> descriptions{};
         descriptions[0].binding = 0;
         descriptions[0].location = 0;
         descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -114,6 +115,11 @@ struct GeometryMesh : BaseMesh {
         descriptions[2].location = 2;
         descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
         descriptions[2].offset = offsetof(GeometryVertex, uv);
+
+        descriptions[3].binding = 0;
+        descriptions[3].location = 3;
+        descriptions[3].format = VK_FORMAT_R32_SFLOAT;
+        descriptions[3].offset = offsetof(GeometryVertex, specStrength);
 
         return descriptions;
     }

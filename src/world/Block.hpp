@@ -11,4 +11,11 @@ enum class Block {
     DIAMOND
 };
 
-enum class Side { TOP, SIDE_Z_POS, SIDE_Z_NEG, SIDE_X_POS, SIDE_X_NEG, BOTTOM };
+enum class Side {
+    SIDE_Y_POS,
+    SIDE_Z_POS,
+    SIDE_Z_NEG,
+    SIDE_X_POS,
+    SIDE_X_NEG,
+    SIDE_Y_NEG
+};

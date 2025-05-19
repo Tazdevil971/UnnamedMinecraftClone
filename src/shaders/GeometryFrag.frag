@@ -3,6 +3,7 @@
 layout(location = 0) in vec3 fragNormal;
 layout(location = 1) in vec2 fragTexCoord;
 layout(location = 2) in vec3 fragWorldPos;
+layout(location = 3) in float fragSpecStrength;
 
 layout(location = 0) out vec4 outColor;
 
@@ -13,19 +14,33 @@ layout(set = 2, binding = 0) uniform Ubo {
     vec4 ambientColor;
     vec4 sunDir;
     vec4 sunColor;
-} ubo;
+    vec4 viewPos;
+}
+ubo;
 
 void main() {
     vec3 sunDir = normalize(ubo.sunDir.xyz);
+    vec3 normal = normalize(fragNormal);
+    vec3 viewPos = ubo.viewPos.xyz;
 
     // Shadow stuff
     vec4 shadowPos = ubo.shadowVP * vec4(fragWorldPos, 1.0);
-    float shadowDepth = texture(depthTexSampler, (shadowPos.xy + vec2(1.0)) / 2).r;
+    float shadowDepth =
+        texture(depthTexSampler, (shadowPos.xy + vec2(1.0)) / 2).r;
 
-    // Simple diffuse shader
+    // Always add ambient color
     vec3 lightColor = ubo.ambientColor.rgb;
-    if (shadowPos.z < (shadowDepth + 0.0001)) 
-        lightColor += ubo.sunColor.rgb * max(dot(sunDir, fragNormal), 0);
+    if (shadowPos.z < (shadowDepth + 0.0001)) {
+        // If we are not in shadow, compute diffuse component
+        lightColor += ubo.sunColor.rgb * max(dot(sunDir, normal), 0);
 
-    outColor = vec4(texture(texSampler, fragTexCoord).rgb * lightColor, 1.0);
+        // Optional specular component
+        vec3 viewDir = normalize(viewPos - fragWorldPos);
+        vec3 reflectDir = reflect(-sunDir, normal);
+        float spec = pow(max(dot(viewDir, reflectDir), 0), 256);
+
+        lightColor += ubo.sunColor.rgb * spec * fragSpecStrength;
+    }
+
+    outColor = vec4(lightColor * texture(texSampler, fragTexCoord).rgb, 1.0);
 }

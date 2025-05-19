@@ -21,12 +21,12 @@ void GeometryRenderer::record(VkCommandBuffer commandBuffer,
                               const Texture& depthTexture,
                               std::list<GeometryModel> models) {
     // Update UBO
-    lightInfoUbo.write(LightInfoUbo{
-        ShadowPass::computeShadowVP(camera.pos, lights.sunDir),
-        {lights.ambientColor, 1.0f},
-        {lights.sunDir, 1.0f},
-        {lights.sunColor, 1.0f},
-    });
+    lightInfoUbo.write(
+        LightInfoUbo{ShadowPass::computeShadowVP(camera.pos, lights.sunDir),
+                     {lights.ambientColor, 1.0f},
+                     {lights.sunDir, 1.0f},
+                     {lights.sunColor, 1.0f},
+                     {camera.pos, 1.0f}});
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       *pipeline);

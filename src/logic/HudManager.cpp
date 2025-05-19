@@ -1,4 +1,5 @@
 #include "HudManager.hpp"
+
 #include "../render/BufferManager.hpp"
 
 using namespace world;
@@ -6,7 +7,6 @@ using namespace render;
 using namespace logic;
 
 HudManager::HudManager(std::shared_ptr<AtlasManager> atlas) : atlas{atlas} {
-
     selected_block = 0;
 
     for (int i = 1; i < 8; i++) {
@@ -27,7 +27,7 @@ HudManager::HudManager(std::shared_ptr<AtlasManager> atlas) : atlas{atlas} {
         vertices.push_back({{100, 40}, bounds.getBottomRight()});
         vertices.push_back({{100, -110}, bounds.getTopRight()});
         // top
-        bounds = atlas->getAtlasBounds(static_cast<Block>(i), Side::TOP);
+        bounds = atlas->getAtlasBounds(static_cast<Block>(i), Side::SIDE_Y_POS);
         vertices.push_back({{-75, -75}, bounds.getTopRight()});
         vertices.push_back({{75, -75}, bounds.getBottomRight()});
         vertices.push_back({{100, -110}, bounds.getBottomLeft()});
@@ -53,7 +53,6 @@ HudManager::HudManager(std::shared_ptr<AtlasManager> atlas) : atlas{atlas} {
 }
 
 void HudManager::addToModelList(std::list<render::UiModel>& uiModels) {
-
     glm::vec2 center = {0, 0};
     uiModels.push_back(UiModel{pointerMesh, pointerTexture, center, CENTER});
 

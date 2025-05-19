@@ -18,16 +18,16 @@ AtlasManager::AtlasBounds AtlasManager::getAtlasBounds(Block block,
 
         // GRASS
     } else if (block == Block::GRASS) {
-        if (side == Side::TOP) {
+        if (side == Side::SIDE_Y_POS) {
             return computeAtlasBound({32, 0});
-        } else if (side == Side::BOTTOM) {
+        } else if (side == Side::SIDE_Y_NEG) {
             return computeAtlasBound({0, 0});
         } else {
             return computeAtlasBound({16, 0});
         }
         // WOOD
     } else if (block == Block::WOOD_LOG) {
-        if ((side == Side::BOTTOM) || (side == Side::TOP)) {
+        if ((side == Side::SIDE_Y_NEG) || (side == Side::SIDE_Y_POS)) {
             return computeAtlasBound({32, 16});
         } else {
             return computeAtlasBound({48, 0});
@@ -48,6 +48,14 @@ AtlasManager::AtlasBounds AtlasManager::getAtlasBounds(Block block,
     } else {
         // In case everything else fails, just return dirt
         return computeAtlasBound({0, 0});
+    }
+}
+
+float AtlasManager::getBlockSpecularStrength(Block block, Side side) const {
+    if (block == Block::COBBLESTONE || block == Block::DIAMOND) {
+        return 5.0f;
+    } else {
+        return 0.0f;
     }
 }
 

@@ -2,15 +2,15 @@
 
 #include <list>
 
+#include "logic/HudManager.hpp"
 #include "logic/PlayerController.hpp"
 #include "render/Renderer.hpp"
 #include "render/Skybox.hpp"
 #include "render/Window.hpp"
 #include "world/AtlasManager.hpp"
-#include "world/Mucchina.hpp"
 #include "world/Capretta.hpp"
+#include "world/Mucchina.hpp"
 #include "world/World.hpp"
-#include "logic/HudManager.hpp"
 
 class MainWindow : public render::Window {
 public:

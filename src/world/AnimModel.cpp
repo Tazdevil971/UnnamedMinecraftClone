@@ -1,6 +1,7 @@
 #include "AnimModel.hpp"
 
 #include "../render/BufferManager.hpp"
+#include "../render/Constants.hpp"
 
 using namespace world;
 using namespace render;
@@ -27,8 +28,8 @@ AnimModelBlueprint::JointId AnimModelBlueprint::addJoint(
     glm::ivec3 size, glm::ivec2 topLeft) {
     size_t index = joints.size();
 
-    auto topBounds = getBounds(topLeft, Side::TOP, size);
-    auto bottomBounds = getBounds(topLeft, Side::BOTTOM, size);
+    auto topBounds = getBounds(topLeft, Side::SIDE_Y_POS, size);
+    auto bottomBounds = getBounds(topLeft, Side::SIDE_Y_NEG, size);
     auto zNegBounds = getBounds(topLeft, Side::SIDE_Z_NEG, size);
     auto zPosBounds = getBounds(topLeft, Side::SIDE_Z_POS, size);
     auto xNegBounds = getBounds(topLeft, Side::SIDE_X_NEG, size);
@@ -94,40 +95,40 @@ AnimModelBlueprint::JointId AnimModelBlueprint::addJoint(
             20, 21, 22, 20, 22, 23,
         }, {
             // Z- side
-            {xPosYNegZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getBottomRight()},
-            {xNegYNegZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getBottomLeft()},
-            {xNegYPosZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getTopLeft()},
-            {xPosYPosZNeg, {0.0f, 0.0f, -1.0f}, zNegBounds.getTopRight()},
+            {xPosYNegZNeg, Z_NEG_NORMAL, zNegBounds.getBottomRight(), 0.0f},
+            {xNegYNegZNeg, Z_NEG_NORMAL, zNegBounds.getBottomLeft(), 0.0f},
+            {xNegYPosZNeg, Z_NEG_NORMAL, zNegBounds.getTopLeft(), 0.0f},
+            {xPosYPosZNeg, Z_NEG_NORMAL, zNegBounds.getTopRight(), 0.0f},
 
             // Z+ side
-            {xNegYNegZPos, {0.0f, 0.0f, +1.0f}, zPosBounds.getBottomLeft()},
-            {xPosYNegZPos, {0.0f, 0.0f, +1.0f}, zPosBounds.getBottomRight()},
-            {xPosYPosZPos, {0.0f, 0.0f, +1.0f}, zPosBounds.getTopRight()},
-            {xNegYPosZPos, {0.0f, 0.0f, +1.0f}, zPosBounds.getTopLeft()},
+            {xNegYNegZPos, Z_POS_NORMAL, zPosBounds.getBottomLeft(), 0.0f},
+            {xPosYNegZPos, Z_POS_NORMAL, zPosBounds.getBottomRight(), 0.0f},
+            {xPosYPosZPos, Z_POS_NORMAL, zPosBounds.getTopRight(), 0.0f},
+            {xNegYPosZPos, Z_POS_NORMAL, zPosBounds.getTopLeft(), 0.0f},
 
             // Bottom
-            {xNegYNegZNeg, {0.0f, -1.0f, 0.0f}, bottomBounds.getBottomLeft()},
-            {xPosYNegZNeg, {0.0f, -1.0f, 0.0f}, bottomBounds.getBottomRight()},
-            {xPosYNegZPos, {0.0f, -1.0f, 0.0f}, bottomBounds.getTopRight()},
-            {xNegYNegZPos, {0.0f, -1.0f, 0.0f}, bottomBounds.getTopLeft()},
+            {xNegYNegZNeg, Y_NEG_NORMAL, bottomBounds.getBottomLeft(), 0.0f},
+            {xPosYNegZNeg, Y_NEG_NORMAL, bottomBounds.getBottomRight(), 0.0f},
+            {xPosYNegZPos, Y_NEG_NORMAL, bottomBounds.getTopRight(), 0.0f},
+            {xNegYNegZPos, Y_NEG_NORMAL, bottomBounds.getTopLeft(), 0.0f},
 
             // Top
-            {xNegYPosZPos, {0.0f, +1.0f, 0.0f}, topBounds.getBottomLeft()},
-            {xPosYPosZPos, {0.0f, +1.0f, 0.0f}, topBounds.getBottomRight()},
-            {xPosYPosZNeg, {0.0f, +1.0f, 0.0f}, topBounds.getTopRight()},
-            {xNegYPosZNeg, {0.0f, +1.0f, 0.0f}, topBounds.getTopLeft()},
+            {xNegYPosZPos, Y_POS_NORMAL, topBounds.getBottomLeft(), 0.0f},
+            {xPosYPosZPos, Y_POS_NORMAL, topBounds.getBottomRight(), 0.0f},
+            {xPosYPosZNeg, Y_POS_NORMAL, topBounds.getTopRight(), 0.0f},
+            {xNegYPosZNeg, Y_POS_NORMAL, topBounds.getTopLeft(), 0.0f},
 
             // X- side
-            {xNegYNegZNeg, {-1.0f, 0.0f, 0.0f}, xNegBounds.getBottomRight()},
-            {xNegYNegZPos, {-1.0f, 0.0f, 0.0f}, xNegBounds.getBottomLeft()},
-            {xNegYPosZPos, {-1.0f, 0.0f, 0.0f}, xNegBounds.getTopLeft()},
-            {xNegYPosZNeg, {-1.0f, 0.0f, 0.0f}, xNegBounds.getTopRight()},
+            {xNegYNegZNeg, X_NEG_NORMAL, xNegBounds.getBottomRight(), 0.0f},
+            {xNegYNegZPos, X_NEG_NORMAL, xNegBounds.getBottomLeft(), 0.0f},
+            {xNegYPosZPos, X_NEG_NORMAL, xNegBounds.getTopLeft(), 0.0f},
+            {xNegYPosZNeg, X_NEG_NORMAL, xNegBounds.getTopRight(), 0.0f},
 
             // X+ side
-            {xPosYNegZPos, {+1.0f, 0.0f, 0.0f}, xPosBounds.getBottomLeft()},
-            {xPosYNegZNeg, {+1.0f, 0.0f, 0.0f}, xPosBounds.getBottomRight()},
-            {xPosYPosZNeg, {+1.0f, 0.0f, 0.0f}, xPosBounds.getTopRight()},
-            {xPosYPosZPos, {+1.0f, 0.0f, 0.0f}, xPosBounds.getTopLeft()}
+            {xPosYNegZPos, X_POS_NORMAL, xPosBounds.getBottomLeft(), 0.0f},
+            {xPosYNegZNeg, X_POS_NORMAL, xPosBounds.getBottomRight(), 0.0f},
+            {xPosYPosZNeg, X_POS_NORMAL, xPosBounds.getTopRight(), 0.0f},
+            {xPosYPosZPos, X_POS_NORMAL, xPosBounds.getTopLeft(), 0.0f}
         });
     // clang-format on
 
@@ -175,7 +176,7 @@ void AnimModelBlueprint::addToModelList(
 AnimModelBlueprint::Bounds AnimModelBlueprint::getBounds(
     glm::ivec2 topLeft, Side side, glm::ivec3 size) const {
     glm::ivec2 sideSize;
-    if (side == Side::TOP || side == Side::BOTTOM) {
+    if (side == Side::SIDE_Y_POS || side == Side::SIDE_Y_NEG) {
         sideSize = glm::ivec2{size.x, size.z};
     } else if (side == Side::SIDE_X_POS || side == Side::SIDE_X_NEG) {
         sideSize = glm::ivec2{size.z, size.y};
@@ -184,9 +185,9 @@ AnimModelBlueprint::Bounds AnimModelBlueprint::getBounds(
     }
 
     glm::ivec2 sideTopLeft = topLeft;
-    if (side == Side::TOP) {
+    if (side == Side::SIDE_Y_POS) {
         // sideTopLeft = topLeft;
-    } else if (side == Side::BOTTOM) {
+    } else if (side == Side::SIDE_Y_NEG) {
         sideTopLeft += glm::ivec2{size.x, 0};
     } else if (side == Side::SIDE_Z_POS) {
         sideTopLeft += glm::ivec2{0, size.z};

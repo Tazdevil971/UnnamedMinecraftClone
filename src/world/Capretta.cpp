@@ -1,9 +1,10 @@
+#include "Capretta.hpp"
+
 #include <algorithm>
 #include <cmath>
 
 #include "../Random.hpp"
 #include "AnimModel.hpp"
-#include "Capretta.hpp"
 #include "glm/geometric.hpp"
 
 using namespace world;

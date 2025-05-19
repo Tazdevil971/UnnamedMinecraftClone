@@ -6,9 +6,8 @@ layout(location = 0) out vec4 outColor;
 
 layout(set = 0, binding = 0) uniform sampler2D dayTexSampler;
 layout(set = 1, binding = 0) uniform sampler2D nightTexSampler;
-layout(set = 2, binding = 0) uniform Ubo {
-    float blend;
-} ubo;
+layout(set = 2, binding = 0) uniform Ubo { float blend; }
+ubo;
 
 void main() {
     vec3 dayColor = texture(dayTexSampler, fragTexCoord).rgb;

@@ -35,6 +35,7 @@ private:
         glm::vec4 ambientColor;
         glm::vec4 sunDir;
         glm::vec4 sunColor;
+        glm::vec4 viewPos;
     };
 
     void recordSingle(VkCommandBuffer commandBuffer, glm::mat4 vp,
