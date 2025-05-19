@@ -138,20 +138,26 @@ void MainWindow::onFrame(InputState& input) {
     }
 
     // Destroy mucchine that are too far to be seen
-    for (auto it = mucchine.begin(); it != mucchine.end(); it++) {
+    for (auto it = mucchine.begin(); it != mucchine.end();) {
         glm::vec3 pos1 = playerController.getPos();
         glm::vec3 pos2 = it->getPos();
         if (std::abs(pos1.x - pos2.x) >= 48.0f ||
-            std::abs(pos1.z - pos2.z) >= 48.0f)
+            std::abs(pos1.z - pos2.z) >= 48.0f) {
             it = mucchine.erase(it);
+        } else {
+            it++;
+        }
     }
 
-    for (auto it = caprette.begin(); it != caprette.end(); it++) {
+    for (auto it = caprette.begin(); it != caprette.end();) {
         glm::vec3 pos1 = playerController.getPos();
         glm::vec3 pos2 = it->getPos();
         if (std::abs(pos1.x - pos2.x) >= 48.0f ||
-            std::abs(pos1.z - pos2.z) >= 48.0f)
+            std::abs(pos1.z - pos2.z) >= 48.0f) {
             it = caprette.erase(it);
+        } else {
+            it++;
+        }
     }
 
     auto dayNightState = logic::getDayNightState(input.time);

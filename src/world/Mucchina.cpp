@@ -15,7 +15,6 @@ MucchinaBlueprint::MucchinaBlueprint()
     body = blueprint.addJoint(AnimModelBlueprint::JointId::root(), {12, 5, 6},
                               {0, 14, 0}, glm::vec3{0, 0, 0}, {24, 10, 12},
                               {0, 0});
-
     backLeftLeg = blueprint.addJoint(body, {2, 14, 2}, {-10, 0, -4},
                                      glm::vec3{0, 0, 0}, {5, 9, 4}, {0, 22});
     backRightLeg = blueprint.addJoint(body, {2, 14, 2}, {-10, 0, 4},
@@ -25,7 +24,6 @@ MucchinaBlueprint::MucchinaBlueprint()
                                       glm::vec3{0, 0, 0}, {5, 9, 4}, {0, 22});
     frontRightLeg = blueprint.addJoint(body, {3, 14, 2}, {10, 0, 4},
                                        glm::vec3{0, 0, 0}, {5, 9, 4}, {0, 22});
-
     head = blueprint.addJoint(body, {2, 2, 4}, {11, 4, 0}, glm::vec3{0, 0, 0},
                               {8, 8, 8}, {18, 22});
 }

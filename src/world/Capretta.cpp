@@ -12,20 +12,20 @@ using namespace render;
 CaprettaBlueprint::CaprettaBlueprint()
     : blueprint{"assets/capretta.png", VK_FORMAT_R8G8B8A8_SRGB} {
     body =
-        blueprint.addJoint(AnimModelBlueprint::JointId::root(), {8, 4, 4},
-                           {0, 10, 0}, glm::vec3{0, 0, 0}, {16, 8, 8}, {0, 14});
+        blueprint.addJoint(AnimModelBlueprint::JointId::root(), {6, 3, 3},
+                           {0, 8, 0}, glm::vec3{0, 0, 0}, {12, 6, 6}, {0, 0});
 
-    backLeftLeg = blueprint.addJoint(body, {1, 3, 1}, {-5, -8, -2},
-                                     glm::vec3{0, 0, 0}, {2, 6, 2}, {0, 10});
-    backRightLeg = blueprint.addJoint(body, {1, 3, 1}, {-5, -8, 2},
-                                      glm::vec3{0, 0, 0}, {2, 6, 2}, {0, 10});
+    backLeftLeg = blueprint.addJoint(body, {1, 3, 1}, {-4, -6, -2},
+                                     glm::vec3{0, 0, 0}, {2, 6, 2}, {0, 12});
+    backRightLeg = blueprint.addJoint(body, {1, 3, 1}, {-4, -6, 2},
+                                      glm::vec3{0, 0, 0}, {2, 6, 2}, {0, 12});
+    frontLeftLeg = blueprint.addJoint(body, {1, 3, 1}, {4, -6, -2},
+                                      glm::vec3{0, 0, 0}, {2, 6, 2}, {0, 12});
+    frontRightLeg = blueprint.addJoint(body, {1, 3, 1}, {4, -6, 2},
+                                       glm::vec3{0, 0, 0}, {2, 6, 2}, {0, 12});
 
-    frontLeftLeg = blueprint.addJoint(body, {1, 3, 1}, {5, -8, -2},
-                                      glm::vec3{0, 0, 0}, {2, 6, 2}, {0, 10});
-    frontRightLeg = blueprint.addJoint(body, {1, 3, 1}, {5, -8, 2},
-                                       glm::vec3{0, 0, 0}, {2, 6, 2}, {0, 10});
-    head = blueprint.addJoint(body, {2, 2, 2}, {9, 2, 0}, glm::vec3{0, 0, 0},
-                              {5, 5, 5}, {12, 14});
+    head = blueprint.addJoint(body, {2, 2, 3}, {8, 3, 0}, glm::vec3{0, 0, 0},
+                              {6, 6, 6}, {8, 12});
 }
 
 Capretta CaprettaBlueprint::fabricate() {
