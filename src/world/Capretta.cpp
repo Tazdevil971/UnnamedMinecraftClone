@@ -14,7 +14,7 @@ CaprettaBlueprint::CaprettaBlueprint()
     : blueprint{"assets/capretta.png", VK_FORMAT_R8G8B8A8_SRGB} {
     body =
         blueprint.addJoint(AnimModelBlueprint::JointId::root(), {6, 3, 3},
-                           {0, 8, 0}, glm::vec3{0, 0, 0}, {12, 6, 6}, {0, 0});
+                           {0, 9, 0}, glm::vec3{0, 0, 0}, {12, 6, 6}, {0, 0});
 
     backLeftLeg = blueprint.addJoint(body, {1, 3, 1}, {-4, -6, -2},
                                      glm::vec3{0, 0, 0}, {2, 6, 2}, {0, 12});
