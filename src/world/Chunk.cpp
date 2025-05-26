@@ -276,11 +276,10 @@ void Chunk::genTree(glm::ivec3 pos, Chunk &chunk) {
         return;
     }
 
-
-   for (int i = 0; i < 5; i++) {
-        chunk.blocks[x][y+i][z] = Block::WOOD_LOG;
-   }
-   y = y+4;
+    for (int i = 0; i < 5; i++) {
+        chunk.blocks[x][y + i][z] = Block::WOOD_LOG;
+    }
+    y = y + 4;
 
     for (int k = 0; k < 2; k++) {
         for (int i = -1; i < 2; i++) {
@@ -308,7 +307,7 @@ Chunk Chunk::genChunk(std::shared_ptr<AtlasManager> atlas, glm::ivec3 pos) {
             // coordinates of the block
             float noiseValue = noiseOctave(worldX, worldZ);
             float treeNoise = glm::simplex(glm::vec2(worldX, worldZ) / 50.0f);
-            float treeProbability =  whiteNoise(worldX, worldZ);
+            float treeProbability = whiteNoise(worldX, worldZ);
             // maps the value in a range from 0 to 4*DIM.y
             int height = static_cast<int>((noiseValue + 1.0f) * 2 * DIM.y);
 
@@ -320,9 +319,10 @@ Chunk Chunk::genChunk(std::shared_ptr<AtlasManager> atlas, glm::ivec3 pos) {
                     chunk.blocks[x][y][z] = Block::DIRT;
                 } else if (worldY == (height - 1)) {
                     chunk.blocks[x][y][z] = Block::GRASS;
-                    if (treeNoise > treeProbability && treeNoise>0.4f && y < (DIM.y - 8) && x < (DIM.x - 1) && z > 1 && 
-                        z < (DIM.z - 1) && z >1) {
-                        genTree({x, y+1, z}, chunk);
+                    if (treeNoise > treeProbability && treeNoise > 0.4f &&
+                        y < (DIM.y - 8) && x < (DIM.x - 1) && x > 1 &&
+                        z < (DIM.z - 1) && z > 1) {
+                        genTree({x, y + 1, z}, chunk);
                     }
                 }
             }
